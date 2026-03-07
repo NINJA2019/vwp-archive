@@ -329,7 +329,7 @@ function edit(id,e){
   e.stopPropagation();e.preventDefault();
   const v=videos.find(x=>x.id===id);if(!v)return;
   editId=id;
-  inputTags=parseTags(v);renderTagChips();
+  inputTags=parseTags(v);
   document.getElementById("iUrl").value=v.url||"";
   document.getElementById("iTitle").value=v.title||"";
   document.getElementById("iMember").value=v.member||"kafu";
@@ -340,7 +340,7 @@ function edit(id,e){
   if(vid){document.getElementById("thumbImg").src=`https://img.youtube.com/vi/${vid}/mqdefault.jpg`;document.getElementById("thumbPreview").style.display="block";}
   document.querySelector("#mover .modal h2").textContent="動画を編集";
   document.getElementById("mSave").textContent="更新する";
-  document.getElementById("mover").classList.add("open");
+  document.getElementById("mover").classList.add("open"); setTimeout(()=>renderTagChips(),50);
 }
 
 function showMb(v){return curMember==='all'?mbPill(v.member):'';}
