@@ -379,46 +379,10 @@ const MBR_CLS = { kafu:'mb-kafu', rime:'mb-rime', harusar:'mb-harusar', isekai:'
 const MBR_NAME= { kafu:'花譜', rime:'理芽', harusar:'春猿火', isekai:'ヰ世界情緒', koko:'幸祜', vwp:'V.W.P' };
 
 // ── SAMPLE DATA ──────────────────────────────────────
-const SAMPLES = [
-  // 花譜
-  {id:1, member:'kafu', title:'過去を喰らう',           tag:'組曲',    date:'2020-02-28', url:'https://www.youtube.com/watch?v=osTD8PLBIUE', note:'TAKU INOUE'},
-  {id:2, member:'kafu', title:'魂の番',                 tag:'組曲',    date:'2020-09-07', url:'https://www.youtube.com/watch?v=FhJqO6GC_N8', note:'カンザキイオリ'},
-  {id:3, member:'kafu', title:'不完全燃焼',             tag:'シングル', date:'2020-04-24', url:'https://www.youtube.com/watch?v=DwFQ21Ll0iM', note:''},
-  {id:4, member:'kafu', title:'INTERNET YAMERO',        tag:'代表曲',  date:'2019-05-24', url:'https://www.youtube.com/watch?v=ygM68k6gHKs', note:''},
-  {id:5, member:'kafu', title:'糸',                     tag:'歌ってみた',date:'2019-11-15',url:'https://www.youtube.com/watch?v=ZFGR8AJwfds', note:'中島みゆき cover'},
-  {id:6, member:'kafu', title:'不可解 1st ONE-MAN LIVE',tag:'公演',    date:'2019-12-28', url:'https://www.youtube.com/watch?v=6ZDDOlKRhIA', note:'初単独公演'},
-  {id:7, member:'kafu', title:'天球、彼方の果てまで',   tag:'デュエット',date:'2021-03-20',url:'https://www.youtube.com/watch?v=i4WaTnNDqJM', note:'w/ 理芽'},
-  {id:8, member:'kafu', title:'邂逅',                   tag:'組曲',    date:'2021-06-11', url:'https://www.youtube.com/watch?v=xwqGEYOcOX0', note:'カンザキイオリ'},
-  // 理芽
-  {id:9,  member:'rime', title:'黄昏のダーリン',        tag:'シングル', date:'2020-08-13', url:'https://www.youtube.com/watch?v=cX3KokyFoqE', note:''},
-  {id:10, member:'rime', title:'みじめ',                tag:'組曲',    date:'2021-02-19', url:'https://www.youtube.com/watch?v=q6bIELU3niE', note:'カンザキイオリ'},
-  {id:11, member:'rime', title:'花になって',            tag:'歌ってみた',date:'2020-11-20',url:'https://www.youtube.com/watch?v=Jh3a2J4VkEo', note:'back number cover'},
-  {id:12, member:'rime', title:'RITUAL 1st ONE-MAN LIVE',tag:'公演',   date:'2022-01-09', url:'https://www.youtube.com/watch?v=9lTcgMLKkzs', note:'初単独公演'},
-  {id:13, member:'rime', title:'なんでもないや',        tag:'歌ってみた',date:'2021-06-05',url:'https://www.youtube.com/watch?v=yNwK_J0RFBU', note:'RADWIMPS cover'},
-  // 春猿火
-  {id:14, member:'harusar', title:'燔祭上等',           tag:'組曲',    date:'2021-04-09', url:'https://www.youtube.com/watch?v=jfUSoqFDnTg', note:'カンザキイオリ'},
-  {id:15, member:'harusar', title:'平熱',               tag:'シングル', date:'2021-10-29', url:'https://www.youtube.com/watch?v=oDXk5cH-fzc', note:''},
-  {id:16, member:'harusar', title:'鬼哭 1st ONE-MAN LIVE',tag:'公演',  date:'2022-06-18', url:'https://www.youtube.com/watch?v=UVkf0eqNFDI', note:'初単独公演'},
-  {id:17, member:'harusar', title:'ガラスの靴',         tag:'歌ってみた',date:'2022-01-14',url:'https://www.youtube.com/watch?v=xW6LhW7FVKY', note:'Aimer cover'},
-  // ヰ世界情緒
-  {id:18, member:'isekai', title:'アルジャーノン',       tag:'組曲',    date:'2021-03-05', url:'https://www.youtube.com/watch?v=Y10oIb5Dq44', note:'カンザキイオリ'},
-  {id:19, member:'isekai', title:'まほうつかいのでし',   tag:'シングル', date:'2021-09-24', url:'https://www.youtube.com/watch?v=b0M_cNkp4ak', note:''},
-  {id:20, member:'isekai', title:'「I」1st ONE-MAN LIVE',tag:'公演',   date:'2022-08-27', url:'https://www.youtube.com/watch?v=sKkZo2Jxg4s', note:'初単独公演'},
-  {id:21, member:'isekai', title:'春に',                tag:'歌ってみた',date:'2022-03-11',url:'https://www.youtube.com/watch?v=PMmLBjIHhfY', note:'よしだよしこ cover'},
-  // 幸祜
-  {id:22, member:'koko', title:'カラカラ',               tag:'組曲',    date:'2021-05-07', url:'https://www.youtube.com/watch?v=LxPeMELB5fQ', note:'カンザキイオリ'},
-  {id:23, member:'koko', title:'白昼夢',                tag:'シングル', date:'2021-12-31', url:'https://www.youtube.com/watch?v=LxPeMELB5fQ', note:''},
-  {id:24, member:'koko', title:'KOKO 1st ONE-MAN LIVE', tag:'公演',    date:'2022-11-26', url:'https://www.youtube.com/watch?v=LxPeMELB5fQ', note:'初単独公演'},
-  {id:25, member:'koko', title:'夜に駆ける',            tag:'歌ってみた',date:'2022-04-30',url:'https://www.youtube.com/watch?v=LxPeMELB5fQ', note:'YOASOBI cover'},
-  // V.W.P
-  {id:26, member:'vwp', title:'虚無病',                 tag:'グループ曲',date:'2021-10-21',url:'https://www.youtube.com/watch?v=_ZLbhipRjxE', note:'5人全員'},
-  {id:27, member:'vwp', title:'快晴',                   tag:'グループ曲',date:'2022-01-26',url:'https://www.youtube.com/watch?v=_ZLbhipRjxE', note:'5人全員'},
-  {id:28, member:'vwp', title:'V.W.P 1st LIVE「詩」',   tag:'公演',    date:'2022-09-10', url:'https://www.youtube.com/watch?v=_ZLbhipRjxE', note:'初グループ公演'},
-  {id:29, member:'vwp', title:'命に嫌われている。',      tag:'歌ってみた',date:'2022-06-03',url:'https://www.youtube.com/watch?v=_ZLbhipRjxE', note:'カンザキイオリ cover'},
-];
+const SAMPLES = [];
 
 // ── STATE ────────────────────────────────────────────
-const SK = 'vwp_v2_videos';
+const SK = 'vwp_v3_videos';
 let videos = [];
 let nextId = 100;
 let curMember = 'all';
