@@ -141,6 +141,37 @@ aside::-webkit-scrollbar{width:3px;} aside::-webkit-scrollbar-thumb{background:v
 ::-webkit-scrollbar{width:5px;height:5px;} ::-webkit-scrollbar-track{background:transparent;} ::-webkit-scrollbar-thumb{background:rgba(160,170,220,.16);border-radius:3px;}
 @keyframes fi{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 .vcard,.litem,.tl-row{animation:fi .26s ease both;}
+/* ─── MOBILE ─── */
+@media (max-width: 700px) {
+  aside { display:none; }
+  .layout { flex-direction:column; }
+  .content { width:100%; }
+
+  /* mobile filter bar */
+  .mob-filters { display:flex; flex-direction:column; gap:6px; padding:.7rem 1rem; border-bottom:1px solid var(--border); background:var(--surface); position:sticky; top:54px; z-index:90; }
+  .mob-scroll  { display:flex; gap:5px; overflow-x:auto; padding-bottom:2px; scrollbar-width:none; }
+  .mob-scroll::-webkit-scrollbar { display:none; }
+  .mob-chip { background:var(--surface2); border:1px solid var(--border); border-radius:20px; color:var(--dim); font-size:.72rem; padding:4px 12px; white-space:nowrap; cursor:pointer; transition:all .2s; flex-shrink:0; font-family:'Noto Sans JP',sans-serif; }
+  .mob-chip.on { background:rgba(160,170,255,.15); border-color:rgba(160,170,255,.3); color:#c8d0ff; }
+  .mob-chip[data-m="kafu"].on    { background:rgba(255,183,197,.15); border-color:#ffb7c5; color:#ffb7c5; }
+  .mob-chip[data-m="rime"].on    { background:rgba(126,184,247,.15); border-color:#7eb8f7; color:#7eb8f7; }
+  .mob-chip[data-m="harusar"].on { background:rgba(255,112,112,.15); border-color:#ff7070; color:#ff7070; }
+  .mob-chip[data-m="isekai"].on  { background:rgba(240,240,240,.12); border-color:#e8e8e8; color:#e8e8e8; }
+  .mob-chip[data-m="koko"].on    { background:rgba(192,132,252,.15); border-color:#c084fc; color:#c084fc; }
+  .mob-chip[data-m="vwp"].on     { background:rgba(196,181,253,.15); border-color:#c4b5fd; color:#c4b5fd; }
+
+  .vgrid { grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); }
+  .sort-bar { padding:.5rem 1rem; }
+  .header-inner { gap:.6rem; padding:0 .8rem; }
+  .logo { font-size:.8rem; letter-spacing:.2em; }
+  .lang-sw { display:none; }
+  .fab { bottom:1.2rem; right:1.2rem; width:42px; height:42px; }
+  #loginBtn { bottom:1.2rem; right:1.2rem; width:42px; height:42px; }
+}
+@media (min-width: 701px) {
+  .mob-filters { display:none; }
+}
+
 </style>
 </head>
 <body>
@@ -160,6 +191,10 @@ aside::-webkit-scrollbar{width:3px;} aside::-webkit-scrollbar-thumb{background:v
     </div>
   </div>
 </header>
+<div class="mob-filters" id="mobFilters">
+  <div class="mob-scroll" id="mobMembers"></div>
+  <div class="mob-scroll" id="mobTags"></div>
+</div>
 <div class="layout">
   <aside>
     <div class="sb-sec"><div class="sb-title" data-i18n="members">メンバー</div><div class="member-pills" id="memberPills"></div></div>
@@ -317,6 +352,39 @@ function buildSidebar(){
     b.innerHTML=`<span class="cfilt-label">#${tag}</span><span class="ccnt" id="tc-${tag}">0</span>`;
     b.addEventListener('click',()=>{curTag=tag;tf.querySelectorAll('.cfilt').forEach(x=>x.classList.remove('on'));b.classList.add('on');updateCounts();render();});
     tf.appendChild(b);
+  });
+  buildMobFilters();
+}
+
+function buildMobFilters(){
+  // メンバーチップ
+  const mm=document.getElementById('mobMembers');
+  if(!mm)return;
+  mm.innerHTML='';
+  MEMBERS.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='mob-chip'+(m.id===curMember?' on':'');
+    b.dataset.m=m.id;
+    b.textContent=m.emoji+' '+mbr(m.id);
+    b.addEventListener('click',()=>{curMember=m.id;curTag='all';buildSidebar();updateCounts();render();});
+    mm.appendChild(b);
+  });
+  // タグチップ
+  const mt=document.getElementById('mobTags');
+  mt.innerHTML='';
+  const src=curMember==='all'?videos:videos.filter(v=>v.member===curMember);
+  const tags=allTagsOf(src);
+  const allB=document.createElement('button');
+  allB.className='mob-chip'+(curTag==='all'?' on':'');
+  allB.textContent=t('allTag');
+  allB.addEventListener('click',()=>{curTag='all';buildSidebar();updateCounts();render();});
+  mt.appendChild(allB);
+  tags.forEach(tag=>{
+    const b=document.createElement('button');
+    b.className='mob-chip'+(curTag===tag?' on':'');
+    b.textContent='#'+tag;
+    b.addEventListener('click',()=>{curTag=tag;buildSidebar();updateCounts();render();});
+    mt.appendChild(b);
   });
 }
 
