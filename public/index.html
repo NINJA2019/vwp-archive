@@ -472,11 +472,8 @@ document.getElementById('loginCancel').addEventListener('click',()=>document.get
 document.getElementById('loginMover').addEventListener('click',e=>{if(e.target===document.getElementById('loginMover'))document.getElementById('loginMover').classList.remove('open');});
 
 async function verifyPw(pw){
-  const res=await fetch('/api/videos-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw,url:'_check_',title:'_check_',member:'kafu',tags:'',date:'',note:''})});
-  if(res.status===401)return false;
-  const d=await res.json();
-  if(d.id)await fetch('/api/videos-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw,id:d.id})});
-  return true;
+  const res=await fetch("/api/auth-check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:pw})});
+  return res.ok;
 }
 document.getElementById('loginSubmit').addEventListener('click',async()=>{
   const pw=document.getElementById('pwInput').value;
