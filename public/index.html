@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>V.W.P ARCHIVE</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9FTCYNJCHN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-9FTCYNJCHN');
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Shippori+Mincho:wght@400;500&family=Noto+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
 <style>
@@ -234,7 +242,7 @@ const MEMBERS = [
 ];
 const MBR_CLS = {kafu:'mb-kafu',rime:'mb-rime',harusar:'mb-harusar',isekai:'mb-isekai',koko:'mb-koko',vwp:'mb-vwp'};
 
-let videos=[],curMember='all',curTag='all',curSort='new',curView='grid',searchQ='',isAdmin=false;
+let videos=[],curMember='all',curTag='all',curSort='new',curView='grid',searchQ='',isAdmin=false,editId=null;
 const PW_SK='vwp_admin_pw';
 function getStoredPw(){try{return localStorage.getItem(PW_SK)||'';}catch{return '';}}
 function storePw(pw){try{localStorage.setItem(PW_SK,pw);}catch{}}
@@ -249,6 +257,10 @@ async function addVideoApi(payload){
 async function deleteVideoApi(id){
   const res=await fetch('/api/videos-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:getStoredPw(),id})});
   const d=await res.json(); if(!res.ok) throw new Error(d.error||'failed');
+}
+async function updateVideoApi(id,payload){
+  const res=await fetch("/api/videos-update",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:getStoredPw(),id,...payload})});
+  const d=await res.json(); if(!res.ok) throw new Error(d.error||"failed"); return d;
 }
 
 function ytId(url){const m=url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);return m?m[1]:null;}
@@ -313,6 +325,24 @@ async function del(id,e){
   catch(err){alert(err.message);}
 }
 
+function edit(id,e){
+  e.stopPropagation();e.preventDefault();
+  const v=videos.find(x=>x.id===id);if(!v)return;
+  editId=id;
+  inputTags=parseTags(v);renderTagChips();
+  document.getElementById("iUrl").value=v.url||"";
+  document.getElementById("iTitle").value=v.title||"";
+  document.getElementById("iMember").value=v.member||"kafu";
+  document.getElementById("iDate").value=v.date||"";
+  document.getElementById("iSpotify").value=v.spotify_url||"";
+  document.getElementById("iNote").value=v.note||"";
+  const vid=ytId(v.url);
+  if(vid){document.getElementById("thumbImg").src=`https://img.youtube.com/vi/${vid}/mqdefault.jpg`;document.getElementById("thumbPreview").style.display="block";}
+  document.querySelector("#mover .modal h2").textContent="動画を編集";
+  document.getElementById("mSave").textContent="更新する";
+  document.getElementById("mover").classList.add("open");
+}
+
 function showMb(v){return curMember==='all'?mbPill(v.member):'';}
 
 function renderGrid(list){
@@ -323,7 +353,7 @@ function renderGrid(list){
       <div class="cbody">
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div>
         <div class="ctitle">${v.title}</div>
-        <div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${v.note}</span>`:''}${isAdmin?`<button class="dbtn" onclick="del(${v.id},event)">✕</button>`:''}</div>
+        <div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${v.note}</span>`:''}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div>
       </div>
     </div>`).join('')+`</div>`;
 }
@@ -333,7 +363,7 @@ function renderList(list){
     <a class="litem" style="animation-delay:${i*.022}s" href="${v.url}" target="_blank" rel="noopener">
       <div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div>
       <div class="linfo"><div class="ltitle">${v.title}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${v.note}</span>`:''}</div></div>
-      ${isAdmin?`<button class="dbtn" onclick="del(${v.id},event)">✕</button>`:''}
+      ${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
     </a>`).join('')+`</div>`;
 }
 function renderTimeline(list){
@@ -347,7 +377,7 @@ function renderTimeline(list){
       <div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div>
       <div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${v.title}</div>
       <div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${v.note}</span>`:''}</div></div>
-      ${isAdmin?`<button class="dbtn" onclick="del(${v.id},event)">✕</button>`:''}
+      ${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
     </div>`;
   });
   return html+'</div>';
@@ -423,8 +453,8 @@ document.getElementById('fetchBtn').addEventListener('click',async()=>{
   }catch(e){status.textContent='Error: '+e.message;status.style.color='#fca5a5';}
 });
 
-document.getElementById('fab').addEventListener('click',()=>{inputTags=[];renderTagChips();document.getElementById('mover').classList.add('open');});
-document.getElementById('mCancel').addEventListener('click',()=>document.getElementById('mover').classList.remove('open'));
+document.getElementById('fab').addEventListener('click',()=>{editId=null;inputTags=[];renderTagChips();document.querySelector('#mover .modal h2').textContent=t('addVideo');document.getElementById('mSave').textContent=t('addBtn');document.getElementById('mover').classList.add('open');});
+document.getElementById('mCancel').addEventListener('click',()=>{editId=null;document.querySelector('#mover .modal h2').textContent=t('addVideo');document.getElementById('mSave').textContent=t('addBtn');document.getElementById('mover').classList.remove('open');});
 document.getElementById('mover').addEventListener('click',e=>{if(e.target===document.getElementById('mover'))document.getElementById('mover').classList.remove('open');});
 
 document.getElementById('mSave').addEventListener('click',async()=>{
@@ -439,10 +469,18 @@ document.getElementById('mSave').addEventListener('click',async()=>{
   const tags=inputTags.join(' ');
   if(!url||!title){alert('URLとタイトルは必須です');return;}
   const saveBtn=document.getElementById('mSave');
-  saveBtn.textContent=t('adding');saveBtn.disabled=true;
+  saveBtn.textContent=editId?'更新中…':t('adding');saveBtn.disabled=true;
   try{
-    const nv=await addVideoApi({member,title,tags,date,url,note,spotify_url:spotify});
-    videos.unshift(nv);
+    if(editId){
+      const updated=await updateVideoApi(editId,{member,title,tags,date,url,note,spotify_url:spotify});
+      const idx=videos.findIndex(v=>v.id===editId);
+      if(idx!==-1) videos[idx]={...videos[idx],...updated};
+      editId=null;
+    } else {
+      const nv=await addVideoApi({member,title,tags,date,url,note,spotify_url:spotify});
+      videos.unshift(nv);
+    }
+    document.querySelector('#mover .modal h2').textContent=t('addVideo');
     document.getElementById('mover').classList.remove('open');
     ['iUrl','iTitle','iDate','iNote','iSpotify'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('thumbPreview').style.display='none';
