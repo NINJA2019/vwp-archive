@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V.W.P ARCHIVE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Shippori+Mincho:wght@400;500&family=Noto+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07090e;
+  --surface: #0c0f18;
+  --surface2: #111420;
+  --border: rgba(160,170,220,0.11);
+  --text: #ccd4ee;
+  --dim: #5a6a90;
+  --glow: rgba(160,170,255,0.12);
+}
+
+/* member accent vars */
+.m-all    { --mc:#b0b8ff; --ms:rgba(140,150,255,0.15); --mg:rgba(140,150,255,0.06); }
+.m-kafu   { --mc:#8faeff; --ms:rgba(100,130,255,0.18); --mg:rgba(100,130,255,0.07); }
+.m-rime   { --mc:#ff90bb; --ms:rgba(255,100,160,0.18); --mg:rgba(255,100,155,0.07); }
+.m-harusar{ --mc:#ffb060; --ms:rgba(255,160,70,0.18);  --mg:rgba(255,155,60,0.07);  }
+.m-isekai { --mc:#b08dff; --ms:rgba(150,110,255,0.18); --mg:rgba(145,105,255,0.07); }
+.m-koko   { --mc:#5dd9a8; --ms:rgba(70,210,160,0.18);  --mg:rgba(65,205,155,0.07);  }
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Noto Sans JP',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+body::before {
+  content:'';
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 35% at 5% 0%,   rgba(100,120,255,0.055) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 25% at 95% 100%, rgba(180,120,255,0.04)  0%,transparent 70%);
+}
+
+/* ─── HEADER ─── */
+header {
+  position:sticky; top:0; z-index:100;
+  background:rgba(7,9,14,0.92);
+  backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+}
+.header-inner {
+  max-width:1480px; margin:0 auto;
+  display:flex; align-items:center; gap:1.2rem;
+  height:54px; padding:0 1.5rem;
+}
+.logo {
+  font-family:'Cinzel',serif;
+  font-size:1rem; letter-spacing:0.35em;
+  color:#fff; text-decoration:none; flex-shrink:0;
+  text-shadow:0 0 28px rgba(180,185,255,0.35);
+}
+.logo em { font-style:normal; color:rgba(180,185,255,0.55); font-size:0.7em; letter-spacing:0.2em; }
+
+.search-wrap { flex:1; max-width:340px; position:relative; }
+.search-wrap input {
+  width:100%; background:var(--surface2);
+  border:1px solid var(--border); border-radius:6px;
+  padding:0.42rem 1rem 0.42rem 2.1rem;
+  color:var(--text); font-family:'Noto Sans JP',sans-serif; font-size:0.8rem;
+  outline:none; transition:border-color .2s,box-shadow .2s;
+}
+.search-wrap input:focus { border-color:rgba(160,170,255,0.3); box-shadow:0 0 14px rgba(160,170,255,0.09); }
+.search-wrap input::placeholder { color:var(--dim); }
+.si { position:absolute; left:.65rem; top:50%; transform:translateY(-50%); color:var(--dim); font-size:.78rem; pointer-events:none; }
+
+.view-toggle { display:flex; gap:2px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:3px; margin-left:auto; }
+.vbtn { background:none; border:none; color:var(--dim); cursor:pointer; padding:.28rem .52rem; border-radius:4px; font-size:.88rem; transition:all .2s; }
+.vbtn.on { background:rgba(160,170,255,0.13); color:var(--mc,#b0b8ff); }
+
+/* ─── LAYOUT ─── */
+.layout { max-width:1480px; margin:0 auto; display:flex; position:relative; z-index:1; }
+
+/* ─── SIDEBAR ─── */
+aside {
+  width:200px; flex-shrink:0;
+  padding:1.2rem .9rem 1.2rem 1.3rem;
+  border-right:1px solid var(--border);
+  min-height:calc(100vh - 54px);
+  position:sticky; top:54px; align-self:flex-start;
+  max-height:calc(100vh - 54px); overflow-y:auto;
+}
+aside::-webkit-scrollbar{width:3px;}
+aside::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+.sb-title {
+  font-family:'Cinzel',serif; font-size:.58rem; letter-spacing:.2em;
+  color:var(--dim); text-transform:uppercase;
+  margin-bottom:.55rem; padding-bottom:.35rem; border-bottom:1px solid var(--border);
+}
+.sb-sec { margin-bottom:1.6rem; }
+
+/* Member pills row */
+.member-pills { display:flex; flex-direction:column; gap:2px; }
+.mpill {
+  display:flex; align-items:center; gap:.55rem;
+  width:100%; background:none; border:none;
+  color:var(--dim); cursor:pointer;
+  padding:.36rem .5rem; border-radius:5px;
+  font-family:'Noto Sans JP',sans-serif; font-size:.78rem;
+  text-align:left; transition:all .2s; position:relative;
+  justify-content:space-between;
+}
+.mpill:hover { background:rgba(255,255,255,0.04); color:var(--text); }
+.mpill.on { color:#fff; }
+.mpill.on::before {
+  content:'';
+  position:absolute; left:0; top:20%; bottom:20%;
+  width:2px; border-radius:2px;
+  background:var(--mc2,#b0b8ff);
+}
+/* per member accent for pill indicator */
+.mpill[data-m="all"]    { --mc2:#b0b8ff; }
+.mpill[data-m="kafu"]   { --mc2:#8faeff; }
+.mpill[data-m="rime"]   { --mc2:#ff90bb; }
+.mpill[data-m="harusar"]{ --mc2:#ffb060; }
+.mpill[data-m="isekai"] { --mc2:#b08dff; }
+.mpill[data-m="koko"]   { --mc2:#5dd9a8; }
+
+.mpill-icon { font-size:.95rem; flex-shrink:0; width:20px; text-align:center; }
+.mpill-name { flex:1; }
+.mpill-cnt { font-size:.65rem; background:var(--surface2); padding:1px 6px; border-radius:10px; color:var(--dim); }
+.mpill.on .mpill-cnt { background:rgba(160,170,255,0.12); color:inherit; }
+
+/* category filters */
+.cfilt {
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; background:none; border:none; color:var(--dim);
+  cursor:pointer; padding:.35rem .5rem; border-radius:5px;
+  font-family:'Noto Sans JP',sans-serif; font-size:.77rem;
+  text-align:left; transition:all .2s; margin-bottom:2px;
+}
+.cfilt:hover { background:rgba(255,255,255,0.04); color:var(--text); }
+.cfilt.on { background:rgba(160,170,255,0.1); color:#c8d0ff; }
+.cfilt-label { display:flex; align-items:center; gap:.45rem; flex:1; }
+.cdot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+.ccnt { font-size:.65rem; background:var(--surface2); padding:1px 5px; border-radius:10px; color:var(--dim); }
+.cfilt.on .ccnt { background:rgba(160,170,255,0.15); color:#a0aaff; }
+
+/* tag dot colors */
+.d-kumikyo { background:#a5b4fc; } .d-single  { background:#f9a8d4; }
+.d-popular { background:#fcd34d; } .d-live    { background:#fca5a5; }
+.d-duet    { background:#6ee7b7; } .d-cover   { background:#7dd3fc; }
+.d-group   { background:#c4b5fd; }
+
+/* tag pill colors */
+.t-kumikyo { background:rgba(99,102,241,.17);  color:#a5b4fc; }
+.t-single  { background:rgba(236,72,153,.14);  color:#f9a8d4; }
+.t-popular { background:rgba(245,158,11,.14);  color:#fcd34d; }
+.t-live    { background:rgba(239,68,68,.14);   color:#fca5a5; }
+.t-duet    { background:rgba(16,185,129,.14);  color:#6ee7b7; }
+.t-cover   { background:rgba(14,165,233,.14);  color:#7dd3fc; }
+.t-group   { background:rgba(167,139,250,.16); color:#c4b5fd; }
+
+/* member badge colors (inline) */
+.mb-kafu   { background:rgba(100,130,255,.15); color:#8faeff; }
+.mb-rime   { background:rgba(255,100,160,.14); color:#ff90bb; }
+.mb-harusar{ background:rgba(255,155,60,.14);  color:#ffb060; }
+.mb-isekai { background:rgba(145,105,255,.15); color:#b08dff; }
+.mb-koko   { background:rgba(65,205,155,.14);  color:#5dd9a8; }
+.mb-vwp    { background:rgba(150,140,255,.14); color:#c4b5fd; }
+
+/* ─── SORT BAR ─── */
+.sort-bar {
+  padding:.7rem 1.5rem; border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:.7rem; font-size:.76rem; color:var(--dim);
+}
+.sbtn { background:none; border:none; color:var(--dim); cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-size:.76rem; padding:.18rem .5rem; border-radius:4px; transition:all .2s; }
+.sbtn.on { color:#c8d0ff; background:rgba(160,170,255,.1); }
+.sbtn:hover:not(.on) { color:var(--text); }
+.rcnt { margin-left:auto; font-size:.7rem; }
+
+/* ─── CONTENT ─── */
+.content { flex:1; min-width:0; }
+
+/* GRID */
+.vgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:1px; background:var(--border); }
+.vcard { background:var(--bg); cursor:pointer; position:relative; transition:background .2s; }
+.vcard:hover { background:var(--surface); }
+.tw { position:relative; aspect-ratio:16/9; overflow:hidden; background:var(--surface2); }
+.tw img { width:100%; height:100%; object-fit:cover; opacity:.82; transition:transform .4s ease,opacity .3s; }
+.vcard:hover .tw img { transform:scale(1.04); opacity:1; }
+.tov { position:absolute; inset:0; background:linear-gradient(to top,rgba(7,9,14,.65) 0%,transparent 55%); opacity:0; transition:opacity .3s; display:flex; align-items:center; justify-content:center; }
+.vcard:hover .tov { opacity:1; }
+.pico { width:38px; height:38px; background:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#07090e; font-size:.85rem; padding-left:2px; }
+.cbody { padding:.6rem .85rem .7rem; }
+.ctitle { font-family:'Shippori Mincho',serif; font-size:.82rem; line-height:1.55; color:var(--text); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; margin-bottom:.42rem; }
+.cmeta { font-size:.66rem; color:var(--dim); display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; }
+
+/* LIST */
+.vlist { display:flex; flex-direction:column; }
+.litem { display:flex; gap:.9rem; padding:.6rem 1.5rem; border-bottom:1px solid var(--border); cursor:pointer; transition:background .2s; text-decoration:none; color:inherit; align-items:center; }
+.litem:hover { background:var(--surface); }
+.lthumb { width:104px; flex-shrink:0; aspect-ratio:16/9; overflow:hidden; border-radius:3px; background:var(--surface2); }
+.lthumb img { width:100%; height:100%; object-fit:cover; opacity:.82; transition:opacity .2s; }
+.litem:hover .lthumb img { opacity:1; }
+.linfo { flex:1; min-width:0; }
+.ltitle { font-family:'Shippori Mincho',serif; font-size:.87rem; color:var(--text); margin-bottom:.28rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lmeta { display:flex; align-items:center; gap:.5rem; font-size:.68rem; color:var(--dim); flex-wrap:wrap; }
+
+/* TIMELINE */
+.tl { padding:1.2rem 1.4rem; position:relative; }
+.tl-line { position:absolute; left:3.15rem; top:0; bottom:0; width:1px; background:var(--border); }
+.tl-yr { font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.2em; color:var(--dim); margin:1.3rem 0 .65rem 2.5rem; }
+.tl-yr:first-child { margin-top:0; }
+.tl-row { display:flex; gap:.8rem; margin-bottom:.4rem; position:relative; cursor:pointer; padding:.42rem .45rem; border-radius:6px; transition:background .2s; align-items:flex-start; }
+.tl-row:hover { background:var(--surface); }
+.tl-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; margin-top:.56rem; margin-left:.22rem; position:relative; z-index:1; }
+.tl-th { width:90px; flex-shrink:0; aspect-ratio:16/9; overflow:hidden; border-radius:3px; background:var(--surface2); }
+.tl-th img { width:100%; height:100%; object-fit:cover; opacity:.78; }
+.tl-dt { font-size:.62rem; color:var(--dim); margin-bottom:.12rem; }
+.tl-ti { font-size:.78rem; font-family:'Shippori Mincho',serif; color:var(--text); line-height:1.4; }
+
+/* shared pill */
+.pill { display:inline-flex; align-items:center; gap:3px; font-size:.6rem; padding:1px 7px; border-radius:3px; letter-spacing:.02em; white-space:nowrap; }
+
+/* del btn */
+.dbtn { background:none; border:none; color:var(--dim); cursor:pointer; padding:3px 5px; border-radius:4px; font-size:.7rem; opacity:0; transition:opacity .2s,color .2s; flex-shrink:0; }
+.vcard:hover .dbtn,.litem:hover .dbtn,.tl-row:hover .dbtn { opacity:1; }
+.dbtn:hover { color:#fca5a5; }
+
+/* FAB */
+.fab { position:fixed; bottom:1.8rem; right:1.8rem; width:46px; height:46px; border-radius:50%; border:none; cursor:pointer; font-size:1.35rem; display:flex; align-items:center; justify-content:center; background:#b0b8ff; color:#07090e; box-shadow:0 4px 18px rgba(0,0,0,.45); transition:transform .2s,box-shadow .2s; z-index:200; }
+.fab:hover { transform:scale(1.1); box-shadow:0 6px 26px rgba(0,0,0,.55); }
+
+/* MODAL */
+.mover { display:none; position:fixed; inset:0; background:rgba(7,9,14,.88); backdrop-filter:blur(10px); z-index:300; align-items:center; justify-content:center; }
+.mover.open { display:flex; }
+.modal { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:1.7rem; width:90%; max-width:450px; box-shadow:0 20px 60px rgba(0,0,0,.65); }
+.modal h2 { font-family:'Cinzel',serif; font-size:.9rem; letter-spacing:.1em; color:#b0b8ff; margin-bottom:1.3rem; }
+.fg { margin-bottom:.85rem; }
+.fg label { display:block; font-size:.7rem; color:var(--dim); margin-bottom:.32rem; letter-spacing:.05em; }
+.fg input,.fg select,.fg textarea { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:5px; padding:.52rem .8rem; color:var(--text); font-family:'Noto Sans JP',sans-serif; font-size:.8rem; outline:none; transition:border-color .2s; }
+.fg input:focus,.fg select:focus,.fg textarea:focus { border-color:rgba(160,170,255,.3); }
+.fg select option { background:var(--surface); }
+.frow { display:flex; gap:.7rem; }
+.frow .fg { flex:1; }
+.fa { display:flex; gap:.6rem; justify-content:flex-end; margin-top:1.2rem; }
+.btn { padding:.42rem 1rem; border-radius:5px; border:none; cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-size:.8rem; transition:all .2s; }
+.btn-p { background:#b0b8ff; color:#07090e; font-weight:600; }
+.btn-p:hover { opacity:.88; }
+.btn-s { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+.btn-s:hover { background:var(--surface); }
+
+.empty { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:5rem 2rem; color:var(--dim); text-align:center; gap:.4rem; }
+.empty-i { font-size:2.2rem; margin-bottom:.4rem; opacity:.3; }
+.empty h3 { font-family:'Shippori Mincho',serif; font-weight:400; font-size:.9rem; }
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(160,170,220,.16);border-radius:3px;}
+
+@keyframes fi{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.vcard,.litem,.tl-row{animation:fi .26s ease both;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a class="logo" href="#">V.W.P <em>ARCHIVE</em></a>
+    <div class="search-wrap">
+      <span class="si">🔍</span>
+      <input type="text" id="searchInput" placeholder="タイトルで検索…">
+    </div>
+    <div class="view-toggle">
+      <button class="vbtn on" id="vGrid" title="グリッド">⊞</button>
+      <button class="vbtn" id="vList" title="リスト">☰</button>
+      <button class="vbtn" id="vTl"   title="時系列">⊢</button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ── SIDEBAR ── -->
+  <aside>
+    <!-- Members -->
+    <div class="sb-sec">
+      <div class="sb-title">メンバー</div>
+      <div class="member-pills" id="memberPills"></div>
+    </div>
+    <!-- Categories -->
+    <div class="sb-sec">
+      <div class="sb-title">カテゴリ</div>
+      <div id="catFilters"></div>
+    </div>
+  </aside>
+
+  <!-- ── MAIN ── -->
+  <div class="content">
+    <div class="sort-bar">
+      <span>並び順:</span>
+      <button class="sbtn on" id="sNew">新しい順</button>
+      <button class="sbtn" id="sOld">古い順</button>
+      <span class="rcnt" id="rcnt"></span>
+    </div>
+    <div id="vc"></div>
+  </div>
+</div>
+
+<button class="fab" id="fab">＋</button>
+
+<!-- Add Modal -->
+<div class="mover" id="mover">
+  <div class="modal">
+    <h2>動画を追加</h2>
+    <div class="fg">
+      <label>YouTube URL</label>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="iUrl" placeholder="https://www.youtube.com/watch?v=..." style="flex:1;">
+        <button id="fetchBtn" class="btn btn-s" style="white-space:nowrap;flex-shrink:0;padding:.42rem .75rem;font-size:.75rem;">取得</button>
+      </div>
+      <div id="fetchStatus" style="font-size:.7rem;margin-top:.28rem;min-height:.9rem;"></div>
+    </div>
+    <div id="thumbPreview" style="display:none;margin-bottom:.7rem;border-radius:4px;overflow:hidden;aspect-ratio:16/9;max-width:160px;background:var(--surface2);">
+      <img id="thumbImg" src="" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.9;">
+    </div>
+    <div class="fg">
+      <label>タイトル</label>
+      <input type="text" id="iTitle" placeholder="動画タイトル（URLから自動取得）">
+    </div>
+    <div class="frow">
+      <div class="fg">
+        <label>メンバー</label>
+        <select id="iMember"></select>
+      </div>
+      <div class="fg">
+        <label>カテゴリ</label>
+        <select id="iCat"></select>
+      </div>
+    </div>
+    <div class="fg">
+      <label>公開日</label>
+      <input type="date" id="iDate">
+    </div>
+    <div class="fg">
+      <label>メモ (任意)</label>
+      <textarea id="iNote" rows="2" placeholder="コラボ相手・作曲者など"></textarea>
+    </div>
+    <div class="fa">
+      <button class="btn btn-s" id="mCancel">キャンセル</button>
+      <button class="btn btn-p" id="mSave">追加する</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+// ── CONFIG ──────────────────────────────────────────
+const MEMBERS = [
+  { id:'all',     nameJp:'すべて',      emoji:'✦',  mc:'#b0b8ff' },
+  { id:'kafu',    nameJp:'花譜',        emoji:'🌸', mc:'#8faeff' },
+  { id:'rime',    nameJp:'理芽',        emoji:'🌱', mc:'#ff90bb' },
+  { id:'harusar', nameJp:'春猿火',      emoji:'🔥', mc:'#ffb060' },
+  { id:'isekai',  nameJp:'ヰ世界情緒',  emoji:'🌼', mc:'#b08dff' },
+  { id:'koko',    nameJp:'幸祜',        emoji:'⚡️', mc:'#5dd9a8' },
+  { id:'vwp',     nameJp:'V.W.P',       emoji:'✦', mc:'#c4b5fd' },
+];
+
+const CATS_ALL    = ['グループ曲','組曲','シングル','代表曲','公演','デュエット','歌ってみた'];
+const CATS_VWP    = ['グループ曲','組曲','公演','歌ってみた'];
+const CATS_SOLO   = ['組曲','シングル','代表曲','公演','デュエット','歌ってみた'];
+
+const TAG_CLS = { '組曲':'t-kumikyo','シングル':'t-single','代表曲':'t-popular','公演':'t-live','デュエット':'t-duet','歌ってみた':'t-cover','グループ曲':'t-group' };
+const DOT_CLS = { '組曲':'d-kumikyo','シングル':'d-single','代表曲':'d-popular','公演':'d-live','デュエット':'d-duet','歌ってみた':'d-cover','グループ曲':'d-group' };
+const MBR_CLS = { kafu:'mb-kafu', rime:'mb-rime', harusar:'mb-harusar', isekai:'mb-isekai', koko:'mb-koko', vwp:'mb-vwp' };
+const MBR_NAME= { kafu:'花譜', rime:'理芽', harusar:'春猿火', isekai:'ヰ世界情緒', koko:'幸祜', vwp:'V.W.P' };
+
+// ── SAMPLE DATA ──────────────────────────────────────
+const SAMPLES = [
+  // 花譜
+  {id:1, member:'kafu', title:'過去を喰らう',           tag:'組曲',    date:'2020-02-28', url:'https://www.youtube.com/watch?v=osTD8PLBIUE', note:'TAKU INOUE'},
+  {id:2, member:'kafu', title:'魂の番',                 tag:'組曲',    date:'2020-09-07', url:'https://www.youtube.com/watch?v=FhJqO6GC_N8', note:'カンザキイオリ'},
+  {id:3, member:'kafu', title:'不完全燃焼',             tag:'シングル', date:'2020-04-24', url:'https://www.youtube.com/watch?v=DwFQ21Ll0iM', note:''},
+  {id:4, member:'kafu', title:'INTERNET YAMERO',        tag:'代表曲',  date:'2019-05-24', url:'https://www.youtube.com/watch?v=ygM68k6gHKs', note:''},
+  {id:5, member:'kafu', title:'糸',                     tag:'歌ってみた',date:'2019-11-15',url:'https://www.youtube.com/watch?v=ZFGR8AJwfds', note:'中島みゆき cover'},
+  {id:6, member:'kafu', title:'不可解 1st ONE-MAN LIVE',tag:'公演',    date:'2019-12-28', url:'https://www.youtube.com/watch?v=6ZDDOlKRhIA', note:'初単独公演'},
+  {id:7, member:'kafu', title:'天球、彼方の果てまで',   tag:'デュエット',date:'2021-03-20',url:'https://www.youtube.com/watch?v=i4WaTnNDqJM', note:'w/ 理芽'},
+  {id:8, member:'kafu', title:'邂逅',                   tag:'組曲',    date:'2021-06-11', url:'https://www.youtube.com/watch?v=xwqGEYOcOX0', note:'カンザキイオリ'},
+  // 理芽
+  {id:9,  member:'rime', title:'黄昏のダーリン',        tag:'シングル', date:'2020-08-13', url:'https://www.youtube.com/watch?v=cX3KokyFoqE', note:''},
+  {id:10, member:'rime', title:'みじめ',                tag:'組曲',    date:'2021-02-19', url:'https://www.youtube.com/watch?v=q6bIELU3niE', note:'カンザキイオリ'},
+  {id:11, member:'rime', title:'花になって',            tag:'歌ってみた',date:'2020-11-20',url:'https://www.youtube.com/watch?v=Jh3a2J4VkEo', note:'back number cover'},
+  {id:12, member:'rime', title:'RITUAL 1st ONE-MAN LIVE',tag:'公演',   date:'2022-01-09', url:'https://www.youtube.com/watch?v=9lTcgMLKkzs', note:'初単独公演'},
+  {id:13, member:'rime', title:'なんでもないや',        tag:'歌ってみた',date:'2021-06-05',url:'https://www.youtube.com/watch?v=yNwK_J0RFBU', note:'RADWIMPS cover'},
+  // 春猿火
+  {id:14, member:'harusar', title:'燔祭上等',           tag:'組曲',    date:'2021-04-09', url:'https://www.youtube.com/watch?v=jfUSoqFDnTg', note:'カンザキイオリ'},
+  {id:15, member:'harusar', title:'平熱',               tag:'シングル', date:'2021-10-29', url:'https://www.youtube.com/watch?v=oDXk5cH-fzc', note:''},
+  {id:16, member:'harusar', title:'鬼哭 1st ONE-MAN LIVE',tag:'公演',  date:'2022-06-18', url:'https://www.youtube.com/watch?v=UVkf0eqNFDI', note:'初単独公演'},
+  {id:17, member:'harusar', title:'ガラスの靴',         tag:'歌ってみた',date:'2022-01-14',url:'https://www.youtube.com/watch?v=xW6LhW7FVKY', note:'Aimer cover'},
+  // ヰ世界情緒
+  {id:18, member:'isekai', title:'アルジャーノン',       tag:'組曲',    date:'2021-03-05', url:'https://www.youtube.com/watch?v=Y10oIb5Dq44', note:'カンザキイオリ'},
+  {id:19, member:'isekai', title:'まほうつかいのでし',   tag:'シングル', date:'2021-09-24', url:'https://www.youtube.com/watch?v=b0M_cNkp4ak', note:''},
+  {id:20, member:'isekai', title:'「I」1st ONE-MAN LIVE',tag:'公演',   date:'2022-08-27', url:'https://www.youtube.com/watch?v=sKkZo2Jxg4s', note:'初単独公演'},
+  {id:21, member:'isekai', title:'春に',                tag:'歌ってみた',date:'2022-03-11',url:'https://www.youtube.com/watch?v=PMmLBjIHhfY', note:'よしだよしこ cover'},
+  // 幸祜
+  {id:22, member:'koko', title:'カラカラ',               tag:'組曲',    date:'2021-05-07', url:'https://www.youtube.com/watch?v=LxPeMELB5fQ', note:'カンザキイオリ'},
+  {id:23, member:'koko', title:'白昼夢',                tag:'シングル', date:'2021-12-31', url:'https://www.youtube.com/watch?v=LxPeMELB5fQ', note:''},
+  {id:24, member:'koko', title:'KOKO 1st ONE-MAN LIVE', tag:'公演',    date:'2022-11-26', url:'https://www.youtube.com/watch?v=LxPeMELB5fQ', note:'初単独公演'},
+  {id:25, member:'koko', title:'夜に駆ける',            tag:'歌ってみた',date:'2022-04-30',url:'https://www.youtube.com/watch?v=LxPeMELB5fQ', note:'YOASOBI cover'},
+  // V.W.P
+  {id:26, member:'vwp', title:'虚無病',                 tag:'グループ曲',date:'2021-10-21',url:'https://www.youtube.com/watch?v=_ZLbhipRjxE', note:'5人全員'},
+  {id:27, member:'vwp', title:'快晴',                   tag:'グループ曲',date:'2022-01-26',url:'https://www.youtube.com/watch?v=_ZLbhipRjxE', note:'5人全員'},
+  {id:28, member:'vwp', title:'V.W.P 1st LIVE「詩」',   tag:'公演',    date:'2022-09-10', url:'https://www.youtube.com/watch?v=_ZLbhipRjxE', note:'初グループ公演'},
+  {id:29, member:'vwp', title:'命に嫌われている。',      tag:'歌ってみた',date:'2022-06-03',url:'https://www.youtube.com/watch?v=_ZLbhipRjxE', note:'カンザキイオリ cover'},
+];
+
+// ── STATE ────────────────────────────────────────────
+const SK = 'vwp_v2_videos';
+let videos = [];
+let nextId = 100;
+let curMember = 'all';
+let curCat    = 'all';
+let curSort   = 'new';
+let curView   = 'grid';
+let searchQ   = '';
+
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SK));
+    if (s && s.length) { videos = s; nextId = Math.max(...videos.map(v=>v.id))+1; return; }
+  } catch {}
+  videos = SAMPLES.map(v=>({...v}));
+  nextId = Math.max(...videos.map(v=>v.id))+1;
+  save();
+}
+function save() { try { localStorage.setItem(SK, JSON.stringify(videos)); } catch {} }
+
+// ── HELPERS ──────────────────────────────────────────
+function ytId(url) { const m = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/); return m?m[1]:null; }
+function thumb(v)  { const id=ytId(v.url); return id?`https://img.youtube.com/vi/${id}/mqdefault.jpg`:''; }
+function fmtDate(d){ if(!d) return ''; const dt=new Date(d+'T00:00:00'); return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`; }
+function pill(tag) { return `<span class="pill ${TAG_CLS[tag]||''}">${tag}</span>`; }
+function mpill(mid){ return `<span class="pill ${MBR_CLS[mid]||''}">${MBR_NAME[mid]||mid}</span>`; }
+
+function filtered() {
+  let list = videos.slice();
+  if (curMember !== 'all') list = list.filter(v=>v.member===curMember);
+  if (curCat    !== 'all') list = list.filter(v=>v.tag===curCat);
+  if (searchQ)             list = list.filter(v=>v.title.includes(searchQ)||(v.note&&v.note.includes(searchQ)));
+  list.sort((a,b)=>curSort==='new'?(b.date>a.date?1:-1):(a.date>b.date?1:-1));
+  return list;
+}
+
+// ── COUNTS ───────────────────────────────────────────
+function updateCounts() {
+  // members
+  const srcM = curCat==='all' ? videos : videos.filter(v=>v.tag===curCat);
+  MEMBERS.forEach(m=>{
+    const el=document.getElementById('mc-'+m.id);
+    if(!el) return;
+    el.textContent = m.id==='all' ? srcM.length : srcM.filter(v=>v.member===m.id).length;
+  });
+  // cats – visible only for curMember
+  const srcC = curMember==='all' ? videos : videos.filter(v=>v.member===curMember);
+  const cats = curMember==='vwp' ? CATS_VWP : curMember==='all' ? CATS_ALL : CATS_SOLO;
+  cats.forEach(c=>{
+    const el=document.getElementById('cc-'+c);
+    if(el) el.textContent=srcC.filter(v=>v.tag===c).length;
+  });
+  const allEl=document.getElementById('cc-all');
+  if(allEl) allEl.textContent=srcC.length;
+}
+
+// ── BUILD SIDEBAR ─────────────────────────────────────
+function buildSidebar() {
+  // member pills
+  const mp = document.getElementById('memberPills');
+  mp.innerHTML = '';
+  MEMBERS.forEach(m=>{
+    const btn=document.createElement('button');
+    btn.className='mpill'+(m.id===curMember?' on':'');
+    btn.dataset.m=m.id;
+    btn.innerHTML=`<span class="mpill-icon">${m.emoji}</span><span class="mpill-name">${m.nameJp}</span><span class="mpill-cnt" id="mc-${m.id}">0</span>`;
+    btn.addEventListener('click',()=>{ curMember=m.id; curCat='all'; buildSidebar(); updateCounts(); render(); });
+    mp.appendChild(btn);
+  });
+
+  // category filters
+  const cf=document.getElementById('catFilters');
+  cf.innerHTML='';
+  const cats = curMember==='vwp' ? CATS_VWP : curMember==='all' ? CATS_ALL : CATS_SOLO;
+
+  // "all" button
+  const allBtn=document.createElement('button');
+  allBtn.className='cfilt'+(curCat==='all'?' on':'');
+  allBtn.innerHTML=`<span class="cfilt-label">すべて</span><span class="ccnt" id="cc-all">0</span>`;
+  allBtn.addEventListener('click',()=>{ curCat='all'; cf.querySelectorAll('.cfilt').forEach(b=>b.classList.remove('on')); allBtn.classList.add('on'); updateCounts(); render(); });
+  cf.appendChild(allBtn);
+
+  cats.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='cfilt'+(curCat===c?' on':'');
+    b.innerHTML=`<span class="cfilt-label"><span class="cdot ${DOT_CLS[c]||''}"></span>${c}</span><span class="ccnt" id="cc-${c}">0</span>`;
+    b.addEventListener('click',()=>{ curCat=c; cf.querySelectorAll('.cfilt').forEach(x=>x.classList.remove('on')); b.classList.add('on'); updateCounts(); render(); });
+    cf.appendChild(b);
+  });
+}
+
+// ── MODAL SELECT OPTIONS ──────────────────────────────
+function buildModalSelects() {
+  const ms=document.getElementById('iMember');
+  ms.innerHTML=MEMBERS.filter(m=>m.id!=='all').map(m=>`<option value="${m.id}">${m.nameJp}</option>`).join('');
+
+  // update cat options when member changes
+  function updateCatOpts() {
+    const mid=ms.value;
+    const cats=mid==='vwp'?CATS_VWP:CATS_SOLO;
+    document.getElementById('iCat').innerHTML=cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+  }
+  ms.addEventListener('change', updateCatOpts);
+  updateCatOpts();
+}
+
+// ── DELETE ────────────────────────────────────────────
+function del(id,e) {
+  e.stopPropagation(); e.preventDefault();
+  if(!confirm('この動画を削除しますか？')) return;
+  videos=videos.filter(v=>v.id!==id);
+  save(); updateCounts(); render();
+}
+
+// ── RENDER ────────────────────────────────────────────
+function showMemberBadge(v) {
+  // show member badge only when viewing "all"
+  return curMember==='all' ? mpill(v.member) : '';
+}
+
+function renderGrid(list) {
+  if(!list.length) return `<div class="empty"><div class="empty-i">🌙</div><h3>動画が見つかりません</h3></div>`;
+  return `<div class="vgrid">`+list.map((v,i)=>`
+    <div class="vcard" style="animation-delay:${i*.022}s" onclick="window.open('${v.url}','_blank')">
+      <div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div>
+      <div class="cbody">
+        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${pill(v.tag)}${showMemberBadge(v)}</div>
+        <div class="ctitle">${v.title}</div>
+        <div class="cmeta"><span>${fmtDate(v.date)}</span>${v.note?`<span>${v.note}</span>`:''}<button class="dbtn" onclick="del(${v.id},event)">✕</button></div>
+      </div>
+    </div>`).join('')+`</div>`;
+}
+
+function renderList(list) {
+  if(!list.length) return `<div class="empty"><div class="empty-i">🌙</div><h3>動画が見つかりません</h3></div>`;
+  return `<div class="vlist">`+list.map((v,i)=>`
+    <a class="litem" style="animation-delay:${i*.022}s" href="${v.url}" target="_blank" rel="noopener">
+      <div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div>
+      <div class="linfo">
+        <div class="ltitle">${v.title}</div>
+        <div class="lmeta">${pill(v.tag)}${showMemberBadge(v)}<span>${fmtDate(v.date)}</span>${v.note?`<span>${v.note}</span>`:''}</div>
+      </div>
+      <button class="dbtn" onclick="del(${v.id},event)">✕</button>
+    </a>`).join('')+`</div>`;
+}
+
+function renderTimeline(list) {
+  if(!list.length) return `<div class="empty"><div class="empty-i">🌙</div><h3>動画が見つかりません</h3></div>`;
+  let html=`<div class="tl"><div class="tl-line"></div>`;
+  let yr='';
+  list.forEach((v,i)=>{
+    const y=v.date?v.date.slice(0,4):'不明';
+    if(y!==yr){yr=y;html+=`<div class="tl-yr">${y}</div>`;}
+    html+=`<div class="tl-row" style="animation-delay:${i*.022}s" onclick="window.open('${v.url}','_blank')">
+      <div class="tl-dot ${DOT_CLS[v.tag]||''}"></div>
+      <div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div>
+      <div style="flex:1;min-width:0">
+        <div class="tl-dt">${fmtDate(v.date)}</div>
+        <div class="tl-ti">${v.title}</div>
+        <div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap;align-items:center">${pill(v.tag)}${showMemberBadge(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${v.note}</span>`:''}</div>
+      </div>
+      <button class="dbtn" onclick="del(${v.id},event)">✕</button>
+    </div>`;
+  });
+  return html+'</div>';
+}
+
+function render() {
+  const list=filtered();
+  document.getElementById('rcnt').textContent=`${list.length} 件`;
+  const c=document.getElementById('vc');
+  if(curView==='grid')   c.innerHTML=renderGrid(list);
+  else if(curView==='list') c.innerHTML=renderList(list);
+  else                   c.innerHTML=renderTimeline(list);
+}
+
+
+// ── YOUTUBE FETCH (Netlify Function経由) ────────────────
+async function fetchYTInfo(url) {
+  const vid = ytId(url);
+  if (!vid) return null;
+  const res = await fetch(`/api/youtube?id=${vid}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// ── EVENTS ───────────────────────────────────────────
+document.getElementById('searchInput').addEventListener('input',e=>{ searchQ=e.target.value.trim(); render(); });
+
+// URL入力でサムネをプレビュー（APIキー不要）
+document.getElementById('iUrl').addEventListener('input', e => {
+  const vid = ytId(e.target.value.trim());
+  const prev = document.getElementById('thumbPreview');
+  const img  = document.getElementById('thumbImg');
+  if (vid) {
+    img.src = `https://img.youtube.com/vi/${vid}/mqdefault.jpg`;
+    prev.style.display = 'block';
+  } else {
+    prev.style.display = 'none';
+  }
+});
+
+// 取得ボタン
+document.getElementById('fetchBtn').addEventListener('click', async () => {
+  const url = document.getElementById('iUrl').value.trim();
+  const status = document.getElementById('fetchStatus');
+  if (!url) { status.textContent = 'URLを入力してください'; status.style.color='#fca5a5'; return; }
+  const vid = ytId(url);
+  if (!vid) { status.textContent = '有効なYouTube URLではありません'; status.style.color='#fca5a5'; return; }
+
+  status.textContent = '取得中…'; status.style.color='var(--dim)';
+  try {
+    const info = await fetchYTInfo(url);
+    if (!info) { status.textContent = '動画が見つかりませんでした'; status.style.color='#fca5a5'; return; }
+    if (info.title) document.getElementById('iTitle').value = info.title;
+    if (info.date)  document.getElementById('iDate').value  = info.date;
+    if (info.thumb) {
+      document.getElementById('thumbImg').src = info.thumb;
+      document.getElementById('thumbPreview').style.display = 'block';
+    }
+    status.textContent = '✓ タイトル・公開日・サムネイルを取得しました'; status.style.color='#6ee7b7';
+  } catch(e) {
+    status.textContent = 'エラー: ' + e.message; status.style.color='#fca5a5';
+  }
+});
+
+// 設定ボタン
+
+
+['vGrid','vList','vTl'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',()=>{
+    curView={vGrid:'grid',vList:'list',vTl:'timeline'}[id];
+    document.querySelectorAll('.vbtn').forEach(b=>b.classList.remove('on'));
+    document.getElementById(id).classList.add('on');
+    render();
+  });
+});
+
+document.getElementById('sNew').addEventListener('click',()=>{ curSort='new'; document.getElementById('sNew').classList.add('on'); document.getElementById('sOld').classList.remove('on'); render(); });
+document.getElementById('sOld').addEventListener('click',()=>{ curSort='old'; document.getElementById('sOld').classList.add('on'); document.getElementById('sNew').classList.remove('on'); render(); });
+
+document.getElementById('fab').addEventListener('click',()=>document.getElementById('mover').classList.add('open'));
+document.getElementById('mCancel').addEventListener('click',()=>document.getElementById('mover').classList.remove('open'));
+document.getElementById('mover').addEventListener('click',e=>{ if(e.target===document.getElementById('mover')) document.getElementById('mover').classList.remove('open'); });
+
+document.getElementById('mSave').addEventListener('click',()=>{
+  const url  = document.getElementById('iUrl').value.trim();
+  const title= document.getElementById('iTitle').value.trim();
+  const member=document.getElementById('iMember').value;
+  const tag  = document.getElementById('iCat').value;
+  const date = document.getElementById('iDate').value;
+  const note = document.getElementById('iNote').value.trim();
+  if(!url||!title){ alert('URLとタイトルは必須です'); return; }
+  videos.push({id:nextId++,member,title,tag,date,url,note});
+  save();
+  document.getElementById('mover').classList.remove('open');
+  ['iUrl','iTitle','iDate','iNote'].forEach(id=>document.getElementById(id).value='');
+  buildSidebar(); updateCounts(); render();
+});
+
+// ── INIT ─────────────────────────────────────────────
+load();
+buildSidebar();
+buildModalSelects();
+updateCounts();
+render();
+</script>
+</body>
+</html>
