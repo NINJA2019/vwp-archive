@@ -191,7 +191,7 @@ aside::-webkit-scrollbar{width:3px;} aside::-webkit-scrollbar-thumb{background:v
     </div>
     <div id="thumbPreview" style="display:none;margin-bottom:.7rem;border-radius:4px;overflow:hidden;aspect-ratio:16/9;max-width:160px;background:var(--surface2);"><img id="thumbImg" src="" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.9;"></div>
     <div class="fg"><label data-i18n="titleLabel">タイトル</label><input type="text" id="iTitle" placeholder="動画タイトル"></div>
-    <div class="fg"><label data-i18n="memberLabel">メンバー</label><select id="iMember"></select></div>
+    <div class="fg"><label data-i18n="memberLabel">メンバー <span style="color:var(--dim);font-size:.65rem;">（複数選択可）</span></label><div id="iMemberCb" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;"></div></div>
     <div class="fg">
       <label data-i18n="tagsLabel">タグ <span style="color:var(--dim);font-size:.65rem;" data-i18n-sub="tagHint">（#をつけてEnterで追加）</span></label>
       <div class="tag-input-wrap" id="tagInputWrap"><input type="text" id="tagInput" placeholder="#シングル #組曲"></div>
@@ -267,13 +267,14 @@ function ytId(url){const m=url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{1
 function thumb(v){const id=ytId(v.url);return id?`https://img.youtube.com/vi/${id}/mqdefault.jpg`:'';}
 function fmtDate(d){if(!d)return '';const dt=new Date(d+'T00:00:00');return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;}
 function parseTags(v){const raw=v.tags||v.tag||'';return raw.split(/[\s,]+/).map(s=>s.replace(/^#/,'')).filter(Boolean);}
+function parseMembers(v){return (v.member||'').split(/[\s,]+/).filter(Boolean);}
 function tagPills(v){return parseTags(v).map(tag=>`<span class="pill">#${tag}</span>`).join('');}
 function mbPill(mid){return `<span class="pill ${MBR_CLS[mid]||''}">${mbr(mid)}</span>`;}
 function spotifyBtn(v){if(!v.spotify_url)return '';return `<a class="spotify-btn" href="${v.spotify_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">♫ ${t('spotify')}</a>`;}
 
 function filtered(){
   let list=videos.slice();
-  if(curMember!=='all') list=list.filter(v=>v.member===curMember);
+  if(curMember!=='all') list=list.filter(v=>parseMembers(v).includes(curMember));
   if(curTag!=='all') list=list.filter(v=>parseTags(v).includes(curTag));
   if(searchQ) list=list.filter(v=>v.title.includes(searchQ)||(v.note&&v.note.includes(searchQ)));
   list.sort((a,b)=>curSort==='new'?(b.date>a.date?1:-1):(a.date>b.date?1:-1));
@@ -283,7 +284,7 @@ function allTagsOf(src){const s=new Set();src.forEach(v=>parseTags(v).forEach(t=
 
 function updateCounts(){
   const srcM=curTag==='all'?videos:videos.filter(v=>parseTags(v).includes(curTag));
-  MEMBERS.forEach(m=>{const el=document.getElementById('mc-'+m.id);if(!el)return;el.textContent=m.id==='all'?srcM.length:srcM.filter(v=>v.member===m.id).length;});
+  MEMBERS.forEach(m=>{const el=document.getElementById('mc-'+m.id);if(!el)return;el.textContent=m.id==='all'?srcM.length:srcM.filter(v=>parseMembers(v).includes(m.id)).length;});
   const srcT=curMember==='all'?videos:videos.filter(v=>v.member===curMember);
   const el0=document.getElementById('tc-all');if(el0)el0.textContent=srcT.length;
   allTagsOf(srcT).forEach(tag=>{const el=document.getElementById('tc-'+tag);if(el)el.textContent=srcT.filter(v=>parseTags(v).includes(tag)).length;});
@@ -332,7 +333,7 @@ function edit(id,e){
   inputTags=parseTags(v);
   document.getElementById("iUrl").value=v.url||"";
   document.getElementById("iTitle").value=v.title||"";
-  document.getElementById("iMember").value=v.member||"kafu";
+  setSelectedMembers(v.member||"kafu");
   document.getElementById("iDate").value=v.date||"";
   document.getElementById("iSpotify").value=v.spotify_url||"";
   document.getElementById("iNote").value=v.note||"";
@@ -343,7 +344,7 @@ function edit(id,e){
   document.getElementById("mover").classList.add("open"); setTimeout(()=>renderTagChips(),50);
 }
 
-function showMb(v){return curMember==='all'?mbPill(v.member):'';}
+function showMb(v){return curMember==='all'?parseMembers(v).map(m=>mbPill(m)).join(''):'';}
 
 function renderGrid(list){
   if(!list.length)return `<div class="empty"><div class="empty-i">🌙</div><h3>${t('notFound')}</h3></div>`;
@@ -453,14 +454,14 @@ document.getElementById('fetchBtn').addEventListener('click',async()=>{
   }catch(e){status.textContent='Error: '+e.message;status.style.color='#fca5a5';}
 });
 
-document.getElementById('fab').addEventListener('click',()=>{editId=null;inputTags=[];renderTagChips();document.querySelector('#mover .modal h2').textContent=t('addVideo');document.getElementById('mSave').textContent=t('addBtn');document.getElementById('mover').classList.add('open');});
-document.getElementById('mCancel').addEventListener('click',()=>{editId=null;document.querySelector('#mover .modal h2').textContent=t('addVideo');document.getElementById('mSave').textContent=t('addBtn');document.getElementById('mover').classList.remove('open');});
+document.getElementById('fab').addEventListener('click',()=>{editId=null;inputTags=[];renderTagChips();document.querySelectorAll('#iMemberCb input[type=checkbox]').forEach(cb=>cb.checked=false);document.querySelector('#mover .modal h2').textContent=t('addVideo');document.getElementById('mSave').textContent=t('addBtn');document.getElementById('mover').classList.add('open');});
+document.getElementById('mCancel').addEventListener('click',()=>{editId=null;document.querySelectorAll('#iMemberCb input[type=checkbox]').forEach(cb=>cb.checked=false);document.querySelector('#mover .modal h2').textContent=t('addVideo');document.getElementById('mSave').textContent=t('addBtn');document.getElementById('mover').classList.remove('open');});
 document.getElementById('mover').addEventListener('click',e=>{if(e.target===document.getElementById('mover'))document.getElementById('mover').classList.remove('open');});
 
 document.getElementById('mSave').addEventListener('click',async()=>{
   const url=document.getElementById('iUrl').value.trim();
   const title=document.getElementById('iTitle').value.trim();
-  const member=document.getElementById('iMember').value;
+  const member=getSelectedMembers();
   const date=document.getElementById('iDate').value;
   const spotify=document.getElementById('iSpotify').value.trim();
   const note=document.getElementById('iNote').value.trim();
@@ -491,7 +492,26 @@ document.getElementById('mSave').addEventListener('click',async()=>{
 });
 
 function buildMemberSelect(){
-  document.getElementById('iMember').innerHTML=MEMBERS.filter(m=>m.id!=='all').map(m=>`<option value="${m.id}">${mbr(m.id)}</option>`).join('');
+  const wrap=document.getElementById('iMemberCb');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  MEMBERS.filter(m=>m.id!=='all').forEach(m=>{
+    const lbl=document.createElement('label');
+    lbl.style.cssText='display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:4px 10px;cursor:pointer;font-size:.76rem;transition:all .2s;';
+    lbl.innerHTML=`<input type="checkbox" value="${m.id}" style="accent-color:#b0b8ff;"> ${m.emoji} ${mbr(m.id)}`;
+    wrap.appendChild(lbl);
+  });
+}
+function getSelectedMembers(){
+  const cbs=document.querySelectorAll('#iMemberCb input[type=checkbox]:checked');
+  const vals=[...cbs].map(cb=>cb.value);
+  return vals.length?vals.join(' '):'kafu';
+}
+function setSelectedMembers(memberStr){
+  const ids=(memberStr||'').split(/[\s,]+/).filter(Boolean);
+  document.querySelectorAll('#iMemberCb input[type=checkbox]').forEach(cb=>{
+    cb.checked=ids.includes(cb.value);
+  });
 }
 
 function setAdminMode(on){
