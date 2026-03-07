@@ -63,12 +63,12 @@ aside::-webkit-scrollbar{width:3px;} aside::-webkit-scrollbar-thumb{background:v
 .cfilt-label { display:flex; align-items:center; gap:.45rem; flex:1; min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 .ccnt { font-size:.62rem; background:var(--surface2); padding:1px 5px; border-radius:10px; color:var(--dim); flex-shrink:0; }
 .cfilt.on .ccnt { color:#a0aaff; }
-.mb-kafu    { background:rgba(255,183,197,.13); color:#ffb7c5; }
-.mb-rime    { background:rgba(126,184,247,.13); color:#7eb8f7; }
-.mb-harusar { background:rgba(255,112,112,.13); color:#ff7070; }
-.mb-isekai  { background:rgba(240,240,240,.1);  color:#e8e8e8; }
-.mb-koko    { background:rgba(192,132,252,.13); color:#c084fc; }
-.mb-vwp     { background:rgba(196,181,253,.13); color:#c4b5fd; }
+.mb-kafu    { background:rgba(255,183,197,.18) !important; color:#ffb7c5 !important; }
+.mb-rime    { background:rgba(126,184,247,.18) !important; color:#7eb8f7 !important; }
+.mb-harusar { background:rgba(255,112,112,.18) !important; color:#ff7070 !important; }
+.mb-isekai  { background:rgba(240,240,240,.12) !important; color:#e8e8e8 !important; }
+.mb-koko    { background:rgba(192,132,252,.18) !important; color:#c084fc !important; }
+.mb-vwp     { background:rgba(196,181,253,.18) !important; color:#c4b5fd !important; }
 .sort-bar { padding:.7rem 1.5rem; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:.7rem; font-size:.76rem; color:var(--dim); }
 .sbtn { background:none; border:none; color:var(--dim); cursor:pointer; font-family:'Noto Sans JP',sans-serif; font-size:.76rem; padding:.18rem .5rem; border-radius:4px; transition:all .2s; }
 .sbtn.on { color:#c8d0ff; background:rgba(160,170,255,.1); }
@@ -195,6 +195,7 @@ aside::-webkit-scrollbar{width:3px;} aside::-webkit-scrollbar-thumb{background:v
     <div class="fg">
       <label data-i18n="tagsLabel">タグ <span style="color:var(--dim);font-size:.65rem;" data-i18n-sub="tagHint">（#をつけてEnterで追加）</span></label>
       <div class="tag-input-wrap" id="tagInputWrap"><input type="text" id="tagInput" placeholder="#シングル #組曲"></div>
+      <div id="tagSuggest" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;"></div>
     </div>
     <div class="fg"><label data-i18n="pubdate">公開日</label><input type="date" id="iDate"></div>
     <div class="fg"><label>Spotify URL <span style="color:var(--dim);font-size:.65rem;">(任意)</span></label><input type="text" id="iSpotify" placeholder="https://open.spotify.com/track/..."></div>
@@ -341,7 +342,7 @@ function edit(id,e){
   if(vid){document.getElementById("thumbImg").src=`https://img.youtube.com/vi/${vid}/mqdefault.jpg`;document.getElementById("thumbPreview").style.display="block";}
   document.querySelector("#mover .modal h2").textContent="動画を編集";
   document.getElementById("mSave").textContent="更新する";
-  document.getElementById("mover").classList.add("open"); setTimeout(()=>renderTagChips(),50);
+  document.getElementById("mover").classList.add("open"); setTimeout(()=>{renderTagChips();renderTagSuggest();},50);
 }
 
 function showMb(v){return curMember==='all'?parseMembers(v).map(m=>mbPill(m)).join(''):'';}
@@ -394,6 +395,14 @@ function render(){
 
 // tag input
 let inputTags=[];
+function renderTagSuggest(){
+  const suggest=document.getElementById('tagSuggest');
+  if(!suggest)return;
+  const allT=allTagsOf(videos);
+  if(!allT.length){suggest.style.display='none';return;}
+  suggest.style.display='flex';
+  suggest.innerHTML=allT.map(tag=>`<button onclick="addInputTag('${tag}');renderTagSuggest();" style="background:var(--surface2);border:1px solid var(--border);border-radius:3px;color:var(--dim);font-size:.65rem;padding:2px 8px;cursor:pointer;transition:all .2s;" onmouseover="this.style.color='#a0aaff'" onmouseout="this.style.color='var(--dim)'">#${tag}</button>`).join('');
+}
 function renderTagChips(){
   const wrap=document.getElementById('tagInputWrap'),inp=document.getElementById('tagInput');
   wrap.querySelectorAll('.tag-chip').forEach(el=>el.remove());
@@ -454,7 +463,7 @@ document.getElementById('fetchBtn').addEventListener('click',async()=>{
   }catch(e){status.textContent='Error: '+e.message;status.style.color='#fca5a5';}
 });
 
-document.getElementById('fab').addEventListener('click',()=>{editId=null;inputTags=[];renderTagChips();document.querySelectorAll('#iMemberCb input[type=checkbox]').forEach(cb=>cb.checked=false);document.querySelector('#mover .modal h2').textContent=t('addVideo');document.getElementById('mSave').textContent=t('addBtn');document.getElementById('mover').classList.add('open');});
+document.getElementById('fab').addEventListener('click',()=>{editId=null;inputTags=[];renderTagChips();renderTagSuggest();document.querySelectorAll('#iMemberCb input[type=checkbox]').forEach(cb=>cb.checked=false);document.querySelector('#mover .modal h2').textContent=t('addVideo');document.getElementById('mSave').textContent=t('addBtn');document.getElementById('mover').classList.add('open');});
 document.getElementById('mCancel').addEventListener('click',()=>{editId=null;document.querySelectorAll('#iMemberCb input[type=checkbox]').forEach(cb=>cb.checked=false);document.querySelector('#mover .modal h2').textContent=t('addVideo');document.getElementById('mSave').textContent=t('addBtn');document.getElementById('mover').classList.remove('open');});
 document.getElementById('mover').addEventListener('click',e=>{if(e.target===document.getElementById('mover'))document.getElementById('mover').classList.remove('open');});
 
