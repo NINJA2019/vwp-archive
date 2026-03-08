@@ -177,7 +177,7 @@ aside::-webkit-scrollbar{width:3px;} aside::-webkit-scrollbar-thumb{background:v
 <body>
 <header>
   <div class="header-inner">
-    <a class="logo" href="#"><em style="font-style:normal;font-size:.55em;letter-spacing:.08em;color:var(--dim);display:block;line-height:1;margin-bottom:1px;">UNOFFICIAL</em>V.W.P <em>ARCHIVE</em></a>
+    <a class="logo" href="#"><em style="font-style:normal;font-size:.55em;letter-spacing:.08em;color:#c4b5fd;display:block;line-height:1;margin-bottom:1px;">UNOFFICIAL</em>V.W.P <em>ARCHIVE</em></a>
     <div class="search-wrap"><span class="si">🔍</span><input type="text" id="searchInput"></div>
     <div class="view-toggle">
       <button class="vbtn on" id="vGrid">⊞</button>
@@ -279,6 +279,18 @@ const MEMBERS = [
   {id:'harusar',emoji:'🔥'},{id:'isekai',emoji:'🌼'},{id:'koko',emoji:'⚡️'},{id:'vwp',emoji:'✦'}
 ];
 const MBR_CLS = {kafu:'mb-kafu',rime:'mb-rime',harusar:'mb-harusar',isekai:'mb-isekai',koko:'mb-koko',vwp:'mb-vwp'};
+
+function openPage(page){
+  document.getElementById('pageAbout').style.display=page==='about'?'block':'none';
+  document.getElementById('pageContact').style.display=page==='contact'?'block':'none';
+  document.getElementById('pageMover').style.display='block';
+  document.body.style.overflow='hidden';
+  return false;
+}
+function closePage(){
+  document.getElementById('pageMover').style.display='none';
+  document.body.style.overflow='';
+}
 
 let videos=[],curMember='all',curTag='all',curSort='new',curView='grid',searchQ='',isAdmin=false,editId=null;
 const PW_SK='vwp_admin_pw';
@@ -690,5 +702,8 @@ document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='En
     </div>
   </div>
 </div>
+<script>
+document.getElementById('pageMover').addEventListener('click',function(e){if(e.target===this)closePage();});
+</script>
 </body>
 </html>
