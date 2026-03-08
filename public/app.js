@@ -1,10 +1,13 @@
 const I18N = {
   ja: { members:'メンバー', tags:'タグ', sort:'並び順:', newest:'新しい順', oldest:'古い順', addVideo:'動画を追加', fetch:'取得', titleLabel:'タイトル', memberLabel:'メンバー', tagsLabel:'タグ', tagHint:'（#をつけてEnterで追加）', pubdate:'公開日', note:'メモ', cancel:'キャンセル', addBtn:'追加する', adminLogin:'管理者ログイン', loginDesc:'パスワードを入力すると動画の追加・削除ができます。', password:'パスワード', login:'ログイン', notFound:'動画が見つかりません', fetching:'取得中…', fetchOk:'✓ タイトル・公開日・サムネイルを取得しました', delConfirm:'この動画を削除しますか？', adding:'追加中…', searchPh:'タイトルで検索…', spotify:'Spotify', allTag:'すべて',
-    mbr:{ all:'すべて', kafu:'花譜', rime:'理芽', harusar:'春猿火', isekai:'ヰ世界情緒', koko:'幸祜', vwp:'V.W.P' } },
+    mbr:{ all:'すべて', kafu:'花譜', rime:'理芽', harusar:'春猿火', isekai:'ヰ世界情緒', koko:'幸祜', vwp:'V.W.P' },
+    tagMap:{} },
   en: { members:'Members', tags:'Tags', sort:'Sort:', newest:'Newest', oldest:'Oldest', addVideo:'Add Video', fetch:'Fetch', titleLabel:'Title', memberLabel:'Member', tagsLabel:'Tags', tagHint:'(type #tag + Enter)', pubdate:'Publish Date', note:'Notes', cancel:'Cancel', addBtn:'Add', adminLogin:'Admin Login', loginDesc:'Enter password to add/delete videos.', password:'Password', login:'Login', notFound:'No videos found', fetching:'Fetching…', fetchOk:'✓ Loaded title, date & thumbnail', delConfirm:'Delete this video?', adding:'Adding…', searchPh:'Search by title…', spotify:'Spotify', allTag:'All',
-    mbr:{ all:'All', kafu:'KAF', rime:'RIM', harusar:'HARUSARUHI', isekai:'ISEKAIJOUCHO', koko:'KOKO', vwp:'V.W.P' } },
+    mbr:{ all:'All', kafu:'KAF', rime:'RIM', harusar:'HARUSARUHI', isekai:'ISEKAIJOUCHO', koko:'KOKO', vwp:'V.W.P' },
+    tagMap:{ 'シングル':'Single', 'アニメ':'Anime', 'ゲーム':'Game', '映画':'Film', 'クインテット':'Quintet', 'デュエット':'Duet', '拡声曲':'Amplified', 'Covered':'Covered', 'Remix':'Remix', 'sinka':'sinka', '社外コラボ':'Collab', 'ライブ':'Live', 'カバー':'Cover', 'コラボ':'Collab' } },
   zh: { members:'成员', tags:'标签', sort:'排序:', newest:'最新', oldest:'最旧', addVideo:'添加视频', fetch:'获取', titleLabel:'标题', memberLabel:'成员', tagsLabel:'标签', tagHint:'（输入#标签后按Enter）', pubdate:'发布日期', note:'备注', cancel:'取消', addBtn:'添加', adminLogin:'管理员登录', loginDesc:'输入密码以添加或删除视频。', password:'密码', login:'登录', notFound:'未找到视频', fetching:'获取中…', fetchOk:'✓ 已获取标题、日期和缩略图', delConfirm:'确认删除此视频？', adding:'添加中…', searchPh:'按标题搜索…', spotify:'Spotify', allTag:'全部',
-    mbr:{ all:'全部', kafu:'花谱', rime:'理芽', harusar:'春猿火', isekai:'异世界情绪', koko:'幸祜', vwp:'V.W.P' } }
+    mbr:{ all:'全部', kafu:'花谱', rime:'理芽', harusar:'春猿火', isekai:'异世界情绪', koko:'幸祜', vwp:'V.W.P' },
+    tagMap:{ 'シングル':'单曲', 'アニメ':'动漫', 'ゲーム':'游戏', '映画':'电影', 'クインテット':'五重唱', 'デュエット':'二重唱', '拡声曲':'扩声曲', 'Covered':'翻唱', 'Remix':'混音', 'sinka':'sinka', '社外コラボ':'联动', 'ライブ':'现场', 'カバー':'翻唱', 'コラボ':'合作' } }
 };
 let lang = 'ja';
 function t(k){ return (I18N[lang]||I18N.ja)[k] || I18N.ja[k] || k; }
@@ -59,7 +62,8 @@ function thumb(v){const id=ytId(v.url);return id?`https://img.youtube.com/vi/${i
 function fmtDate(d){if(!d)return '';const dt=new Date(d+'T00:00:00');return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;}
 function parseTags(v){const raw=v.tags||v.tag||'';return raw.split(/[ ,]+/).map(s=>s.replace(/^#/,'')).filter(Boolean);}
 function parseMembers(v){return (v.member||'').split(/[ ,]+/).filter(Boolean);}
-function tagPills(v){return parseTags(v).map(tag=>`<span class="pill">#${tag}</span>`).join('');}
+function tTag(tag){ return (I18N[lang].tagMap||{})[tag] || tag; }
+function tagPills(v){return parseTags(v).map(tag=>`<span class="pill">#${tTag(tag)}</span>`).join('');}
 function mbPill(mid){return `<span class="pill ${MBR_CLS[mid]||''}">${mbr(mid)}</span>`;}
 function spotifyBtn(v){if(!v.spotify_url)return '';return `<a class="spotify-btn" href="${v.spotify_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">♫ ${t('spotify')}</a>`;}
 
@@ -162,7 +166,7 @@ function buildSidebar(){
   tags.forEach(tag=>{
     const b=document.createElement('button');
     b.className='cfilt'+(curTag===tag?' on':'');
-    b.innerHTML=`<span class="cfilt-label">#${tag}</span><span class="ccnt" id="tc-${tag}">0</span>`;
+    b.innerHTML=`<span class="cfilt-label">#${tTag(tag)}</span><span class="ccnt" id="tc-${tag}">0</span>`;
     b.addEventListener('click',()=>{curTag=tag;tf.querySelectorAll('.cfilt').forEach(x=>x.classList.remove('on'));b.classList.add('on');updateCounts();render();});
     tf.appendChild(b);
   });
@@ -225,7 +229,7 @@ function buildMobFilters(){
   tags.forEach(tag=>{
     const b=document.createElement('button');
     b.className='mob-chip'+(curTag===tag?' on':'');
-    b.textContent='#'+tag;
+    b.textContent='#'+tTag(tag);
     b.addEventListener('click',()=>{curTag=tag;buildSidebar();updateCounts();render();});
     mt.appendChild(b);
   });
