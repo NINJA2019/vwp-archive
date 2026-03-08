@@ -71,7 +71,13 @@ function filtered(){
     list=list.filter(v=>selectedMembers.every(m=>parseMembers(v).includes(m)));
   }
   if(curTag!=='all') list=list.filter(v=>parseTags(v).includes(curTag));
-  if(searchQ) list=list.filter(v=>v.title.includes(searchQ)||(v.note&&v.note.includes(searchQ)));
+  if(searchQ){
+    const words=searchQ.toLowerCase().split(/\s+/).filter(Boolean);
+    list=list.filter(v=>{
+      const hay=(v.title+' '+(v.note||'')).toLowerCase();
+      return words.every(w=>hay.includes(w));
+    });
+  }
   list.sort((a,b)=>curSort==='new'?(b.date>a.date?1:-1):(a.date>b.date?1:-1));
   return list;
 }
@@ -431,6 +437,7 @@ function setSelectedMembers(memberStr){
 function setAdminMode(on){
   isAdmin=on;
   document.getElementById('fab').style.display=on?'flex':'none';
+  document.getElementById('importBtn').style.display=on?'flex':'none';
   document.getElementById('loginBtn').style.display=on?'none':'flex';
   render();
 }
@@ -477,4 +484,43 @@ themeBtn.addEventListener('click', ()=>{
   const isLight = document.body.classList.toggle('light');
   themeBtn.textContent = isLight ? '☀️' : '🌙';
   localStorage.setItem('vwp_theme', isLight ? 'light' : 'dark');
+});
+
+// プレイリストインポート
+document.getElementById('importBtn').addEventListener('click',()=>{
+  document.getElementById('importMover').classList.add('open');
+  document.getElementById('importStatus').textContent='';
+  document.getElementById('importPlaylistId').value='';
+});
+document.getElementById('importMover').addEventListener('click',function(e){
+  if(e.target===this) this.classList.remove('open');
+});
+document.getElementById('importCancel').addEventListener('click',()=>{
+  document.getElementById('importMover').classList.remove('open');
+});
+document.getElementById('importSubmit').addEventListener('click', async ()=>{
+  const playlistId = document.getElementById('importPlaylistId').value.trim();
+  const member = document.getElementById('importMember').value;
+  const status = document.getElementById('importStatus');
+  if(!playlistId){ status.textContent='プレイリストIDを入力してください'; status.style.color='#fca5a5'; return; }
+  const pw = getStoredPw();
+  if(!pw){ status.textContent='ログインが必要です'; status.style.color='#fca5a5'; return; }
+  status.textContent='取得中…'; status.style.color='var(--dim)';
+  document.getElementById('importSubmit').disabled=true;
+  try{
+    const res = await fetch('/.netlify/functions/playlist-import',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ playlistId, member, password: pw })
+    });
+    const data = await res.json();
+    if(!res.ok){ status.textContent='エラー: '+(data.error||res.status); status.style.color='#fca5a5'; return; }
+    status.textContent = `✅ ${data.message}`;
+    status.style.color='#86efac';
+    await loadVideos(); buildSidebar(); updateCounts(); render();
+  } catch(e){
+    status.textContent='エラー: '+e.message; status.style.color='#fca5a5';
+  } finally {
+    document.getElementById('importSubmit').disabled=false;
+  }
 });

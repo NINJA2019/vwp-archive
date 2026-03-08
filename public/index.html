@@ -56,7 +56,37 @@
   </div>
 </div>
 <button class="fab" id="fab" style="display:none;">＋</button>
+<button id="importBtn" title="プレイリスト一括インポート" style="display:none;position:fixed;bottom:5.2rem;right:1.8rem;width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;font-size:1.1rem;align-items:center;justify-content:center;background:#7c6ff7;color:#fff;z-index:200;box-shadow:0 4px 18px rgba(0,0,0,.45);">📥</button>
 <button id="loginBtn" style="position:fixed;bottom:1.8rem;right:1.8rem;width:46px;height:46px;border-radius:50%;border:1px solid var(--border);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--dim);z-index:200;">🔑</button>
+
+<!-- IMPORT MODAL -->
+<div class="mover" id="importMover">
+  <div class="modal" style="max-width:440px;">
+    <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.4rem;letter-spacing:.15em;margin-bottom:1.2rem;color:#c8d0ff;">📥 PLAYLIST IMPORT</h2>
+    <p style="font-size:.75rem;color:var(--dim);margin-bottom:1.2rem;line-height:1.7;">YouTubeプレイリストIDを入力すると動画を一括登録します。すでに登録済みのURLは自動でスキップされます。</p>
+    <div style="margin-bottom:.8rem;">
+      <label style="font-size:.72rem;color:var(--dim);display:block;margin-bottom:.3rem;">プレイリストID</label>
+      <input id="importPlaylistId" type="text" placeholder="PLxxxxxxxxxxxxxxxxxxxxxx" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
+      <p style="font-size:.68rem;color:var(--dim);margin-top:.3rem;">YouTubeのプレイリストURLの <code style="color:#a0aaff;">list=</code> 以降の文字列</p>
+    </div>
+    <div style="margin-bottom:1.2rem;">
+      <label style="font-size:.72rem;color:var(--dim);display:block;margin-bottom:.3rem;">メンバー</label>
+      <select id="importMember" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
+        <option value="vwp">V.W.P</option>
+        <option value="kafu">花譜</option>
+        <option value="rime">理芽</option>
+        <option value="harusar">春猿火</option>
+        <option value="isekai">ヰ世界情緒</option>
+        <option value="koko">幸祜</option>
+      </select>
+    </div>
+    <div id="importStatus" style="font-size:.78rem;min-height:1.2rem;margin-bottom:.8rem;"></div>
+    <div style="display:flex;gap:.6rem;justify-content:flex-end;">
+      <button id="importCancel" class="btn btn-s">キャンセル</button>
+      <button id="importSubmit" class="btn btn-p btn-s">インポート開始</button>
+    </div>
+  </div>
+</div>
 <!-- Add Modal -->
 <div class="mover" id="mover">
   <div class="modal">
