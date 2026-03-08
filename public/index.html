@@ -184,11 +184,17 @@ aside::-webkit-scrollbar{width:3px;} aside::-webkit-scrollbar-thumb{background:v
       <button class="vbtn" id="vList">☰</button>
       <button class="vbtn" id="vTl">⊢</button>
     </div>
-    <div class="lang-sw">
+    <div style="display:flex;gap:4px;flex-shrink:0;">
+      <button onclick="document.getElementById('aboutMover').classList.add('open')" style="background:none;border:none;color:var(--dim);cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:.72rem;padding:.22rem .5rem;border-radius:4px;transition:all .2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--dim)'">About</button>
+      <button onclick="document.getElementById('contactMover').classList.add('open')" style="background:none;border:none;color:var(--dim);cursor:pointer;font-family:'Noto Sans JP',sans-serif;font-size:.72rem;padding:.22rem .5rem;border-radius:4px;transition:all .2s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--dim)'">Contact</button>
+    </div>
+    <nav style="display:flex;gap:1.2rem;margin-right:.6rem;"><a href="#about" onclick="openPage('about')" style="color:var(--dim);font-size:.68rem;letter-spacing:.1em;text-decoration:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;transition:color .2s;" onmouseover="this.style.color='#c8d0ff'" onmouseout="this.style.color='var(--dim)'">ABOUT</a><a href="#contact" onclick="openPage('contact')" style="color:var(--dim);font-size:.68rem;letter-spacing:.1em;text-decoration:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;transition:color .2s;" onmouseover="this.style.color='#c8d0ff'" onmouseout="this.style.color='var(--dim)'">CONTACT</a></nav>
+      <div class="lang-sw">
       <button class="lbtn on" data-lang="ja">JP</button>
       <button class="lbtn" data-lang="en">EN</button>
       <button class="lbtn" data-lang="zh">中文</button>
     </div>
+      </div>
   </div>
 </header>
 <div class="mob-filters" id="mobFilters">
@@ -238,6 +244,37 @@ aside::-webkit-scrollbar{width:3px;} aside::-webkit-scrollbar-thumb{background:v
     <div class="fa">
       <button class="btn btn-s" id="mCancel" data-i18n="cancel">キャンセル</button>
       <button class="btn btn-p" id="mSave" data-i18n="addBtn">追加する</button>
+    </div>
+  </div>
+</div>
+<!-- About Modal -->
+<div class="mover" id="aboutMover">
+  <div class="modal" style="max-width:520px;">
+    <h2>About This Site</h2>
+    <p style="font-size:.78rem;line-height:1.8;color:var(--text);margin-bottom:1.2rem;">このサイトはV.W.P（花譜・理芽・春猿火・ヰ世界情緒・幸祜）のファンが制作した非公式アーカイブサイトです。メンバーの楽曲・公演動画を整理・保存することを目的としています。</p>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:1.2rem;">
+      <div style="font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.15em;color:var(--dim);margin-bottom:.7rem;">KAMITSUBAKI STUDIO 二次創作ガイドライン</div>
+      <p style="font-size:.74rem;line-height:1.75;color:var(--text);margin-bottom:.8rem;">本サイトはKAMITSUBAKI STUDIOの二次創作ガイドラインに基づき運営しています。非商業目的・個人による二次創作活動の一環として制作されたものです。公式コンテンツとの混同が生じないよう配慮しています。</p>
+      <a href="https://kamitsubaki.jp/guidelines/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;background:rgba(160,170,255,.1);border:1px solid rgba(160,170,255,.2);border-radius:5px;color:#a0aaff;font-size:.72rem;padding:.4rem .85rem;text-decoration:none;transition:all .2s;">↗ 公式ガイドラインを確認する</a>
+    </div>
+    <div class="fa"><button class="btn btn-s" onclick="document.getElementById('aboutMover').classList.remove('open')">閉じる</button></div>
+  </div>
+</div>
+<!-- Contact Modal -->
+<div class="mover" id="contactMover">
+  <div class="modal" style="max-width:400px;">
+    <h2>Contact</h2>
+    <p style="font-size:.76rem;line-height:1.75;color:var(--dim);margin-bottom:1.2rem;">サイトへのご要望・お問い合わせはTwitterのDMからお気軽にどうぞ。</p>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:1rem 1.2rem;display:flex;align-items:center;gap:1rem;">
+      <div style="width:40px;height:40px;border-radius:50%;background:rgba(29,161,242,.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">𝕏</div>
+      <div>
+        <div style="font-size:.82rem;color:var(--text);font-weight:500;margin-bottom:2px;">にんじゃ3歳</div>
+        <a href="https://twitter.com/ninnin8672" target="_blank" rel="noopener" style="font-size:.74rem;color:#1d9bf0;text-decoration:none;">@ninnin8672</a>
+      </div>
+    </div>
+    <div class="fa" style="margin-top:1rem;">
+      <button class="btn btn-s" onclick="document.getElementById('contactMover').classList.remove('open')">閉じる</button>
+      <a href="https://twitter.com/ninnin8672" target="_blank" rel="noopener" class="btn btn-p" style="text-decoration:none;display:inline-flex;align-items:center;gap:4px;">𝕏 DMを送る</a>
     </div>
   </div>
 </div>
@@ -598,6 +635,8 @@ function setAdminMode(on){
   render();
 }
 
+document.getElementById('aboutMover').addEventListener('click',e=>{if(e.target===document.getElementById('aboutMover'))document.getElementById('aboutMover').classList.remove('open');});
+document.getElementById('contactMover').addEventListener('click',e=>{if(e.target===document.getElementById('contactMover'))document.getElementById('contactMover').classList.remove('open');});
 document.getElementById('loginBtn').addEventListener('click',()=>{
   document.getElementById('pwInput').value='';document.getElementById('pwStatus').textContent='';
   document.getElementById('loginMover').classList.add('open');
@@ -630,5 +669,62 @@ document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='En
   if(savedPw){try{const ok=await verifyPw(savedPw);if(ok)setAdminMode(true);}catch{}}
 })();
 </script>
+
+<!-- About / Contact Page Modal -->
+<div id="pageMover" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);overflow-y:auto;">
+  <div style="max-width:720px;margin:2rem auto;padding:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;position:relative;">
+    <button onclick="closePage()" style="position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--dim);font-size:1.2rem;cursor:pointer;line-height:1;">✕</button>
+
+    <!-- ABOUT -->
+    <div id="pageAbout">
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:.15em;margin-bottom:1.4rem;color:#c8d0ff;">ABOUT</h2>
+      <p style="font-size:.78rem;color:var(--dim);line-height:1.9;margin-bottom:1.4rem;">このサイトはV.W.P（Virtual Ward-robe Project）の楽曲・映像アーカイブサイトです。花譜、理芽、春猿火、ヰ世界情緒、幸祜の5名の活動を記録・整理することを目的としたファンサイトです。</p>
+
+      <h3 style="font-size:.82rem;letter-spacing:.1em;color:#9ca3af;border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-bottom:1rem;">二次創作ガイドライン（KAMITSUBAKI STUDIO）</h3>
+      <p style="font-size:.73rem;color:var(--dim);line-height:1.8;margin-bottom:.8rem;">本サイトはKAMITSUBAKI STUDIOの二次創作ガイドラインに基づき運営しています。</p>
+
+      <div style="font-size:.72rem;color:var(--dim);line-height:1.85;display:flex;flex-direction:column;gap:.9rem;">
+        <div>
+          <div style="color:#a0aaff;font-weight:700;margin-bottom:.3rem;">対象コンテンツ</div>
+          <p>KAMITSUBAKI STUDIOの各バーチャルアーティストおよび各バーチャルアーティストが創作したコンテンツ、「神椿市建設中。」の世界観・オリジナルキャラクター・物語、ならびにそれらの商標。</p>
+        </div>
+        <div>
+          <div style="color:#a0aaff;font-weight:700;margin-bottom:.3rem;">利用条件</div>
+          <p>本ガイドラインの対象は非商業目的（同人活動・趣味の範囲）で対象コンテンツを二次創作に利用する個人の方に限ります。法人および商業目的での利用には別途許諾が必要です。</p>
+        </div>
+        <div>
+          <div style="color:#a0aaff;font-weight:700;margin-bottom:.3rem;">公開にあたってのお願い</div>
+          <ul style="padding-left:1.2rem;display:flex;flex-direction:column;gap:.3rem;list-style:disc;">
+            <li>他人の気持ちや名誉を傷つける目的のものはお控えください</li>
+            <li>特定の政治・宗教を過度に推す・貶すものはお控えください</li>
+            <li>過度に暴力的・グロテスク・性的なものはお控えください</li>
+            <li>公式作品と誤認されないようご配慮ください</li>
+          </ul>
+        </div>
+        <div>
+          <div style="color:#a0aaff;font-weight:700;margin-bottom:.3rem;">販売・収益化</div>
+          <p>非商業目的の範囲内（書籍・グッズ等）で、制作原価相当額程度の収益を得る場合のみ販売が可能です。公式素材をそのまま利用した作品の販売・収益化はできません。</p>
+        </div>
+      </div>
+      <p style="margin-top:1.2rem;font-size:.68rem;color:#6b7280;">
+        完全なガイドラインは <a href="https://kamitsubaki.jp/guidelines/" target="_blank" rel="noopener" style="color:#a0aaff;">kamitsubaki.jp/guidelines/</a> をご確認ください。
+      </p>
+    </div>
+
+    <!-- CONTACT -->
+    <div id="pageContact" style="display:none;">
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:.15em;margin-bottom:1.4rem;color:#c8d0ff;">CONTACT</h2>
+      <p style="font-size:.78rem;color:var(--dim);line-height:1.9;margin-bottom:1.8rem;">ご要望・お問い合わせはTwitter（X）のDMまでお気軽にどうぞ。</p>
+      <div style="display:flex;align-items:center;gap:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.2rem 1.4rem;">
+        <div style="width:48px;height:48px;border-radius:50%;background:rgba(160,170,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">𝕏</div>
+        <div>
+          <div style="font-size:.88rem;color:#e2e8f0;font-weight:600;margin-bottom:.2rem;">にんじゃ3歳</div>
+          <a href="https://twitter.com/ninnin8672" target="_blank" rel="noopener" style="color:#a0aaff;font-size:.78rem;text-decoration:none;">@ninnin8672</a>
+        </div>
+      </div>
+      <p style="margin-top:1.2rem;font-size:.7rem;color:#6b7280;line-height:1.7;">サイトへのご意見・登録動画のご要望・不具合のご報告などはDMにてお受けしています。</p>
+    </div>
+  </div>
+</div>
 </body>
 </html>
