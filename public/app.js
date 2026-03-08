@@ -2,7 +2,7 @@ const I18N = {
   ja: { members:'メンバー', tags:'タグ', sort:'並び順:', newest:'新しい順', oldest:'古い順', addVideo:'動画を追加', fetch:'取得', titleLabel:'タイトル', memberLabel:'メンバー', tagsLabel:'タグ', tagHint:'（#をつけてEnterで追加）', pubdate:'公開日', note:'メモ', cancel:'キャンセル', addBtn:'追加する', adminLogin:'管理者ログイン', loginDesc:'パスワードを入力すると動画の追加・削除ができます。', password:'パスワード', login:'ログイン', notFound:'動画が見つかりません', fetching:'取得中…', fetchOk:'✓ タイトル・公開日・サムネイルを取得しました', delConfirm:'この動画を削除しますか？', adding:'追加中…', searchPh:'タイトルで検索…', spotify:'Spotify', allTag:'すべて',
     mbr:{ all:'すべて', kafu:'花譜', rime:'理芽', harusar:'春猿火', isekai:'ヰ世界情緒', koko:'幸祜', vwp:'V.W.P' } },
   en: { members:'Members', tags:'Tags', sort:'Sort:', newest:'Newest', oldest:'Oldest', addVideo:'Add Video', fetch:'Fetch', titleLabel:'Title', memberLabel:'Member', tagsLabel:'Tags', tagHint:'(type #tag + Enter)', pubdate:'Publish Date', note:'Notes', cancel:'Cancel', addBtn:'Add', adminLogin:'Admin Login', loginDesc:'Enter password to add/delete videos.', password:'Password', login:'Login', notFound:'No videos found', fetching:'Fetching…', fetchOk:'✓ Loaded title, date & thumbnail', delConfirm:'Delete this video?', adding:'Adding…', searchPh:'Search by title…', spotify:'Spotify', allTag:'All',
-    mbr:{ all:'All', kafu:'KAFU', rime:'RIME', harusar:'HARUSARUBI', isekai:'ISEKAI JOCHO', koko:'KOKO', vwp:'V.W.P' } },
+    mbr:{ all:'All', kafu:'KAF', rime:'RIM', harusar:'HARUSARUHI', isekai:'ISEKAIJOUCHO', koko:'KOKO', vwp:'V.W.P' } },
   zh: { members:'成员', tags:'标签', sort:'排序:', newest:'最新', oldest:'最旧', addVideo:'添加视频', fetch:'获取', titleLabel:'标题', memberLabel:'成员', tagsLabel:'标签', tagHint:'（输入#标签后按Enter）', pubdate:'发布日期', note:'备注', cancel:'取消', addBtn:'添加', adminLogin:'管理员登录', loginDesc:'输入密码以添加或删除视频。', password:'密码', login:'登录', notFound:'未找到视频', fetching:'获取中…', fetchOk:'✓ 已获取标题、日期和缩略图', delConfirm:'确认删除此视频？', adding:'添加中…', searchPh:'按标题搜索…', spotify:'Spotify', allTag:'全部',
     mbr:{ all:'全部', kafu:'花谱', rime:'理芽', harusar:'春猿火', isekai:'异世界情绪', koko:'幸祜', vwp:'V.W.P' } }
 };
@@ -168,12 +168,32 @@ function buildMobFilters(){
   const mm=document.getElementById('mobMembers');
   if(!mm)return;
   mm.innerHTML='';
+  // リセットボタン（複数選択時のみ）
+  if(selectedMembers.length>0){
+    const reset=document.createElement('button');
+    reset.className='mob-chip';
+    reset.style.cssText='background:rgba(255,100,100,.1);border-color:rgba(255,100,100,.25);color:#fca5a5;';
+    reset.textContent='✕ リセット';
+    reset.addEventListener('click',()=>{selectedMembers=[];curMember='all';curTag='all';buildSidebar();updateCounts();render();});
+    mm.appendChild(reset);
+  }
   MEMBERS.forEach(m=>{
     const b=document.createElement('button');
-    b.className='mob-chip'+(m.id==='all'&&selectedMembers.length===0?' on':(selectedMembers.includes(m.id)?' on':''));
+    const isSelected=selectedMembers.includes(m.id);
+    const isAll=m.id==='all';
+    let dimmed=false;
+    if(selectedMembers.length>0 && !isAll && !isSelected && selectedMembers.length<3){
+      const testSel=[...selectedMembers,m.id];
+      const comboCount=videos.filter(v=>testSel.every(sm=>parseMembers(v).includes(sm))).length;
+      if(comboCount===0) dimmed=true;
+    }
+    if(selectedMembers.length>=3 && !isSelected && !isAll) dimmed=true;
+    b.className='mob-chip'+(isAll&&selectedMembers.length===0?' on':(isSelected?' on':''));
     b.dataset.m=m.id;
+    if(dimmed){ b.style.opacity='0.3'; b.style.cursor='not-allowed'; }
     b.textContent=m.emoji+' '+mbr(m.id);
     b.addEventListener('click',()=>{
+      if(dimmed) return;
       if(m.id==='all'){
         selectedMembers=[];curMember='all';
       } else {
@@ -448,3 +468,13 @@ document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='En
 })();
 
 document.getElementById('pageMover').addEventListener('click',function(e){if(e.target===this)closePage();});
+
+// テーマ切替
+const themeBtn = document.getElementById('themeBtn');
+const savedTheme = localStorage.getItem('vwp_theme');
+if(savedTheme === 'light'){ document.body.classList.add('light'); themeBtn.textContent='☀️'; }
+themeBtn.addEventListener('click', ()=>{
+  const isLight = document.body.classList.toggle('light');
+  themeBtn.textContent = isLight ? '☀️' : '🌙';
+  localStorage.setItem('vwp_theme', isLight ? 'light' : 'dark');
+});

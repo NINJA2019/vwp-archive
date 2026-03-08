@@ -26,7 +26,8 @@
       <button class="vbtn" id="vList">☰</button>
       <button class="vbtn" id="vTl">⊢</button>
     </div>
-    <nav style="display:flex;gap:1.2rem;margin-right:.6rem;"><a href="javascript:void(0)" onclick="openPage('about')" style="color:var(--dim);font-size:.68rem;letter-spacing:.1em;text-decoration:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;transition:color .2s;" onmouseover="this.style.color='#c8d0ff'" onmouseout="this.style.color='var(--dim)'">ABOUT</a><a href="javascript:void(0)" onclick="openPage('contact')" style="color:var(--dim);font-size:.68rem;letter-spacing:.1em;text-decoration:none;font-family:'Barlow Condensed',sans-serif;font-weight:700;transition:color .2s;" onmouseover="this.style.color='#c8d0ff'" onmouseout="this.style.color='var(--dim)'">CONTACT</a></nav>
+    <nav class="header-nav"><a href="javascript:void(0)" onclick="openPage('about')">ABOUT</a><a href="javascript:void(0)" onclick="openPage('contact')">CONTACT</a></nav>
+      <button class="theme-btn" id="themeBtn" title="ダーク/ライト切替">🌙</button>
       <div class="lang-sw">
       <button class="lbtn on" data-lang="ja">JP</button>
       <button class="lbtn" data-lang="en">EN</button>
@@ -152,6 +153,13 @@
         <div>
           <div style="font-size:.88rem;color:#e2e8f0;font-weight:600;margin-bottom:.2rem;">にんじゃ3歳</div>
           <a href="https://twitter.com/ninnin8672" target="_blank" rel="noopener" style="color:#a0aaff;font-size:.78rem;text-decoration:none;">@ninnin8672</a>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.2rem 1.4rem;margin-top:.8rem;">
+        <div style="width:48px;height:48px;border-radius:50%;background:rgba(100,200,100,.1);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">📝</div>
+        <div>
+          <div style="font-size:.88rem;color:#e2e8f0;font-weight:600;margin-bottom:.2rem;">Note</div>
+          <a href="https://note.com/ninnin8672" target="_blank" rel="noopener" style="color:#a0aaff;font-size:.78rem;text-decoration:none;">note.com/ninnin8672</a>
         </div>
       </div>
       <p style="margin-top:1.2rem;font-size:.7rem;color:#6b7280;line-height:1.7;">サイトへのご意見・登録動画のご要望・不具合のご報告などはDMにてお受けしています。</p>
