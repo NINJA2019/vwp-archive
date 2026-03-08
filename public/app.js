@@ -501,6 +501,7 @@ document.getElementById('importCancel').addEventListener('click',()=>{
 document.getElementById('importSubmit').addEventListener('click', async ()=>{
   const playlistId = document.getElementById('importPlaylistId').value.trim();
   const member = document.getElementById('importMember').value;
+  const tags = document.getElementById('importTags').value.trim();
   const status = document.getElementById('importStatus');
   if(!playlistId){ status.textContent='プレイリストIDを入力してください'; status.style.color='#fca5a5'; return; }
   const pw = getStoredPw();
@@ -511,7 +512,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     const res = await fetch('/.netlify/functions/playlist-import',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ playlistId, member, password: pw })
+      body: JSON.stringify({ playlistId, member, tags, password: pw })
     });
     const data = await res.json();
     if(!res.ok){ status.textContent='エラー: '+(data.error||res.status); status.style.color='#fca5a5'; return; }

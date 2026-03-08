@@ -69,7 +69,7 @@
       <input id="importPlaylistId" type="text" placeholder="PLxxxxxxxxxxxxxxxxxxxxxx" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
       <p style="font-size:.68rem;color:var(--dim);margin-top:.3rem;">YouTubeのプレイリストURLの <code style="color:#a0aaff;">list=</code> 以降の文字列</p>
     </div>
-    <div style="margin-bottom:1.2rem;">
+    <div style="margin-bottom:.8rem;">
       <label style="font-size:.72rem;color:var(--dim);display:block;margin-bottom:.3rem;">メンバー</label>
       <select id="importMember" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
         <option value="vwp">V.W.P</option>
@@ -79,6 +79,11 @@
         <option value="isekai">ヰ世界情緒</option>
         <option value="koko">幸祜</option>
       </select>
+    </div>
+    <div style="margin-bottom:1.2rem;">
+      <label style="font-size:.72rem;color:var(--dim);display:block;margin-bottom:.3rem;">タグ <span style="color:var(--dim);font-weight:400;">（任意・スペース区切りで複数可）</span></label>
+      <input id="importTags" type="text" placeholder="例: シングル アニメ" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
+      <p style="font-size:.68rem;color:var(--dim);margin-top:.3rem;">登録される全動画に同じタグが付きます。後から個別に編集できます。</p>
     </div>
     <div id="importStatus" style="font-size:.78rem;min-height:1.2rem;margin-bottom:.8rem;"></div>
     <div style="display:flex;gap:.6rem;justify-content:flex-end;">
