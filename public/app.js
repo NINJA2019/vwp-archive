@@ -16,8 +16,8 @@ function applyI18n(){
 }
 
 const MEMBERS = [
-  {id:'all',emoji:'✦'},{id:'kafu',emoji:'🌸'},{id:'rime',emoji:'🌱'},
-  {id:'harusar',emoji:'🔥'},{id:'isekai',emoji:'🌼'},{id:'koko',emoji:'⚡️'},{id:'vwp',emoji:'✦'}
+  {id:'all',emoji:'✦'},{id:'vwp',emoji:'✦'},{id:'kafu',emoji:'🌸'},{id:'rime',emoji:'🌱'},
+  {id:'harusar',emoji:'🔥'},{id:'isekai',emoji:'🌼'},{id:'koko',emoji:'⚡️'}
 ];
 const MBR_CLS = {kafu:'mb-kafu',rime:'mb-rime',harusar:'mb-harusar',isekai:'mb-isekai',koko:'mb-koko',vwp:'mb-vwp'};
 
