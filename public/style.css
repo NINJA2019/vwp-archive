@@ -189,3 +189,55 @@ aside::-webkit-scrollbar{width:3px;} aside::-webkit-scrollbar-thumb{background:v
   0%,100%{opacity:1;}
   50%{opacity:.7;}
 }
+
+/* ===== アルバム ===== */
+.album-filt{
+  width:100%;text-align:left;
+}
+#albumHeader{
+  gap:1rem;
+  padding:.9rem 1.1rem;
+  margin-bottom:.9rem;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:10px;
+}
+.al-thumb-wrap{
+  flex-shrink:0;
+  width:80px;height:80px;
+  border-radius:6px;overflow:hidden;
+  background:var(--surface);
+}
+.al-thumb{
+  width:100%;height:100%;object-fit:cover;
+}
+.al-info{
+  display:flex;flex-direction:column;gap:.35rem;
+}
+.al-name{
+  font-family:'Barlow Condensed',sans-serif;
+  font-weight:900;
+  font-size:1.15rem;
+  letter-spacing:.08em;
+  color:var(--text);
+}
+.al-member{
+  font-size:.72rem;
+  color:var(--dim);
+  letter-spacing:.06em;
+}
+.al-buy-btn{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:.72rem;font-weight:600;
+  color:#c084fc;
+  border:1px solid rgba(192,132,252,.35);
+  border-radius:4px;
+  padding:3px 10px;
+  text-decoration:none;
+  width:fit-content;
+  transition:all .2s;
+}
+.al-buy-btn:hover{
+  background:rgba(192,132,252,.12);
+  color:#d4a8ff;
+}

@@ -52,6 +52,27 @@ const PW_SK='vwp_admin_pw';
 function getStoredPw(){try{return localStorage.getItem(PW_SK)||'';}catch{return '';}}
 function storePw(pw){try{localStorage.setItem(PW_SK,pw);}catch{}}
 
+
+let albums=[];
+let curAlbum=null; // 選択中のアルバムid (nullなら未選択)
+
+async function loadAlbums(){
+  try{ const res=await fetch('/api/albums-get'); const d=await res.json(); if(Array.isArray(d)) albums=d; }catch(e){console.error(e);}
+}
+async function addAlbumApi(payload){
+  const res=await fetch('/api/albums-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:getStoredPw(),...payload})});
+  const d=await res.json(); if(!res.ok) throw new Error(d.error||'failed'); return d;
+}
+async function deleteAlbumApi(id){
+  const res=await fetch('/api/albums-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:getStoredPw(),id})});
+  const d=await res.json(); if(!res.ok) throw new Error(d.error||'failed');
+}
+
+// アルバムの1曲目サムネイル
+function albumThumb(album){
+  const first=videos.find(v=>v.album_id===album.id);
+  return first?thumb(first):'';
+}
 async function loadVideos(){
   try{ const res=await fetch('/api/videos-get'); const d=await res.json(); if(Array.isArray(d)) videos=d; }catch(e){console.error(e);}
 }
@@ -134,6 +155,12 @@ function getDailyPicksFromCache(){
 
 function filtered(){
   let list=videos.slice();
+  // アルバム選択時はそのアルバム曲のみ、未選択時はアルバム曲を除外
+  if(curAlbum!==null){
+    list=list.filter(v=>v.album_id===curAlbum);
+  } else {
+    list=list.filter(v=>!v.album_id);
+  }
   if(selectedMembers.length===1){
     list=list.filter(v=>parseMembers(v).includes(selectedMembers[0]));
   } else if(selectedMembers.length>1){
@@ -180,7 +207,7 @@ function buildSidebar(){
     const reset=document.createElement('button');
     reset.style.cssText='background:rgba(255,100,100,.1);border:1px solid rgba(255,100,100,.25);color:#fca5a5;font-size:.65rem;padding:3px 10px;border-radius:4px;cursor:pointer;margin-bottom:6px;width:100%;transition:all .2s;';
     reset.textContent='✕ 選択をリセット';
-    reset.addEventListener('click',()=>{selectedMembers=[];curMember='all';curTag='all';buildSidebar();updateCounts();render();});
+    reset.addEventListener('click',()=>{selectedMembers=[];curMember='all';curTag='all';curAlbum=null;buildSidebar();updateCounts();render();});
     mp.appendChild(reset);
   }
   MEMBERS.forEach(m=>{
@@ -215,14 +242,63 @@ function buildSidebar(){
         }
         curMember=selectedMembers.length===1?selectedMembers[0]:(selectedMembers.length>1?'multi':'all');
       }
-      curTag='all';buildSidebar();updateCounts();render();
+      curTag='all';curAlbum=null;buildSidebar();updateCounts();render();
     });
     mp.appendChild(btn);
   });
+  // ===== アルバムセクション =====
+  const af=document.getElementById('albumFilters');
+  if(af){
+    af.innerHTML='';
+    // 選択中メンバーに対応するアルバムを絞り込み
+    const memberAlbums=albums.filter(al=>{
+      if(selectedMembers.length===0) return false; // メンバー未選択時は非表示
+      // 単一メンバー選択時のみアルバム表示（コラボ曲はアルバムに入れる想定なし）
+      if(selectedMembers.length===1) return al.member===selectedMembers[0];
+      return false;
+    });
+    const albumSec=document.getElementById('albumSection');
+    if(albumSec) albumSec.style.display=memberAlbums.length>0?'block':'none';
+    memberAlbums.forEach(al=>{
+      const btn=document.createElement('button');
+      const isOn=curAlbum===al.id;
+      btn.className='cfilt album-filt'+(isOn?' on':'');
+      btn.innerHTML=`<span class="cfilt-label">📀 ${al.name}</span>`;
+      if(isAdmin){
+        const del=document.createElement('span');
+        del.textContent=' ✕';
+        del.style.cssText='font-size:.6rem;opacity:.5;margin-left:2px;cursor:pointer;';
+        del.addEventListener('click',async(e)=>{
+          e.stopPropagation();
+          if(!confirm(`アルバム「${al.name}」を削除しますか？（収録曲のアルバム紐付けも解除されます）`)) return;
+          await deleteAlbumApi(al.id);
+          if(curAlbum===al.id){curAlbum=null;}
+          await loadAlbums();
+          buildSidebar();updateCounts();render();
+        });
+        btn.appendChild(del);
+      }
+      btn.addEventListener('click',()=>{
+        curAlbum=isOn?null:al.id;
+        buildSidebar();updateCounts();render();
+      });
+      af.appendChild(btn);
+    });
+    // 管理者：アルバム追加ボタン
+    if(isAdmin && selectedMembers.length===1){
+      const addBtn=document.createElement('button');
+      addBtn.className='cfilt';
+      addBtn.style.cssText='border-style:dashed;opacity:.6;';
+      addBtn.textContent='＋ アルバムを追加';
+      addBtn.addEventListener('click',()=>openAlbumModal(selectedMembers[0]));
+      af.appendChild(addBtn);
+    }
+  }
+
   const tf=document.getElementById('tagFilters');
   tf.innerHTML='';
   const src=selectedMembers.length===0?videos:videos.filter(v=>selectedMembers.every(m=>parseMembers(v).includes(m)));
-  const tags=allTagsOf(src);
+  const tags=allTagsOf(src.filter(v=>!v.album_id));
   const allB=document.createElement('button');
   allB.className='cfilt'+(curTag==='all'?' on':'');
   allB.innerHTML=`<span class="cfilt-label">${t('allTag')}</span><span class="ccnt" id="tc-all">0</span>`;
@@ -249,7 +325,7 @@ function buildMobFilters(){
     reset.className='mob-chip';
     reset.style.cssText='background:rgba(255,100,100,.1);border-color:rgba(255,100,100,.25);color:#fca5a5;';
     reset.textContent='✕ リセット';
-    reset.addEventListener('click',()=>{selectedMembers=[];curMember='all';curTag='all';buildSidebar();updateCounts();render();});
+    reset.addEventListener('click',()=>{selectedMembers=[];curMember='all';curTag='all';curAlbum=null;buildSidebar();updateCounts();render();});
     mm.appendChild(reset);
   }
   MEMBERS.forEach(m=>{
@@ -277,7 +353,7 @@ function buildMobFilters(){
         else{selectedMembers.splice(idx,1);}
         curMember=selectedMembers.length===1?selectedMembers[0]:(selectedMembers.length>1?'multi':'all');
       }
-      curTag='all';buildSidebar();updateCounts();render();
+      curTag='all';curAlbum=null;buildSidebar();updateCounts();render();
     });
     mm.appendChild(b);
   });
@@ -315,6 +391,7 @@ function edit(id,e){
   document.getElementById("iUrl").value=v.url||"";
   document.getElementById("iTitle").value=v.title||"";
   setSelectedMembers(v.member||"kafu");
+  const iAlbumSel=document.getElementById('iAlbum');if(iAlbumSel) iAlbumSel.value=v.album_id||'';
   document.getElementById("iDate").value=v.date||"";
   document.getElementById("iSpotify").value=v.spotify_url||"";
   document.getElementById("iNote").value=v.note||"";
@@ -439,6 +516,26 @@ function updateNewBadgeIds(){
 }
 function render(){
   updateNewBadgeIds();
+  // アルバムヘッダー表示
+  const ah=document.getElementById('albumHeader');
+  if(ah){
+    if(curAlbum!==null){
+      const al=albums.find(a=>a.id===curAlbum);
+      if(al){
+        const th=albumThumb(al);
+        ah.style.display='flex';
+        ah.innerHTML=`
+          <div class="al-thumb-wrap">${th?`<img src="${th}" alt="" class="al-thumb">`:''}</div>
+          <div class="al-info">
+            <div class="al-name">${al.name}</div>
+            <div class="al-member">${mbr(al.member)}</div>
+            ${al.purchase_url?`<a class="al-buy-btn" href="${al.purchase_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🛒 購入ページ</a>`:''}
+          </div>`;
+      }
+    } else {
+      ah.style.display='none';
+    }
+  }
   if(curSort==='daily'){
     filteredCache=getDailyPicksFromCache();
   } else {
@@ -539,6 +636,7 @@ document.getElementById('mSave').addEventListener('click',async()=>{
   const date=document.getElementById('iDate').value;
   const spotify=document.getElementById('iSpotify').value.trim();
   const note=document.getElementById('iNote').value.trim();
+  const albumSel=document.getElementById('iAlbum');const album_id=albumSel&&albumSel.value?parseInt(albumSel.value):null;
   const rawInput=document.getElementById('tagInput').value.trim();
   if(rawInput)addInputTag(rawInput);
   const tags=inputTags.join(' ');
@@ -547,12 +645,12 @@ document.getElementById('mSave').addEventListener('click',async()=>{
   saveBtn.textContent=editId?'更新中…':t('adding');saveBtn.disabled=true;
   try{
     if(editId){
-      const updated=await updateVideoApi(editId,{member,title,tags,date,url,note,spotify_url:spotify});
+      const updated=await updateVideoApi(editId,{member,title,tags,date,url,note,spotify_url:spotify,album_id});
       const idx=videos.findIndex(v=>v.id===editId);
       if(idx!==-1) videos[idx]={...videos[idx],...updated};
       editId=null;
     } else {
-      const nv=await addVideoApi({member,title,tags,date,url,note,spotify_url:spotify});
+      const nv=await addVideoApi({member,title,tags,date,url,note,spotify_url:spotify,album_id});
       videos.unshift(nv);
     }
     document.querySelector('#mover .modal h2').textContent=t('addVideo');
@@ -576,6 +674,29 @@ function buildMemberSelect(){
     wrap.appendChild(lbl);
   });
 }
+
+function refreshAlbumSelects(){
+  // 動画追加モーダルのアルバム選択を更新
+  const sel=document.getElementById('iAlbum');
+  if(sel){
+    sel.innerHTML='<option value="">なし</option>';
+    albums.forEach(al=>{
+      const opt=document.createElement('option');
+      opt.value=al.id;opt.textContent=`📀 ${mbr(al.member)} - ${al.name}`;
+      sel.appendChild(opt);
+    });
+  }
+  // インポートモーダルのアルバム選択を更新
+  const isel=document.getElementById('importAlbum');
+  if(isel){
+    isel.innerHTML='<option value="">アルバムに紐付けない</option>';
+    albums.forEach(al=>{
+      const opt=document.createElement('option');
+      opt.value=al.id;opt.textContent=`📀 ${mbr(al.member)} - ${al.name}`;
+      isel.appendChild(opt);
+    });
+  }
+}
 function getSelectedMembers(){
   const cbs=document.querySelectorAll('#iMemberCb input[type=checkbox]:checked');
   const vals=[...cbs].map(cb=>cb.value);
@@ -588,12 +709,43 @@ function setSelectedMembers(memberStr){
   });
 }
 
+
+function openAlbumModal(member){
+  document.getElementById('albumMoverMember').value=member;
+  document.getElementById('albumName').value='';
+  document.getElementById('albumPurchaseUrl').value='';
+  document.getElementById('albumStatus').textContent='';
+  document.getElementById('albumMover').classList.add('open');
+}
+
+document.getElementById('albumMover')?.addEventListener('click',function(e){
+  if(e.target===this) this.classList.remove('open');
+});
+document.getElementById('albumCancel')?.addEventListener('click',()=>{
+  document.getElementById('albumMover').classList.remove('open');
+});
+document.getElementById('albumSave')?.addEventListener('click',async()=>{
+  const member=document.getElementById('albumMoverMember').value;
+  const name=document.getElementById('albumName').value.trim();
+  const purchase_url=document.getElementById('albumPurchaseUrl').value.trim();
+  const status=document.getElementById('albumStatus');
+  if(!name){status.textContent='アルバム名を入力してください';status.style.color='#fca5a5';return;}
+  status.textContent='追加中…';status.style.color='var(--dim)';
+  try{
+    const al=await addAlbumApi({member,name,purchase_url});
+    albums.push(al);
+    refreshAlbumSelects();
+    document.getElementById('albumMover').classList.remove('open');
+    buildSidebar();updateCounts();
+  }catch(e){status.textContent='エラー: '+e.message;status.style.color='#fca5a5';}
+});
+
 function setAdminMode(on){
   isAdmin=on;
   document.getElementById('fab').style.display=on?'flex':'none';
   document.getElementById('importBtn').style.display=on?'flex':'none';
   document.getElementById('loginBtn').style.display=on?'none':'flex';
-  render();
+  buildSidebar();render();
 }
 
 document.getElementById('loginBtn').addEventListener('click',()=>{
@@ -623,6 +775,8 @@ document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='En
 (async()=>{
   applyI18n();
   await loadVideos();
+  await loadAlbums();
+  refreshAlbumSelects();
   buildSidebar();buildMemberSelect();updateCounts();render();
   const savedPw=getStoredPw();
   if(savedPw){try{const ok=await verifyPw(savedPw);if(ok)setAdminMode(true);}catch{}}
@@ -656,6 +810,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
   const playlistId = document.getElementById('importPlaylistId').value.trim();
   const member = document.getElementById('importMember').value;
   const tags = document.getElementById('importTags').value.trim();
+  const importAlbumSel=document.getElementById('importAlbum');const import_album_id=importAlbumSel&&importAlbumSel.value?parseInt(importAlbumSel.value):null;
   const status = document.getElementById('importStatus');
   if(!playlistId){ status.textContent='プレイリストIDを入力してください'; status.style.color='#fca5a5'; return; }
   const pw = getStoredPw();
@@ -666,7 +821,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     const res = await fetch('/.netlify/functions/playlist-import',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ playlistId, member, tags, password: pw })
+      body: JSON.stringify({ playlistId, member, tags, password: pw, album_id: import_album_id })
     });
     const data = await res.json();
     if(!res.ok){ status.textContent='エラー: '+(data.error||res.status); status.style.color='#fca5a5'; return; }

@@ -44,6 +44,10 @@
 <div class="layout">
   <aside>
     <div class="sb-sec"><div class="sb-title" data-i18n="members">メンバー <span id="memberSelCount" style="font-size:.6rem;color:var(--dim);font-family:'Noto Sans JP',sans-serif;font-weight:400;"></span></div><div class="member-pills" id="memberPills"></div></div>
+    <div class="sb-sec" id="albumSection" style="display:none;">
+      <div class="sb-title">アルバム</div>
+      <div id="albumFilters"></div>
+    </div>
     <div class="sb-sec"><div class="sb-title" data-i18n="tags">タグ</div><div id="tagFilters"></div></div>
   </aside>
   <div class="content">
@@ -54,6 +58,7 @@
       <button class="sbtn" id="sDaily">✦ 今日の観測</button>
       <span class="rcnt" id="rcnt"></span>
     </div>
+    <div id="albumHeader" style="display:none;align-items:center;gap:1rem;padding:.8rem 1rem;margin-bottom:.8rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;"></div>
     <div id="vc"></div>
   </div>
 </div>
@@ -82,10 +87,17 @@
         <option value="koko">幸祜</option>
       </select>
     </div>
-    <div style="margin-bottom:1.2rem;">
+    <div style="margin-bottom:.8rem;">
       <label style="font-size:.72rem;color:var(--dim);display:block;margin-bottom:.3rem;">タグ <span style="color:var(--dim);font-weight:400;">（任意・スペース区切りで複数可）</span></label>
       <input id="importTags" type="text" placeholder="例: シングル アニメ" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
       <p style="font-size:.68rem;color:var(--dim);margin-top:.3rem;">登録される全動画に同じタグが付きます。後から個別に編集できます。</p>
+    </div>
+    <div style="margin-bottom:1.2rem;">
+      <label style="font-size:.72rem;color:var(--dim);display:block;margin-bottom:.3rem;">アルバム <span style="color:var(--dim);font-weight:400;">（任意）</span></label>
+      <select id="importAlbum" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
+        <option value="">アルバムに紐付けない</option>
+      </select>
+      <p style="font-size:.68rem;color:var(--dim);margin-top:.3rem;">選択すると全動画がそのアルバムに紐付けられます。</p>
     </div>
     <div id="importStatus" style="font-size:.78rem;min-height:1.2rem;margin-bottom:.8rem;"></div>
     <div style="display:flex;gap:.6rem;justify-content:flex-end;">
@@ -116,10 +128,29 @@
     </div>
     <div class="fg"><label data-i18n="pubdate">公開日</label><input type="date" id="iDate"></div>
     <div class="fg"><label>Spotify URL <span style="color:var(--dim);font-size:.65rem;">(任意)</span></label><input type="text" id="iSpotify" placeholder="https://open.spotify.com/track/..."></div>
+    <div class="fg"><label>アルバム <span style="color:var(--dim);font-size:.65rem;">(任意)</span></label>
+      <select id="iAlbum" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
+        <option value="">なし</option>
+      </select>
+    </div>
     <div class="fg"><label data-i18n="note">メモ</label><textarea id="iNote" rows="2" placeholder="コラボ相手・作曲者など"></textarea></div>
     <div class="fa">
       <button class="btn btn-s" id="mCancel" data-i18n="cancel">キャンセル</button>
       <button class="btn btn-p" id="mSave" data-i18n="addBtn">追加する</button>
+    </div>
+  </div>
+</div>
+<!-- Album Modal -->
+<div class="mover" id="albumMover">
+  <div class="modal" style="max-width:400px;">
+    <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.4rem;letter-spacing:.15em;margin-bottom:1.2rem;color:#c8d0ff;">📀 ADD ALBUM</h2>
+    <input type="hidden" id="albumMoverMember">
+    <div class="fg"><label>アルバム名</label><input type="text" id="albumName" placeholder="例: 絶対的存在感"></div>
+    <div class="fg"><label>購入ページURL <span style="color:var(--dim);font-size:.65rem;">(任意)</span></label><input type="text" id="albumPurchaseUrl" placeholder="https://..."></div>
+    <div id="albumStatus" style="font-size:.78rem;min-height:1.2rem;margin-bottom:.8rem;"></div>
+    <div style="display:flex;gap:.6rem;justify-content:flex-end;">
+      <button id="albumCancel" class="btn btn-s">キャンセル</button>
+      <button id="albumSave" class="btn btn-p btn-s">追加する</button>
     </div>
   </div>
 </div>

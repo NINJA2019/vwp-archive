@@ -6,7 +6,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
 
-  const { playlistId, member, tags, password } = body;
+  const { playlistId, member, tags, password, album_id } = body;
 
   if (!password || password !== process.env.ADMIN_PASSWORD) {
     return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
@@ -52,7 +52,8 @@ exports.handler = async (event) => {
       url,
       date: item.snippet.publishedAt ? item.snippet.publishedAt.slice(0, 10) : '',
       tags: tags || '',
-      note: ''
+      note: '',
+      album_id: album_id || null
     });
   }
 
