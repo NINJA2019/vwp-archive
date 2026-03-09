@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V.W.P ARCHIVE</title>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-9FTCYNJCHN"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-9FTCYNJCHN');
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Shippori+Mincho:wght@400;500&family=Noto+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <a class="logo" href="#"><em style="font-style:normal;font-size:.55em;letter-spacing:.08em;color:#c4b5fd;display:block;line-height:1;margin-bottom:1px;">UNOFFICIAL</em>V.W.P <em>ARCHIVE</em></a>
+    <div class="view-toggle">
+      <button class="vbtn on" id="vGrid">⊞</button>
+      <button class="vbtn" id="vList">☰</button>
+      <button class="vbtn" id="vTl">⊢</button>
+    </div>
+    <div class="search-wrap"><span class="si">🔍</span><input type="text" id="searchInput"></div>
+    <nav class="header-nav"><a href="javascript:void(0)" onclick="openPage('about')">ABOUT</a><a href="javascript:void(0)" onclick="openPage('contact')">CONTACT</a><a href="javascript:void(0)" onclick="openPage('update')">UPDATE</a></nav>
+      <button class="theme-btn" id="themeBtn" title="ダーク/ライト切替">🌙</button>
+      <div class="lang-sw">
+      <button class="lbtn on" data-lang="ja">JP</button>
+      <button class="lbtn" data-lang="en">EN</button>
+      <button class="lbtn" data-lang="zh">中文</button>
+      <button class="lbtn" data-lang="ko">한국어</button>
+    </div>
+      </div>
+  </div>
+</header>
+<div class="mob-filters" id="mobFilters">
+  <div class="mob-scroll" id="mobMembers"></div>
+  <div class="mob-scroll" id="mobTags"></div>
+</div>
+<div class="layout">
+  <aside>
+    <div class="sb-sec"><div class="sb-title" data-i18n="members">メンバー <span id="memberSelCount" style="font-size:.6rem;color:var(--dim);font-family:'Noto Sans JP',sans-serif;font-weight:400;"></span></div><div class="member-pills" id="memberPills"></div></div>
+    <div class="sb-sec" id="albumSection" style="display:none;">
+      <div class="sb-title">アルバム</div>
+      <div id="albumFilters"></div>
+    </div>
+    <div class="sb-sec"><div class="sb-title" data-i18n="tags">タグ</div><div id="tagFilters"></div></div>
+  </aside>
+  <div class="content">
+    <div class="sort-bar">
+      <span data-i18n="sort">並び順:</span>
+      <button class="sbtn on" id="sNew" data-i18n="newest">新しい順</button>
+      <button class="sbtn" id="sOld" data-i18n="oldest">古い順</button>
+      <button class="sbtn" id="sDaily">✦ 今日の観測</button>
+      <span class="rcnt" id="rcnt"></span>
+    </div>
+    <div id="albumHeader" style="display:none;align-items:center;gap:1rem;padding:.8rem 1rem;margin-bottom:.8rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;"></div>
+    <div id="vc"></div>
+  </div>
+</div>
+<button class="fab" id="fab" style="display:none;">＋</button>
+<button id="importBtn" title="プレイリスト一括インポート" style="display:none;position:fixed;bottom:5.2rem;right:1.8rem;width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;font-size:1.1rem;align-items:center;justify-content:center;background:#7c6ff7;color:#fff;z-index:200;box-shadow:0 4px 18px rgba(0,0,0,.45);">📥</button>
+<button id="loginBtn" style="position:fixed;bottom:1.8rem;right:1.8rem;width:46px;height:46px;border-radius:50%;border:1px solid var(--border);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--dim);z-index:200;">🔑</button>
+
+<!-- IMPORT MODAL -->
+<div class="mover" id="importMover">
+  <div class="modal" style="max-width:440px;">
+    <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.4rem;letter-spacing:.15em;margin-bottom:1.2rem;color:#c8d0ff;">📥 PLAYLIST IMPORT</h2>
+    <p style="font-size:.75rem;color:var(--dim);margin-bottom:1.2rem;line-height:1.7;">YouTubeプレイリストIDを入力すると動画を一括登録します。すでに登録済みのURLは自動でスキップされます。</p>
+    <div style="margin-bottom:.8rem;">
+      <label style="font-size:.72rem;color:var(--dim);display:block;margin-bottom:.3rem;">プレイリストID</label>
+      <input id="importPlaylistId" type="text" placeholder="PLxxxxxxxxxxxxxxxxxxxxxx" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
+      <p style="font-size:.68rem;color:var(--dim);margin-top:.3rem;">YouTubeのプレイリストURLの <code style="color:#a0aaff;">list=</code> 以降の文字列</p>
+    </div>
+    <div style="margin-bottom:.8rem;">
+      <label style="font-size:.72rem;color:var(--dim);display:block;margin-bottom:.3rem;">メンバー</label>
+      <select id="importMember" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
+        <option value="vwp">V.W.P</option>
+        <option value="kafu">花譜</option>
+        <option value="rime">理芽</option>
+        <option value="harusar">春猿火</option>
+        <option value="isekai">ヰ世界情緒</option>
+        <option value="koko">幸祜</option>
+      </select>
+    </div>
+    <div style="margin-bottom:.8rem;">
+      <label style="font-size:.72rem;color:var(--dim);display:block;margin-bottom:.3rem;">タグ <span style="color:var(--dim);font-weight:400;">（任意・スペース区切りで複数可）</span></label>
+      <input id="importTags" type="text" placeholder="例: シングル アニメ" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
+      <p style="font-size:.68rem;color:var(--dim);margin-top:.3rem;">登録される全動画に同じタグが付きます。後から個別に編集できます。</p>
+    </div>
+    <div style="margin-bottom:1.2rem;">
+      <label style="font-size:.72rem;color:var(--dim);display:block;margin-bottom:.3rem;">アルバム <span style="color:var(--dim);font-weight:400;">（任意）</span></label>
+      <select id="importAlbum" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
+        <option value="">アルバムに紐付けない</option>
+      </select>
+      <p style="font-size:.68rem;color:var(--dim);margin-top:.3rem;">選択すると全動画がそのアルバムに紐付けられます。</p>
+    </div>
+    <div id="importStatus" style="font-size:.78rem;min-height:1.2rem;margin-bottom:.8rem;"></div>
+    <div style="display:flex;gap:.6rem;justify-content:flex-end;">
+      <button id="importCancel" class="btn btn-s">キャンセル</button>
+      <button id="importSubmit" class="btn btn-p btn-s">インポート開始</button>
+    </div>
+  </div>
+</div>
+<!-- Add Modal -->
+<div class="mover" id="mover">
+  <div class="modal">
+    <h2 data-i18n="addVideo">動画を追加</h2>
+    <div class="fg">
+      <label>YouTube URL</label>
+      <div style="display:flex;gap:6px;">
+        <input type="text" id="iUrl" placeholder="https://www.youtube.com/watch?v=..." style="flex:1;">
+        <button id="fetchBtn" class="btn btn-s" style="white-space:nowrap;flex-shrink:0;padding:.42rem .75rem;font-size:.75rem;" data-i18n="fetch">取得</button>
+      </div>
+      <div id="fetchStatus" style="font-size:.7rem;margin-top:.28rem;min-height:.9rem;"></div>
+    </div>
+    <div id="thumbPreview" style="display:none;margin-bottom:.7rem;border-radius:4px;overflow:hidden;aspect-ratio:16/9;max-width:160px;background:var(--surface2);"><img id="thumbImg" src="" alt="" style="width:100%;height:100%;object-fit:cover;opacity:.9;"></div>
+    <div class="fg"><label data-i18n="titleLabel">タイトル</label><input type="text" id="iTitle" placeholder="動画タイトル"></div>
+    <div class="fg"><label data-i18n="memberLabel">メンバー <span style="color:var(--dim);font-size:.65rem;">（複数選択可）</span></label><div id="iMemberCb" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;"></div></div>
+    <div class="fg">
+      <label data-i18n="tagsLabel">タグ <span style="color:var(--dim);font-size:.65rem;" data-i18n-sub="tagHint">（#をつけてEnterで追加）</span></label>
+      <div class="tag-input-wrap" id="tagInputWrap"><input type="text" id="tagInput" placeholder="#シングル #組曲"></div>
+      <div id="tagSuggest" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;"></div>
+    </div>
+    <div class="fg"><label data-i18n="pubdate">公開日</label><input type="date" id="iDate"></div>
+    <div class="fg"><label>Spotify URL <span style="color:var(--dim);font-size:.65rem;">(任意)</span></label><input type="text" id="iSpotify" placeholder="https://open.spotify.com/track/..."></div>
+    <div class="fg"><label>アルバム <span style="color:var(--dim);font-size:.65rem;">(任意)</span></label>
+      <select id="iAlbum" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
+        <option value="">なし</option>
+      </select>
+    </div>
+    <div class="fg"><label data-i18n="note">メモ</label><textarea id="iNote" rows="2" placeholder="コラボ相手・作曲者など"></textarea></div>
+    <div class="fa">
+      <button class="btn btn-s" id="mCancel" data-i18n="cancel">キャンセル</button>
+      <button class="btn btn-p" id="mSave" data-i18n="addBtn">追加する</button>
+    </div>
+  </div>
+</div>
+<!-- Album Modal -->
+<div class="mover" id="albumMover">
+  <div class="modal" style="max-width:400px;">
+    <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.4rem;letter-spacing:.15em;margin-bottom:1.2rem;color:#c8d0ff;">📀 ADD ALBUM</h2>
+    <input type="hidden" id="albumMoverMember">
+    <div class="fg"><label>アルバム名</label><input type="text" id="albumName" placeholder="例: 絶対的存在感"></div>
+    <div class="fg"><label>購入ページURL <span style="color:var(--dim);font-size:.65rem;">(任意)</span></label><input type="text" id="albumPurchaseUrl" placeholder="https://..."></div>
+    <div id="albumStatus" style="font-size:.78rem;min-height:1.2rem;margin-bottom:.8rem;"></div>
+    <div style="display:flex;gap:.6rem;justify-content:flex-end;">
+      <button id="albumCancel" class="btn btn-s">キャンセル</button>
+      <button id="albumSave" class="btn btn-p btn-s">追加する</button>
+    </div>
+  </div>
+</div>
+<!-- Login Modal -->
+<div class="mover" id="loginMover">
+  <div class="modal" style="max-width:340px;">
+    <h2>🔑 <span data-i18n="adminLogin">管理者ログイン</span></h2>
+    <p style="font-size:.74rem;color:var(--dim);margin-bottom:1rem;line-height:1.6;" data-i18n="loginDesc">パスワードを入力すると動画の追加・削除ができます。</p>
+    <div class="fg"><label data-i18n="password">パスワード</label><input type="password" id="pwInput"></div>
+    <div id="pwStatus" style="font-size:.72rem;margin-top:.28rem;min-height:.9rem;"></div>
+    <div class="fa">
+      <button class="btn btn-s" id="loginCancel" data-i18n="cancel">キャンセル</button>
+      <button class="btn btn-p" id="loginSubmit" data-i18n="login">ログイン</button>
+    </div>
+  </div>
+</div>
+<script src="/app.js" defer></script>
+
+<!-- About / Contact Page Modal -->
+<div id="pageMover" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);overflow-y:auto;">
+  <div style="max-width:720px;margin:2rem auto;padding:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;position:relative;">
+    <button onclick="closePage()" style="position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--dim);font-size:1.2rem;cursor:pointer;line-height:1;">✕</button>
+
+    <!-- ABOUT -->
+    <div id="pageAbout">
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:.15em;margin-bottom:1.4rem;color:#c8d0ff;">ABOUT</h2>
+      <div style="display:inline-block;background:rgba(255,200,100,.08);border:1px solid rgba(255,200,100,.25);color:#fcd34d;font-size:.68rem;padding:2px 10px;border-radius:4px;margin-bottom:.8rem;letter-spacing:.05em;">⚠ UNOFFICIAL FAN SITE</div>
+      <p style="font-size:.78rem;color:var(--dim);line-height:1.9;margin-bottom:1.4rem;">このサイトはV.W.P（花譜・理芽・春猿火・ヰ世界情緒・幸祜）のファンが個人で制作した非公式アーカイブサイトです。KAMITSUBAKI STUDIOおよびV.W.Pとは一切関係ありません。</p>
+
+      <h3 style="font-size:.82rem;letter-spacing:.1em;color:#9ca3af;border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-bottom:1rem;">二次創作ガイドライン（KAMITSUBAKI STUDIO）</h3>
+      <p style="font-size:.73rem;color:var(--dim);line-height:1.8;margin-bottom:.8rem;">本サイトはKAMITSUBAKI STUDIOの二次創作ガイドラインに基づき運営しています。</p>
+
+      <div style="font-size:.72rem;color:var(--dim);line-height:1.85;display:flex;flex-direction:column;gap:.9rem;">
+        <div>
+          <div style="color:#a0aaff;font-weight:700;margin-bottom:.3rem;">対象コンテンツ</div>
+          <p>KAMITSUBAKI STUDIOの各バーチャルアーティストおよび各バーチャルアーティストが創作したコンテンツ、「神椿市建設中。」の世界観・オリジナルキャラクター・物語、ならびにそれらの商標。</p>
+        </div>
+        <div>
+          <div style="color:#a0aaff;font-weight:700;margin-bottom:.3rem;">利用条件</div>
+          <p>本ガイドラインの対象は非商業目的（同人活動・趣味の範囲）で対象コンテンツを二次創作に利用する個人の方に限ります。法人および商業目的での利用には別途許諾が必要です。</p>
+        </div>
+        <div>
+          <div style="color:#a0aaff;font-weight:700;margin-bottom:.3rem;">公開にあたってのお願い</div>
+          <ul style="padding-left:1.2rem;display:flex;flex-direction:column;gap:.3rem;list-style:disc;">
+            <li>他人の気持ちや名誉を傷つける目的のものはお控えください</li>
+            <li>特定の政治・宗教を過度に推す・貶すものはお控えください</li>
+            <li>過度に暴力的・グロテスク・性的なものはお控えください</li>
+            <li>公式作品と誤認されないようご配慮ください</li>
+          </ul>
+        </div>
+        <div>
+          <div style="color:#a0aaff;font-weight:700;margin-bottom:.3rem;">販売・収益化</div>
+          <p>非商業目的の範囲内（書籍・グッズ等）で、制作原価相当額程度の収益を得る場合のみ販売が可能です。公式素材をそのまま利用した作品の販売・収益化はできません。</p>
+        </div>
+      </div>
+      <p style="margin-top:1.2rem;font-size:.68rem;color:#6b7280;">
+        完全なガイドラインは <a href="https://kamitsubaki.jp/guidelines/" target="_blank" rel="noopener" style="color:#a0aaff;">kamitsubaki.jp/guidelines/</a> をご確認ください。
+      </p>
+      <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border);font-size:.72rem;color:#9ca3af;letter-spacing:.04em;">©KAMITSUBAKI STUDIO</div>
+    </div>
+
+    <!-- CONTACT -->
+    <div id="pageContact" style="display:none;">
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:.15em;margin-bottom:1.4rem;color:#c8d0ff;">CONTACT</h2>
+      <p style="font-size:.78rem;color:var(--dim);line-height:1.9;margin-bottom:1.8rem;">ご要望・お問い合わせはTwitter（X）のDMまでお気軽にどうぞ。</p>
+      <div style="display:flex;align-items:center;gap:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.2rem 1.4rem;">
+        <div style="width:48px;height:48px;border-radius:50%;background:rgba(160,170,255,.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;">𝕏</div>
+        <div>
+          <div style="font-size:.88rem;color:#e2e8f0;font-weight:600;margin-bottom:.2rem;">にんじゃ3歳</div>
+          <a href="https://twitter.com/ninnin8672" target="_blank" rel="noopener" style="color:#a0aaff;font-size:.78rem;text-decoration:none;">@ninnin8672</a>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:1rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.2rem 1.4rem;margin-top:.8rem;">
+        <div style="width:48px;height:48px;border-radius:50%;background:rgba(100,200,100,.1);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">📝</div>
+        <div>
+          <div style="font-size:.88rem;color:#e2e8f0;font-weight:600;margin-bottom:.2rem;">Note</div>
+          <a href="https://note.com/ninnin8672" target="_blank" rel="noopener" style="color:#a0aaff;font-size:.78rem;text-decoration:none;">note.com/ninnin8672</a>
+        </div>
+      </div>
+      <p style="margin-top:1.2rem;font-size:.7rem;color:#6b7280;line-height:1.7;">サイトへのご意見・登録動画のご要望・不具合のご報告などはDMにてお受けしています。</p>
+    </div>
+
+    <!-- UPDATE -->
+    <div id="pageUpdate" style="display:none;">
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:.15em;margin-bottom:1.8rem;color:#c8d0ff;">UPDATE</h2>
+      <div style="display:flex;flex-direction:column;gap:.6rem;">
+
+        <div style="display:flex;gap:1.2rem;padding:.9rem 1.1rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;align-items:flex-start;">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.06em;color:#c4b5fd;white-space:nowrap;padding-top:.05rem;">2026/03/09</span>
+          <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.3rem;">
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ 韓国語（한국어）対応を追加</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ タグ翻訳（トリオ・系譜曲・sinka）を追加</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ 無限スクロール実装による初期読み込み高速化</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ ✦ 今日の観測（日替わり5曲ピックアップ）を追加</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ メンバーリストにキャラクターカラーを適用</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ 表示切替ボタンを検索の左に移動</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
