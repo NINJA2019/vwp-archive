@@ -1,14 +1,14 @@
 const I18N = {
-  ja: { members:'メンバー', tags:'タグ', sort:'並び順:', newest:'新しい順', oldest:'古い順', addVideo:'動画を追加', fetch:'取得', titleLabel:'タイトル', memberLabel:'メンバー', tagsLabel:'タグ', tagHint:'（#をつけてEnterで追加）', pubdate:'公開日', note:'メモ', cancel:'キャンセル', addBtn:'追加する', adminLogin:'管理者ログイン', loginDesc:'パスワードを入力すると動画の追加・削除ができます。', password:'パスワード', login:'ログイン', notFound:'動画が見つかりません', fetching:'取得中…', fetchOk:'✓ タイトル・公開日・サムネイルを取得しました', delConfirm:'この動画を削除しますか？', adding:'追加中…', searchPh:'タイトルで検索…', spotify:'Spotify', allTag:'すべて',
+  ja: { members:'メンバー', tags:'タグ', sort:'並び順:', newest:'新しい順', oldest:'古い順', addVideo:'動画を追加', fetch:'取得', titleLabel:'タイトル', memberLabel:'メンバー', tagsLabel:'タグ', tagHint:'（#をつけてEnterで追加）', pubdate:'公開日', note:'メモ', cancel:'キャンセル', addBtn:'追加する', adminLogin:'管理者ログイン', loginDesc:'パスワードを入力すると動画の追加・削除ができます。', password:'パスワード', login:'ログイン', notFound:'動画が見つかりません', fetching:'取得中…', fetchOk:'✓ タイトル・公開日・サムネイルを取得しました', delConfirm:'この動画を削除しますか？', adding:'追加中…', searchPh:'タイトルで検索…', spotify:'Spotify', allTag:'すべて', dailyObs:'✦ 今日の観測',
     mbr:{ all:'すべて', kafu:'花譜', rime:'理芽', harusar:'春猿火', isekai:'ヰ世界情緒', koko:'幸祜', vwp:'V.W.P' },
     tagMap:{} },
-  en: { members:'Members', tags:'Tags', sort:'Sort:', newest:'Newest', oldest:'Oldest', addVideo:'Add Video', fetch:'Fetch', titleLabel:'Title', memberLabel:'Member', tagsLabel:'Tags', tagHint:'(type #tag + Enter)', pubdate:'Publish Date', note:'Notes', cancel:'Cancel', addBtn:'Add', adminLogin:'Admin Login', loginDesc:'Enter password to add/delete videos.', password:'Password', login:'Login', notFound:'No videos found', fetching:'Fetching…', fetchOk:'✓ Loaded title, date & thumbnail', delConfirm:'Delete this video?', adding:'Adding…', searchPh:'Search by title…', spotify:'Spotify', allTag:'All',
+  en: { members:'Members', tags:'Tags', sort:'Sort:', newest:'Newest', oldest:'Oldest', addVideo:'Add Video', fetch:'Fetch', titleLabel:'Title', memberLabel:'Member', tagsLabel:'Tags', tagHint:'(type #tag + Enter)', pubdate:'Publish Date', note:'Notes', cancel:'Cancel', addBtn:'Add', adminLogin:'Admin Login', loginDesc:'Enter password to add/delete videos.', password:'Password', login:'Login', notFound:'No videos found', fetching:'Fetching…', fetchOk:'✓ Loaded title, date & thumbnail', delConfirm:'Delete this video?', adding:'Adding…', searchPh:'Search by title…', spotify:'Spotify', allTag:'All', dailyObs:'✦ Today\'s Observation',
     mbr:{ all:'All', kafu:'KAF', rime:'RIM', harusar:'HARUSARUHI', isekai:'ISEKAIJOUCHO', koko:'KOKO', vwp:'V.W.P' },
     tagMap:{ 'シングル':'Single', 'アニメ':'Anime', 'ゲーム':'Game', '映画':'Film', 'クインテット':'Quintet', 'デュエット':'Duet', 'トリオ':'Trio', '拡声曲':'Amplified', '系譜曲':'Lineage', 'Covered':'Covered', 'Remix':'Remix', 'sinka':'sinka', '社外コラボ':'Collab', 'ライブ':'Live', 'カバー':'Cover', 'コラボ':'Collab' } },
-  zh: { members:'成员', tags:'标签', sort:'排序:', newest:'最新', oldest:'最旧', addVideo:'添加视频', fetch:'获取', titleLabel:'标题', memberLabel:'成员', tagsLabel:'标签', tagHint:'（输入#标签后按Enter）', pubdate:'发布日期', note:'备注', cancel:'取消', addBtn:'添加', adminLogin:'管理员登录', loginDesc:'输入密码以添加或删除视频。', password:'密码', login:'登录', notFound:'未找到视频', fetching:'获取中…', fetchOk:'✓ 已获取标题、日期和缩略图', delConfirm:'确认删除此视频？', adding:'添加中…', searchPh:'按标题搜索…', spotify:'Spotify', allTag:'全部',
+  zh: { members:'成员', tags:'标签', sort:'排序:', newest:'最新', oldest:'最旧', addVideo:'添加视频', fetch:'获取', titleLabel:'标题', memberLabel:'成员', tagsLabel:'标签', tagHint:'（输入#标签后按Enter）', pubdate:'发布日期', note:'备注', cancel:'取消', addBtn:'添加', adminLogin:'管理员登录', loginDesc:'输入密码以添加或删除视频。', password:'密码', login:'登录', notFound:'未找到视频', fetching:'获取中…', fetchOk:'✓ 已获取标题、日期和缩略图', delConfirm:'确认删除此视频？', adding:'添加中…', searchPh:'按标题搜索…', spotify:'Spotify', allTag:'全部', dailyObs:'✦ 今日的观测',
     mbr:{ all:'全部', kafu:'花谱', rime:'理芽', harusar:'春猿火', isekai:'异世界情绪', koko:'幸祜', vwp:'V.W.P' },
     tagMap:{ 'シングル':'单曲', 'アニメ':'动漫', 'ゲーム':'游戏', '映画':'电影', 'クインテット':'五重唱', 'デュエット':'二重唱', 'トリオ':'三重唱', '拡声曲':'扩声曲', '系譜曲':'系谱曲', 'Covered':'翻唱', 'Remix':'混音', 'sinka':'深化', '社外コラボ':'联动', 'ライブ':'现场', 'カバー':'翻唱', 'コラボ':'合作' } },
-  ko: { members:'멤버', tags:'태그', sort:'정렬:', newest:'최신순', oldest:'오래된순', addVideo:'동영상 추가', fetch:'가져오기', titleLabel:'제목', memberLabel:'멤버', tagsLabel:'태그', tagHint:'(#태그 입력 후 Enter)', pubdate:'공개일', note:'메모', cancel:'취소', addBtn:'추가하기', adminLogin:'관리자 로그인', loginDesc:'비밀번호를 입력하면 동영상 추가·삭제가 가능합니다.', password:'비밀번호', login:'로그인', notFound:'동영상을 찾을 수 없습니다', fetching:'가져오는 중…', fetchOk:'✓ 제목·공개일·썸네일을 가져왔습니다', delConfirm:'이 동영상을 삭제하시겠습니까?', adding:'추가 중…', searchPh:'제목으로 검색…', spotify:'Spotify', allTag:'전체',
+  ko: { members:'멤버', tags:'태그', sort:'정렬:', newest:'최신순', oldest:'오래된순', addVideo:'동영상 추가', fetch:'가져오기', titleLabel:'제목', memberLabel:'멤버', tagsLabel:'태그', tagHint:'(#태그 입력 후 Enter)', pubdate:'공개일', note:'메모', cancel:'취소', addBtn:'추가하기', adminLogin:'관리자 로그인', loginDesc:'비밀번호를 입력하면 동영상 추가·삭제가 가능합니다.', password:'비밀번호', login:'로그인', notFound:'동영상을 찾을 수 없습니다', fetching:'가져오는 중…', fetchOk:'✓ 제목·공개일·썸네일을 가져왔습니다', delConfirm:'이 동영상을 삭제하시겠습니까?', adding:'추가 중…', searchPh:'제목으로 검색…', spotify:'Spotify', allTag:'전체', dailyObs:'✦ 오늘의 관측',
     mbr:{ all:'전체', kafu:'카후', rime:'리메', harusar:'하루사루히', isekai:'이세카이죠초', koko:'코코', vwp:'V.W.P' },
     tagMap:{ 'シングル':'싱글', 'アニメ':'애니메이션', 'ゲーム':'게임', '映画':'영화', 'クインテット':'퀸텟', 'デュエット':'듀엣', 'トリオ':'트리오', '拡声曲':'확성곡', '系譜曲':'계보곡', 'Covered':'커버됨', 'Remix':'리믹스', 'sinka':'심화', '社外コラボ':'콜라보', 'ライブ':'라이브', 'カバー':'커버', 'コラボ':'콜라보' } }
 };
@@ -19,6 +19,7 @@ function applyI18n(){
   document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
   document.querySelectorAll('[data-i18n-sub]').forEach(el=>{ el.textContent = t(el.dataset.i18nSub); });
   document.getElementById('searchInput').placeholder = t('searchPh');
+  const sd=document.getElementById('sDaily');if(sd) sd.textContent=t('dailyObs');
 }
 
 const MEMBERS = [
@@ -30,12 +31,16 @@ const MBR_CLS = {kafu:'mb-kafu',rime:'mb-rime',harusar:'mb-harusar',isekai:'mb-i
 function openPage(page){
   document.getElementById('pageAbout').style.display=page==='about'?'block':'none';
   document.getElementById('pageContact').style.display=page==='contact'?'block':'none';
+  document.getElementById('pageUpdate').style.display=page==='update'?'block':'none';
   document.getElementById('pageMover').style.display='block';
   document.body.style.overflow='hidden';
   return false;
 }
 function closePage(){
   document.getElementById('pageMover').style.display='none';
+  document.getElementById('pageAbout').style.display='none';
+  document.getElementById('pageContact').style.display='none';
+  document.getElementById('pageUpdate').style.display='none';
   document.body.style.overflow='';
 }
 
@@ -73,6 +78,60 @@ function tagPills(v){return parseTags(v).map(tag=>`<span class="pill">#${tTag(ta
 function mbPill(mid){return `<span class="pill ${MBR_CLS[mid]||''}">${mbr(mid)}</span>`;}
 function spotifyBtn(v){if(!v.spotify_url)return '';return `<a class="spotify-btn" href="${v.spotify_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">♫ ${t('spotify')}</a>`;}
 
+
+// ===== 今日の観測 =====
+const DAILY_MEMBERS = ['kafu','rime','harusar','isekai','koko'];
+const DAILY_SK = 'vwp_daily_obs';
+
+function seededRand(seed){
+  let s = seed;
+  return function(){
+    s = (s * 1664525 + 1013904223) & 0xffffffff;
+    return (s >>> 0) / 0xffffffff;
+  };
+}
+
+function getTodayJST(){
+  const now = new Date();
+  // JST = UTC+9
+  const jst = new Date(now.getTime() + 9*60*60*1000);
+  return jst.toISOString().slice(0,10); // "YYYY-MM-DD"
+}
+
+function getDailyPicks(){
+  const today = getTodayJST();
+  try {
+    const stored = JSON.parse(localStorage.getItem(DAILY_SK)||'null');
+    if(stored && stored.date === today) return stored.picks;
+  } catch(e){}
+
+  // シード = 日付文字列をハッシュ化
+  const seed = today.split('').reduce((a,c)=>((a<<5)-a)+c.charCodeAt(0)|0, 0);
+  const rand = seededRand(Math.abs(seed));
+
+  const picks = [];
+  DAILY_MEMBERS.forEach(mbr=>{
+    const pool = videos.filter(v=>parseMembers(v).includes(mbr) && !parseMembers(v).includes('vwp'));
+    if(!pool.length) return;
+    const idx = Math.floor(rand() * pool.length);
+    picks.push(pool[idx]);
+  });
+
+  try { localStorage.setItem(DAILY_SK, JSON.stringify({date:today, picks: picks.map(v=>v.id)})); } catch(e){}
+  return picks;
+}
+
+function getDailyPicksFromCache(){
+  const today = getTodayJST();
+  try {
+    const stored = JSON.parse(localStorage.getItem(DAILY_SK)||'null');
+    if(stored && stored.date === today){
+      return stored.picks.map(id=>videos.find(v=>v.id===id)).filter(Boolean);
+    }
+  } catch(e){}
+  return getDailyPicks();
+}
+
 function filtered(){
   let list=videos.slice();
   if(selectedMembers.length===1){
@@ -88,7 +147,7 @@ function filtered(){
       return words.every(w=>hay.includes(w));
     });
   }
-  list.sort((a,b)=>curSort==='new'?(b.date>a.date?1:-1):(a.date>b.date?1:-1));
+  if(curSort!=='daily') list.sort((a,b)=>curSort==='new'?(b.date>a.date?1:-1):(a.date>b.date?1:-1));
   return list;
 }
 function allTagsOf(src){const s=new Set();src.forEach(v=>parseTags(v).forEach(t=>s.add(t)));return [...s].sort();}
@@ -372,7 +431,11 @@ function loadMoreItems(){
 }
 
 function render(){
-  filteredCache=filtered();
+  if(curSort==='daily'){
+    filteredCache=getDailyPicksFromCache();
+  } else {
+    filteredCache=filtered();
+  }
   curPage=0;
   document.getElementById('rcnt').textContent=filteredCache.length+' 件';
   const c=document.getElementById('vc');
@@ -424,8 +487,9 @@ document.getElementById('searchInput').addEventListener('input',e=>{searchQ=e.ta
     document.getElementById(id).classList.add('on');render();
   });
 });
-document.getElementById('sNew').addEventListener('click',()=>{curSort='new';document.getElementById('sNew').classList.add('on');document.getElementById('sOld').classList.remove('on');render();});
-document.getElementById('sOld').addEventListener('click',()=>{curSort='old';document.getElementById('sOld').classList.add('on');document.getElementById('sNew').classList.remove('on');render();});
+document.getElementById('sNew').addEventListener('click',()=>{curSort='new';['sNew','sOld','sDaily'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});document.getElementById('sNew').classList.add('on');render();});
+document.getElementById('sOld').addEventListener('click',()=>{curSort='old';['sNew','sOld','sDaily'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});document.getElementById('sOld').classList.add('on');render();});
+document.getElementById('sDaily').addEventListener('click',()=>{curSort='daily';['sNew','sOld','sDaily'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});document.getElementById('sDaily').classList.add('on');render();});
 
 document.querySelectorAll('.lbtn').forEach(btn=>{
   btn.addEventListener('click',()=>{

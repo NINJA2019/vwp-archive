@@ -20,13 +20,13 @@
 <header>
   <div class="header-inner">
     <a class="logo" href="#"><em style="font-style:normal;font-size:.55em;letter-spacing:.08em;color:#c4b5fd;display:block;line-height:1;margin-bottom:1px;">UNOFFICIAL</em>V.W.P <em>ARCHIVE</em></a>
-    <div class="search-wrap"><span class="si">🔍</span><input type="text" id="searchInput"></div>
     <div class="view-toggle">
       <button class="vbtn on" id="vGrid">⊞</button>
       <button class="vbtn" id="vList">☰</button>
       <button class="vbtn" id="vTl">⊢</button>
     </div>
-    <nav class="header-nav"><a href="javascript:void(0)" onclick="openPage('about')">ABOUT</a><a href="javascript:void(0)" onclick="openPage('contact')">CONTACT</a></nav>
+    <div class="search-wrap"><span class="si">🔍</span><input type="text" id="searchInput"></div>
+    <nav class="header-nav"><a href="javascript:void(0)" onclick="openPage('about')">ABOUT</a><a href="javascript:void(0)" onclick="openPage('contact')">CONTACT</a><a href="javascript:void(0)" onclick="openPage('update')">UPDATE</a></nav>
       <button class="theme-btn" id="themeBtn" title="ダーク/ライト切替">🌙</button>
       <div class="lang-sw">
       <button class="lbtn on" data-lang="ja">JP</button>
@@ -51,6 +51,7 @@
       <span data-i18n="sort">並び順:</span>
       <button class="sbtn on" id="sNew" data-i18n="newest">新しい順</button>
       <button class="sbtn" id="sOld" data-i18n="oldest">古い順</button>
+      <button class="sbtn" id="sDaily">✦ 今日の観測</button>
       <span class="rcnt" id="rcnt"></span>
     </div>
     <div id="vc"></div>
@@ -199,6 +200,26 @@
         </div>
       </div>
       <p style="margin-top:1.2rem;font-size:.7rem;color:#6b7280;line-height:1.7;">サイトへのご意見・登録動画のご要望・不具合のご報告などはDMにてお受けしています。</p>
+    </div>
+
+    <!-- UPDATE -->
+    <div id="pageUpdate" style="display:none;">
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:.15em;margin-bottom:1.8rem;color:#c8d0ff;">UPDATE</h2>
+      <div style="display:flex;flex-direction:column;gap:.6rem;">
+
+        <div style="display:flex;gap:1.2rem;padding:.9rem 1.1rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;align-items:flex-start;">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.06em;color:#c4b5fd;white-space:nowrap;padding-top:.05rem;">2026/03/09</span>
+          <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.3rem;">
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ 韓国語（한국어）対応を追加</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ タグ翻訳（トリオ・系譜曲・sinka）を追加</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ 無限スクロール実装による初期読み込み高速化</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ ✦ 今日の観測（日替わり5曲ピックアップ）を追加</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ メンバーリストにキャラクターカラーを適用</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ 表示切替ボタンを検索の左に移動</li>
+          </ul>
+        </div>
+
+      </div>
     </div>
   </div>
 </div>
