@@ -530,7 +530,23 @@ function render(){
             <div class="al-name">${al.name}</div>
             <div class="al-member">${mbr(al.member)}</div>
             ${al.purchase_url?`<a class="al-buy-btn" href="${al.purchase_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🛒 購入ページ</a>`:''}
-          </div>`;
+          </div>
+          ${isAdmin?`<button class="al-add-btn" id="alAddSongBtn">＋ 曲を追加</button>`:''}
+        `;
+        if(isAdmin){
+          document.getElementById('alAddSongBtn')?.addEventListener('click',()=>{
+            editId=null;inputTags=[];renderTagChips();renderTagSuggest();
+            document.querySelectorAll('#iMemberCb input[type=checkbox]').forEach(cb=>cb.checked=false);
+            const cb=document.querySelector(`#iMemberCb input[value="${al.member}"]`);
+            if(cb) cb.checked=true;
+            const iAlbumSel=document.getElementById('iAlbum');
+            if(iAlbumSel) iAlbumSel.value=al.id;
+            document.querySelector('#mover .modal h2').textContent=`＋ ${al.name}`;
+            document.getElementById('mSave').textContent=t('addBtn');
+            document.getElementById('mover').classList.add('open');
+          });
+        }
+        // dummy to close template literal block
       }
     } else {
       ah.style.display='none';
@@ -711,11 +727,15 @@ function setSelectedMembers(memberStr){
 
 
 function openAlbumModal(member){
-  document.getElementById('albumMoverMember').value=member;
+  const sel=document.getElementById('albumMoverMember');
+  if(sel) sel.value=member||'kafu';
+  const memberRow=document.getElementById('albumMoverMemberRow');
+  if(memberRow) memberRow.style.display=member?'none':'block';
   document.getElementById('albumName').value='';
   document.getElementById('albumPurchaseUrl').value='';
   document.getElementById('albumStatus').textContent='';
   document.getElementById('albumMover').classList.add('open');
+  setTimeout(()=>document.getElementById('albumName').focus(),100);
 }
 
 document.getElementById('albumMover')?.addEventListener('click',function(e){
@@ -744,6 +764,7 @@ function setAdminMode(on){
   isAdmin=on;
   document.getElementById('fab').style.display=on?'flex':'none';
   document.getElementById('importBtn').style.display=on?'flex':'none';
+  document.getElementById('albumAddBtn').style.display=on?'flex':'none';
   document.getElementById('loginBtn').style.display=on?'none':'flex';
   buildSidebar();updateCounts();render();
 }
@@ -755,6 +776,7 @@ document.getElementById('loginBtn').addEventListener('click',()=>{
 });
 document.getElementById('loginCancel').addEventListener('click',()=>document.getElementById('loginMover').classList.remove('open'));
 document.getElementById('loginMover').addEventListener('click',e=>{if(e.target===document.getElementById('loginMover'))document.getElementById('loginMover').classList.remove('open');});
+document.getElementById('albumAddBtn').addEventListener('click',()=>{ openAlbumModal(null); });
 
 async function verifyPw(pw){
   const res=await fetch("/api/auth-check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:pw})});
