@@ -745,7 +745,7 @@ function setAdminMode(on){
   document.getElementById('fab').style.display=on?'flex':'none';
   document.getElementById('importBtn').style.display=on?'flex':'none';
   document.getElementById('loginBtn').style.display=on?'none':'flex';
-  buildSidebar();render();
+  buildSidebar();updateCounts();render();
 }
 
 document.getElementById('loginBtn').addEventListener('click',()=>{
