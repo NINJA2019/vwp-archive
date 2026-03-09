@@ -40,6 +40,9 @@ function closePage(){
 }
 
 let videos=[],curMember='all',selectedMembers=[],curTag='all',curSort='new',curView='grid',searchQ='',isAdmin=false,editId=null;
+let filteredCache=[],curPage=0;
+const PAGE_SIZE=30;
+let ioObserver=null;
 const PW_SK='vwp_admin_pw';
 function getStoredPw(){try{return localStorage.getItem(PW_SK)||'';}catch{return '';}}
 function storePw(pw){try{localStorage.setItem(PW_SK,pw);}catch{}}
@@ -302,13 +305,85 @@ function renderTimeline(list){
   });
   return html+'</div>';
 }
-function render(){
-  const list=filtered();
-  document.getElementById('rcnt').textContent=list.length+' 件';
+function setupObserver(){
+  if(ioObserver) ioObserver.disconnect();
+  const sentinel=document.getElementById('io-sentinel');
+  if(!sentinel) return;
+  ioObserver=new IntersectionObserver(entries=>{
+    if(entries[0].isIntersecting) loadMoreItems();
+  },{rootMargin:'200px'});
+  ioObserver.observe(sentinel);
+}
+
+function loadMoreItems(){
+  const start=curPage*PAGE_SIZE;
+  const chunk=filteredCache.slice(start,start+PAGE_SIZE);
+  if(!chunk.length) return;
+  curPage++;
   const c=document.getElementById('vc');
-  if(curView==='grid') c.innerHTML=renderGrid(list);
-  else if(curView==='list') c.innerHTML=renderList(list);
-  else c.innerHTML=renderTimeline(list);
+  const sentinel=document.getElementById('io-sentinel');
+  if(curView==='grid'){
+    const wrap=c.querySelector('.vgrid')||(() => {const d=document.createElement('div');d.className='vgrid';if(sentinel) c.insertBefore(d,sentinel);else c.appendChild(d);return d;})();
+    chunk.forEach((v,i)=>{
+      const div=document.createElement('div');
+      div.className='vcard';div.style.animationDelay=((start+i)*.022)+'s';
+      div.onclick=()=>window.open(v.url,'_blank');
+      div.innerHTML=`<div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div><div class="cbody"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div><div class="ctitle">${v.title}</div><div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${v.note}</span>`:''}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div></div>`;
+      wrap.appendChild(div);
+    });
+  } else if(curView==='list'){
+    const wrap=c.querySelector('.vlist')||(() => {const d=document.createElement('div');d.className='vlist';if(sentinel) c.insertBefore(d,sentinel);else c.appendChild(d);return d;})();
+    chunk.forEach((v,i)=>{
+      const a=document.createElement('a');
+      a.className='litem';a.style.animationDelay=((start+i)*.022)+'s';
+      a.href=v.url;a.target='_blank';a.rel='noopener';
+      a.innerHTML=`<div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div><div class="linfo"><div class="ltitle">${v.title}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${v.note}</span>`:''}</div></div>${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
+      wrap.appendChild(a);
+    });
+  } else {
+    // タイムライン：既存のtl divに追記 or 新規作成
+    let tl=c.querySelector('.tl');
+    if(!tl){
+      tl=document.createElement('div');tl.className='tl';
+      const line=document.createElement('div');line.className='tl-line';tl.appendChild(line);
+      if(sentinel) c.insertBefore(tl,sentinel);else c.appendChild(tl);
+    }
+    let yr=tl.dataset.lastYr||'';
+    chunk.forEach((v,i)=>{
+      const y=v.date?v.date.slice(0,4):'?';
+      if(y!==yr){
+        yr=y;tl.dataset.lastYr=y;
+        const yrDiv=document.createElement('div');yrDiv.className='tl-yr';yrDiv.textContent=y;tl.appendChild(yrDiv);
+      }
+      const row=document.createElement('div');
+      row.className='tl-row';row.style.animationDelay=((start+i)*.022)+'s';
+      row.onclick=()=>window.open(v.url,'_blank');
+      row.innerHTML=`<div class="tl-dot"></div><div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div><div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${v.title}</div><div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${v.note}</span>`:''}</div></div>${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
+      tl.appendChild(row);
+    });
+  }
+  // 全件描画済みならsentinelを隠す
+  if(curPage*PAGE_SIZE>=filteredCache.length){
+    if(sentinel) sentinel.style.display='none';
+    if(ioObserver) ioObserver.disconnect();
+  } else {
+    if(sentinel) sentinel.style.display='block';
+  }
+}
+
+function render(){
+  filteredCache=filtered();
+  curPage=0;
+  document.getElementById('rcnt').textContent=filteredCache.length+' 件';
+  const c=document.getElementById('vc');
+  if(!filteredCache.length){
+    c.innerHTML=`<div class="empty"><div class="empty-i">🌙</div><h3>${t('notFound')}</h3></div><div id="io-sentinel" style="height:1px"></div>`;
+    return;
+  }
+  c.innerHTML=`<div id="io-sentinel" style="height:1px"></div>`;
+  // sentinelを末尾に移動するためにプレースホルダー挿入後すぐloadMore
+  loadMoreItems();
+  setupObserver();
 }
 
 // tag input
