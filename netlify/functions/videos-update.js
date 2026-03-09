@@ -6,7 +6,7 @@ exports.handler = async (event) => {
   try { body = JSON.parse(event.body || '{}'); } catch(e) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
   }
-  const { password, id, member, title, tags, date, url, note, spotify_url } = body;
+  const { password, id, member, title, tags, date, url, note, spotify_url, album_id } = body;
   if (password !== process.env.ADMIN_PASSWORD) {
     return { statusCode: 401, body: JSON.stringify({ error: 'パスワードが違います' }) };
   }
@@ -27,7 +27,7 @@ exports.handler = async (event) => {
         'Content-Type': 'application/json',
         Prefer: 'return=representation',
       },
-      body: JSON.stringify({ member, title, tags: tags || '', date, url, note, spotify_url: spotify_url || null }),
+      body: JSON.stringify({ member, title, tags: tags || '', date, url, note, spotify_url: spotify_url || null, album_id: album_id !== undefined ? album_id : undefined }),
     });
     const text = await res.text();
     if (!text) return { statusCode: 500, body: JSON.stringify({ error: 'Empty response' }) };
