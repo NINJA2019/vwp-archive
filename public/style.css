@@ -241,3 +241,7 @@ aside::-webkit-scrollbar{width:3px;} aside::-webkit-scrollbar-thumb{background:v
   background:rgba(192,132,252,.12);
   color:#d4a8ff;
 }
+
+/* al-add-btn */
+.al-add-btn{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:600;color:#86efac;background:rgba(134,239,172,.1);border:1px solid rgba(134,239,172,.3);border-radius:4px;padding:5px 12px;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0;}
+.al-add-btn:hover{background:rgba(134,239,172,.2);color:#bbf7d0;}
