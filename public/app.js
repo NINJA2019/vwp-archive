@@ -334,7 +334,7 @@ function renderGrid(list){
       <div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div>
       <div class="cbody">
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div>
-        <div class="ctitle">${v.title}</div>
+        <div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${v.title}</div>
         <div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${v.note}</span>`:''}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div>
       </div>
     </div>`).join('')+`</div>`;
@@ -344,7 +344,7 @@ function renderList(list){
   return `<div class="vlist">`+list.map((v,i)=>`
     <a class="litem" style="animation-delay:${i*.022}s" href="${v.url}" target="_blank" rel="noopener">
       <div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div>
-      <div class="linfo"><div class="ltitle">${v.title}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${v.note}</span>`:''}</div></div>
+      <div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${v.title}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${v.note}</span>`:''}</div></div>
       ${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
     </a>`).join('')+`</div>`;
 }
@@ -357,7 +357,7 @@ function renderTimeline(list){
     html+=`<div class="tl-row" style="animation-delay:${i*.022}s" onclick="window.open('${v.url}','_blank')">
       <div class="tl-dot"></div>
       <div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div>
-      <div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${v.title}</div>
+      <div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${v.title}</div>
       <div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${v.note}</span>`:''}</div></div>
       ${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
     </div>`;
@@ -430,7 +430,15 @@ function loadMoreItems(){
   }
 }
 
+
+// 全動画のcreated_atで新しい順に並べ、上位2件のidをNewバッジ対象とする
+let newBadgeIds=new Set();
+function updateNewBadgeIds(){
+  const sorted=[...videos].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+  newBadgeIds=new Set(sorted.slice(0,2).map(v=>v.id));
+}
 function render(){
+  updateNewBadgeIds();
   if(curSort==='daily'){
     filteredCache=getDailyPicksFromCache();
   } else {
