@@ -1,14 +1,14 @@
 const I18N = {
-  ja: { members:'メンバー', tags:'タグ', sort:'並び順:', newest:'新しい順', oldest:'古い順', addVideo:'動画を追加', fetch:'取得', titleLabel:'タイトル', memberLabel:'メンバー', tagsLabel:'タグ', tagHint:'（#をつけてEnterで追加）', pubdate:'公開日', note:'メモ', cancel:'キャンセル', addBtn:'追加する', adminLogin:'管理者ログイン', loginDesc:'パスワードを入力すると動画の追加・削除ができます。', password:'パスワード', login:'ログイン', notFound:'動画が見つかりません', fetching:'取得中…', fetchOk:'✓ タイトル・公開日・サムネイルを取得しました', delConfirm:'この動画を削除しますか？', adding:'追加中…', searchPh:'タイトルで検索…', spotify:'Spotify', allTag:'すべて', dailyObs:'✦ 今日の観測',
+  ja: { howtoMember:'メンバーで絞り込む', howtoTag:'タグで探す', howtoDaily:'今日の観測でランダムに発見', members:'メンバー', tags:'タグ', sort:'並び順:', newest:'新しい順', oldest:'古い順', addVideo:'動画を追加', fetch:'取得', titleLabel:'タイトル', memberLabel:'メンバー', tagsLabel:'タグ', tagHint:'（#をつけてEnterで追加）', pubdate:'公開日', note:'メモ', cancel:'キャンセル', addBtn:'追加する', adminLogin:'管理者ログイン', loginDesc:'パスワードを入力すると動画の追加・削除ができます。', password:'パスワード', login:'ログイン', notFound:'動画が見つかりません', fetching:'取得中…', fetchOk:'✓ タイトル・公開日・サムネイルを取得しました', delConfirm:'この動画を削除しますか？', adding:'追加中…', searchPh:'タイトルで検索…', spotify:'Spotify', allTag:'すべて', dailyObs:'✦ 今日の観測',
     mbr:{ all:'すべて', kafu:'花譜', rime:'理芽', harusar:'春猿火', isekai:'ヰ世界情緒', koko:'幸祜', vwp:'V.W.P' },
     tagMap:{} },
-  en: { members:'Members', tags:'Tags', sort:'Sort:', newest:'Newest', oldest:'Oldest', addVideo:'Add Video', fetch:'Fetch', titleLabel:'Title', memberLabel:'Member', tagsLabel:'Tags', tagHint:'(type #tag + Enter)', pubdate:'Publish Date', note:'Notes', cancel:'Cancel', addBtn:'Add', adminLogin:'Admin Login', loginDesc:'Enter password to add/delete videos.', password:'Password', login:'Login', notFound:'No videos found', fetching:'Fetching…', fetchOk:'✓ Loaded title, date & thumbnail', delConfirm:'Delete this video?', adding:'Adding…', searchPh:'Search by title…', spotify:'Spotify', allTag:'All', dailyObs:'✦ Today\'s Observation',
+  en: { howtoMember:'Filter by member', howtoTag:'Search by tag', howtoDaily:'Discover randomly with Today\'s Observation', members:'Members', tags:'Tags', sort:'Sort:', newest:'Newest', oldest:'Oldest', addVideo:'Add Video', fetch:'Fetch', titleLabel:'Title', memberLabel:'Member', tagsLabel:'Tags', tagHint:'(type #tag + Enter)', pubdate:'Publish Date', note:'Notes', cancel:'Cancel', addBtn:'Add', adminLogin:'Admin Login', loginDesc:'Enter password to add/delete videos.', password:'Password', login:'Login', notFound:'No videos found', fetching:'Fetching…', fetchOk:'✓ Loaded title, date & thumbnail', delConfirm:'Delete this video?', adding:'Adding…', searchPh:'Search by title…', spotify:'Spotify', allTag:'All', dailyObs:'✦ Today\'s Observation',
     mbr:{ all:'All', kafu:'KAF', rime:'RIM', harusar:'HARUSARUHI', isekai:'ISEKAIJOUCHO', koko:'KOKO', vwp:'V.W.P' },
     tagMap:{ 'シングル':'Single', 'アニメ':'Anime', 'ゲーム':'Game', '映画':'Film', 'クインテット':'Quintet', 'デュエット':'Duet', 'トリオ':'Trio', '拡声曲':'Amplified', '系譜曲':'Lineage', 'Covered':'Covered', 'Remix':'Remix', 'sinka':'sinka', '社外コラボ':'Collab', 'ライブ':'Live', 'カバー':'Cover', 'コラボ':'Collab' } },
-  zh: { members:'成员', tags:'标签', sort:'排序:', newest:'最新', oldest:'最旧', addVideo:'添加视频', fetch:'获取', titleLabel:'标题', memberLabel:'成员', tagsLabel:'标签', tagHint:'（输入#标签后按Enter）', pubdate:'发布日期', note:'备注', cancel:'取消', addBtn:'添加', adminLogin:'管理员登录', loginDesc:'输入密码以添加或删除视频。', password:'密码', login:'登录', notFound:'未找到视频', fetching:'获取中…', fetchOk:'✓ 已获取标题、日期和缩略图', delConfirm:'确认删除此视频？', adding:'添加中…', searchPh:'按标题搜索…', spotify:'Spotify', allTag:'全部', dailyObs:'✦ 今日的观测',
+  zh: { howtoMember:'按成员筛选', howtoTag:'按标签搜索', howtoDaily:'用今日观测随机发现', members:'成员', tags:'标签', sort:'排序:', newest:'最新', oldest:'最旧', addVideo:'添加视频', fetch:'获取', titleLabel:'标题', memberLabel:'成员', tagsLabel:'标签', tagHint:'（输入#标签后按Enter）', pubdate:'发布日期', note:'备注', cancel:'取消', addBtn:'添加', adminLogin:'管理员登录', loginDesc:'输入密码以添加或删除视频。', password:'密码', login:'登录', notFound:'未找到视频', fetching:'获取中…', fetchOk:'✓ 已获取标题、日期和缩略图', delConfirm:'确认删除此视频？', adding:'添加中…', searchPh:'按标题搜索…', spotify:'Spotify', allTag:'全部', dailyObs:'✦ 今日的观测',
     mbr:{ all:'全部', kafu:'花谱', rime:'理芽', harusar:'春猿火', isekai:'异世界情绪', koko:'幸祜', vwp:'V.W.P' },
     tagMap:{ 'シングル':'单曲', 'アニメ':'动漫', 'ゲーム':'游戏', '映画':'电影', 'クインテット':'五重唱', 'デュエット':'二重唱', 'トリオ':'三重唱', '拡声曲':'扩声曲', '系譜曲':'系谱曲', 'Covered':'翻唱', 'Remix':'混音', 'sinka':'深化', '社外コラボ':'联动', 'ライブ':'现场', 'カバー':'翻唱', 'コラボ':'合作' } },
-  ko: { members:'멤버', tags:'태그', sort:'정렬:', newest:'최신순', oldest:'오래된순', addVideo:'동영상 추가', fetch:'가져오기', titleLabel:'제목', memberLabel:'멤버', tagsLabel:'태그', tagHint:'(#태그 입력 후 Enter)', pubdate:'공개일', note:'메모', cancel:'취소', addBtn:'추가하기', adminLogin:'관리자 로그인', loginDesc:'비밀번호를 입력하면 동영상 추가·삭제가 가능합니다.', password:'비밀번호', login:'로그인', notFound:'동영상을 찾을 수 없습니다', fetching:'가져오는 중…', fetchOk:'✓ 제목·공개일·썸네일을 가져왔습니다', delConfirm:'이 동영상을 삭제하시겠습니까?', adding:'추가 중…', searchPh:'제목으로 검색…', spotify:'Spotify', allTag:'전체', dailyObs:'✦ 오늘의 관측',
+  ko: { howtoMember:'멤버로 필터링', howtoTag:'태그로 검색', howtoDaily:'오늘의 관측으로 랜덤 발견', members:'멤버', tags:'태그', sort:'정렬:', newest:'최신순', oldest:'오래된순', addVideo:'동영상 추가', fetch:'가져오기', titleLabel:'제목', memberLabel:'멤버', tagsLabel:'태그', tagHint:'(#태그 입력 후 Enter)', pubdate:'공개일', note:'메모', cancel:'취소', addBtn:'추가하기', adminLogin:'관리자 로그인', loginDesc:'비밀번호를 입력하면 동영상 추가·삭제가 가능합니다.', password:'비밀번호', login:'로그인', notFound:'동영상을 찾을 수 없습니다', fetching:'가져오는 중…', fetchOk:'✓ 제목·공개일·썸네일을 가져왔습니다', delConfirm:'이 동영상을 삭제하시겠습니까?', adding:'추가 중…', searchPh:'제목으로 검색…', spotify:'Spotify', allTag:'전체', dailyObs:'✦ 오늘의 관측',
     mbr:{ all:'전체', kafu:'카후', rime:'리메', harusar:'하루사루히', isekai:'이세카이죠초', koko:'코코', vwp:'V.W.P' },
     tagMap:{ 'シングル':'싱글', 'アニメ':'애니메이션', 'ゲーム':'게임', '映画':'영화', 'クインテット':'퀸텟', 'デュエット':'듀엣', 'トリオ':'트리오', '拡声曲':'확성곡', '系譜曲':'계보곡', 'Covered':'커버됨', 'Remix':'리믹스', 'sinka':'심화', '社外コラボ':'콜라보', 'ライブ':'라이브', 'カバー':'커버', 'コラボ':'콜라보' } }
 };
@@ -531,14 +531,16 @@ function render(){
             <div class="al-member">${mbr(al.member)}</div>
             ${al.purchase_url?`<a class="al-buy-btn" href="${al.purchase_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🛒 購入ページ</a>`:''}
           </div>
-          ${isAdmin?`<button class="al-add-btn" id="alAddSongBtn">＋ 曲を追加</button>`:''}
-        `;
+          ${isAdmin?`<button class="al-add-btn" id="alAddSongBtn">＋ 曲を追加</button>`:''}`;
         if(isAdmin){
           document.getElementById('alAddSongBtn')?.addEventListener('click',()=>{
+            // 動画追加モーダルをこのアルバムにプリセットして開く
             editId=null;inputTags=[];renderTagChips();renderTagSuggest();
             document.querySelectorAll('#iMemberCb input[type=checkbox]').forEach(cb=>cb.checked=false);
+            // アルバムのメンバーを自動選択
             const cb=document.querySelector(`#iMemberCb input[value="${al.member}"]`);
             if(cb) cb.checked=true;
+            // アルバムを自動セット
             const iAlbumSel=document.getElementById('iAlbum');
             if(iAlbumSel) iAlbumSel.value=al.id;
             document.querySelector('#mover .modal h2').textContent=`＋ ${al.name}`;
@@ -546,7 +548,6 @@ function render(){
             document.getElementById('mover').classList.add('open');
           });
         }
-        // dummy to close template literal block
       }
     } else {
       ah.style.display='none';
@@ -727,8 +728,10 @@ function setSelectedMembers(memberStr){
 
 
 function openAlbumModal(member){
+  // memberが指定されていれば選択状態にする、なければ先頭メンバーを選択
   const sel=document.getElementById('albumMoverMember');
   if(sel) sel.value=member||'kafu';
+  // セレクトボックスの表示制御：memberが指定済みなら非表示（サイドバー経由）
   const memberRow=document.getElementById('albumMoverMemberRow');
   if(memberRow) memberRow.style.display=member?'none':'block';
   document.getElementById('albumName').value='';
@@ -776,7 +779,12 @@ document.getElementById('loginBtn').addEventListener('click',()=>{
 });
 document.getElementById('loginCancel').addEventListener('click',()=>document.getElementById('loginMover').classList.remove('open'));
 document.getElementById('loginMover').addEventListener('click',e=>{if(e.target===document.getElementById('loginMover'))document.getElementById('loginMover').classList.remove('open');});
-document.getElementById('albumAddBtn').addEventListener('click',()=>{ openAlbumModal(null); });
+
+// アルバム追加FAB（管理者ならどこからでも）
+document.getElementById('albumAddBtn').addEventListener('click',()=>{
+  // メンバー選択行を表示してモーダルを開く（メンバー未指定）
+  openAlbumModal(null);
+});
 
 async function verifyPw(pw){
   const res=await fetch("/api/auth-check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({password:pw})});
