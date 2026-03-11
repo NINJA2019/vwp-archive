@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>V.W.P ARCHIVE</title>
+  <!-- OGP -->
+  <meta property="og:title" content="V.W.P ARCHIVE">
+  <meta property="og:description" content="Every song, every member, all in one place.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/NINJA2019/vwp-archive/main/ogp-final.png">
+  <meta property="og:url" content="https://vwp-archive.netlify.app/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="V.W.P ARCHIVE">
+  <meta name="twitter:description" content="Every song, every member, all in one place.">
+  <meta name="twitter:image" content="https://raw.githubusercontent.com/NINJA2019/vwp-archive/main/ogp-final.png">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-9FTCYNJCHN"></script>
 <script>
@@ -27,14 +37,13 @@
     </div>
     <div class="search-wrap"><span class="si">🔍</span><input type="text" id="searchInput"></div>
     <nav class="header-nav"><a href="javascript:void(0)" onclick="openPage('about')">ABOUT</a><a href="javascript:void(0)" onclick="openPage('contact')">CONTACT</a><a href="javascript:void(0)" onclick="openPage('update')">UPDATE</a></nav>
-      <button class="theme-btn" id="themeBtn" title="ダーク/ライト切替">🌙</button>
-      <div class="lang-sw">
+    <button class="theme-btn" id="themeBtn" title="ダーク/ライト切替">🌙</button>
+    <div class="lang-sw">
       <button class="lbtn on" data-lang="ja">JP</button>
       <button class="lbtn" data-lang="en">EN</button>
       <button class="lbtn" data-lang="zh">中文</button>
       <button class="lbtn" data-lang="ko">한국어</button>
     </div>
-      </div>
   </div>
 </header>
 <div class="mob-filters" id="mobFilters">
@@ -62,6 +71,8 @@
     <div id="vc"></div>
   </div>
 </div>
+
+<!-- FABs -->
 <button class="fab" id="fab" style="display:none;">＋</button>
 <button id="importBtn" title="プレイリスト一括インポート" style="display:none;position:fixed;bottom:5.2rem;right:1.8rem;width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;font-size:1.1rem;align-items:center;justify-content:center;background:#7c6ff7;color:#fff;z-index:200;box-shadow:0 4px 18px rgba(0,0,0,.45);">📥</button>
 <button id="albumAddBtn" title="アルバムを追加" style="display:none;position:fixed;bottom:9.0rem;right:1.8rem;width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;font-size:1.1rem;align-items:center;justify-content:center;background:#3d6f7c;color:#fff;z-index:200;box-shadow:0 4px 18px rgba(0,0,0,.45);">📀</button>
@@ -107,7 +118,8 @@
     </div>
   </div>
 </div>
-<!-- Add Modal -->
+
+<!-- Add/Edit Video Modal -->
 <div class="mover" id="mover">
   <div class="modal">
     <h2 data-i18n="addVideo">動画を追加</h2>
@@ -141,14 +153,21 @@
     </div>
   </div>
 </div>
-<!-- Album Modal -->
+
+<!-- Album Add Modal -->
 <div class="mover" id="albumMover">
   <div class="modal" style="max-width:400px;">
     <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.4rem;letter-spacing:.15em;margin-bottom:1.2rem;color:#c8d0ff;">📀 ADD ALBUM</h2>
+    <!-- メンバー選択（albumAddBtnから開いた時のみ表示） -->
     <div class="fg" id="albumMoverMemberRow">
       <label style="font-size:.72rem;color:var(--dim);display:block;margin-bottom:.3rem;">メンバー</label>
       <select id="albumMoverMember" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:.5rem .8rem;color:var(--text);font-size:.82rem;outline:none;">
-        <option value="kafu">花譜</option><option value="rime">理芽</option><option value="harusar">春猿火</option><option value="isekai">ヰ世界情緒</option><option value="koko">幸祜</option><option value="vwp">V.W.P</option>
+        <option value="kafu">花譜</option>
+        <option value="rime">理芽</option>
+        <option value="harusar">春猿火</option>
+        <option value="isekai">ヰ世界情緒</option>
+        <option value="koko">幸祜</option>
+        <option value="vwp">V.W.P</option>
       </select>
     </div>
     <div class="fg"><label>アルバム名</label><input type="text" id="albumName" placeholder="例: 絶対的存在感"></div>
@@ -160,6 +179,7 @@
     </div>
   </div>
 </div>
+
 <!-- Login Modal -->
 <div class="mover" id="loginMover">
   <div class="modal" style="max-width:340px;">
@@ -173,22 +193,20 @@
     </div>
   </div>
 </div>
+
 <script src="/app.js" defer></script>
 
 <!-- About / Contact Page Modal -->
 <div id="pageMover" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);overflow-y:auto;">
   <div style="max-width:720px;margin:2rem auto;padding:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;position:relative;">
     <button onclick="closePage()" style="position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--dim);font-size:1.2rem;cursor:pointer;line-height:1;">✕</button>
-
     <!-- ABOUT -->
     <div id="pageAbout">
       <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:.15em;margin-bottom:1.4rem;color:#c8d0ff;">ABOUT</h2>
       <div style="display:inline-block;background:rgba(255,200,100,.08);border:1px solid rgba(255,200,100,.25);color:#fcd34d;font-size:.68rem;padding:2px 10px;border-radius:4px;margin-bottom:.8rem;letter-spacing:.05em;">⚠ UNOFFICIAL FAN SITE</div>
       <p style="font-size:.78rem;color:var(--dim);line-height:1.9;margin-bottom:1.4rem;">このサイトはV.W.P（花譜・理芽・春猿火・ヰ世界情緒・幸祜）のファンが個人で制作した非公式アーカイブサイトです。KAMITSUBAKI STUDIOおよびV.W.Pとは一切関係ありません。</p>
-
       <h3 style="font-size:.82rem;letter-spacing:.1em;color:#9ca3af;border-bottom:1px solid var(--border);padding-bottom:.5rem;margin-bottom:1rem;">二次創作ガイドライン（KAMITSUBAKI STUDIO）</h3>
       <p style="font-size:.73rem;color:var(--dim);line-height:1.8;margin-bottom:.8rem;">本サイトはKAMITSUBAKI STUDIOの二次創作ガイドラインに基づき運営しています。</p>
-
       <div style="font-size:.72rem;color:var(--dim);line-height:1.85;display:flex;flex-direction:column;gap:.9rem;">
         <div>
           <div style="color:#a0aaff;font-weight:700;margin-bottom:.3rem;">対象コンテンツ</div>
@@ -217,7 +235,6 @@
       </p>
       <div style="margin-top:1.2rem;padding-top:1rem;border-top:1px solid var(--border);font-size:.72rem;color:#9ca3af;letter-spacing:.04em;">©KAMITSUBAKI STUDIO</div>
     </div>
-
     <!-- CONTACT -->
     <div id="pageContact" style="display:none;">
       <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:.15em;margin-bottom:1.4rem;color:#c8d0ff;">CONTACT</h2>
@@ -238,12 +255,10 @@
       </div>
       <p style="margin-top:1.2rem;font-size:.7rem;color:#6b7280;line-height:1.7;">サイトへのご意見・登録動画のご要望・不具合のご報告などはDMにてお受けしています。</p>
     </div>
-
     <!-- UPDATE -->
     <div id="pageUpdate" style="display:none;">
       <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:.15em;margin-bottom:1.8rem;color:#c8d0ff;">UPDATE</h2>
       <div style="display:flex;flex-direction:column;gap:.6rem;">
-
         <div style="display:flex;gap:1.2rem;padding:.9rem 1.1rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;align-items:flex-start;">
           <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.06em;color:#c4b5fd;white-space:nowrap;padding-top:.05rem;">2026/03/09</span>
           <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.3rem;">
@@ -255,7 +270,6 @@
             <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ 表示切替ボタンを検索の左に移動</li>
           </ul>
         </div>
-
       </div>
     </div>
   </div>
