@@ -63,6 +63,11 @@ async function addAlbumApi(payload){
   const res=await fetch('/api/albums-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:getStoredPw(),...payload})});
   const d=await res.json(); if(!res.ok) throw new Error(d.error||'failed'); return d;
 }
+async function updateAlbumApi(id, fields){
+  const res=await fetch('/api/albums-update',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:getStoredPw(),id,...fields})});
+  if(!res.ok) throw new Error(await res.text());
+  return res.json();
+}
 async function deleteAlbumApi(id){
   const res=await fetch('/api/albums-delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:getStoredPw(),id})});
   const d=await res.json(); if(!res.ok) throw new Error(d.error||'failed');
@@ -508,11 +513,16 @@ function loadMoreItems(){
 }
 
 
-// 全動画のcreated_atで新しい順に並べ、上位2件のidをNewバッジ対象とする
+// メンバー別・日付順で新しい順から2件ずつNEWバッジ対象とする
 let newBadgeIds=new Set();
 function updateNewBadgeIds(){
-  const sorted=[...videos].sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
-  newBadgeIds=new Set(sorted.slice(0,2).map(v=>v.id));
+  const members=['kafu','rime','harusar','isekai','koko','vwp'];
+  newBadgeIds=new Set();
+  members.forEach(m=>{
+    const mv=[...videos].filter(v=>(v.member||'').split(',').map(s=>s.trim()).includes(m));
+    mv.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+    mv.slice(0,2).forEach(v=>newBadgeIds.add(v.id));
+  });
 }
 function render(){
   updateNewBadgeIds();
@@ -524,29 +534,40 @@ function render(){
       if(al){
         const th=albumThumb(al);
         ah.style.display='flex';
+        ah.style.display='flex';
+        const soldBadge=al.is_sold_out
+          ? '<span class="al-status-badge sold-out">SOLD OUT</span>'
+          : (al.purchase_url ? '<span class="al-status-badge on-sale">ON SALE</span>' : '');
+        const updLabel=al.status_updated_at ? `<span class="al-updated-at">更新: ${al.status_updated_at}</span>` : '';
         ah.innerHTML=`
           <div class="al-thumb-wrap">${th?`<img src="${th}" alt="" class="al-thumb">`:''}</div>
           <div class="al-info">
             <div class="al-name">${al.name}</div>
             <div class="al-member">${mbr(al.member)}</div>
-            ${al.purchase_url?`<a class="al-buy-btn" href="${al.purchase_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🛒 購入ページ</a>`:''}
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+              ${al.purchase_url?`<a class="al-buy-btn" href="${al.purchase_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🛒 購入ページ</a>`:''}
+              ${soldBadge}${updLabel}
+            </div>
           </div>
-          ${isAdmin?`<button class="al-add-btn" id="alAddSongBtn">＋ 曲を追加</button>`:''}`;
+          <div style="display:flex;flex-direction:column;gap:.4rem;align-items:flex-end;margin-left:auto;">
+            ${isAdmin?`<button class="al-add-btn" id="alAddSongBtn">＋ 新規曲を追加</button>`:''}
+            ${isAdmin?`<button class="al-add-btn" id="alLinkSongBtn" style="background:rgba(126,184,247,.15);color:#7eb8f7;border-color:rgba(126,184,247,.3);">🔗 既存曲を紐付け</button>`:''}
+            ${isAdmin?`<button class="al-add-btn" id="alEditAlbumBtn" style="background:rgba(192,132,252,.12);color:#c084fc;border-color:rgba(192,132,252,.25);">⚙ アルバム編集</button>`:''}
+          </div>`;
         if(isAdmin){
           document.getElementById('alAddSongBtn')?.addEventListener('click',()=>{
-            // 動画追加モーダルをこのアルバムにプリセットして開く
             editId=null;inputTags=[];renderTagChips();renderTagSuggest();
             document.querySelectorAll('#iMemberCb input[type=checkbox]').forEach(cb=>cb.checked=false);
-            // アルバムのメンバーを自動選択
             const cb=document.querySelector(`#iMemberCb input[value="${al.member}"]`);
             if(cb) cb.checked=true;
-            // アルバムを自動セット
             const iAlbumSel=document.getElementById('iAlbum');
             if(iAlbumSel) iAlbumSel.value=al.id;
             document.querySelector('#mover .modal h2').textContent=`＋ ${al.name}`;
             document.getElementById('mSave').textContent=t('addBtn');
             document.getElementById('mover').classList.add('open');
           });
+          document.getElementById('alLinkSongBtn')?.addEventListener('click',()=>openLinkSongModal(al));
+          document.getElementById('alEditAlbumBtn')?.addEventListener('click',()=>openEditAlbumModal(al));
         }
       }
     } else {
@@ -726,6 +747,139 @@ function setSelectedMembers(memberStr){
   });
 }
 
+
+
+// ===== 既存曲紐付けモーダル =====
+function openLinkSongModal(al){
+  const overlay=document.createElement('div');
+  overlay.className='mover open';
+  overlay.id='linkSongOverlay';
+  // アルバムに紐付いていない同メンバーの曲一覧
+  const candidates=videos.filter(v=>{
+    const members=(v.member||'').split(',').map(s=>s.trim());
+    return members.includes(al.member) && !v.album_id;
+  }).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  // 既にアルバムに紐付いている曲
+  const linked=videos.filter(v=>v.album_id===al.id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  overlay.innerHTML=`
+    <div class="modal" style="max-width:520px;max-height:85vh;overflow-y:auto;">
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:.12em;color:#7eb8f7;margin-bottom:1rem;">🔗 ${al.name} — 曲の管理</h2>
+      <div style="margin-bottom:1.2rem;">
+        <div style="font-size:.72rem;color:var(--dim);letter-spacing:.08em;margin-bottom:.5rem;">収録曲 (${linked.length}曲)</div>
+        <div id="linkedList" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;">
+          ${linked.length===0?'<div style="font-size:.78rem;color:var(--dim);padding:.3rem 0;">まだ収録曲がありません</div>':
+            linked.map(v=>`
+              <div style="display:flex;align-items:center;gap:.5rem;padding:.35rem .5rem;background:var(--surface2);border-radius:5px;font-size:.78rem;">
+                <span style="flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.title}</span>
+                <span style="color:var(--dim);flex-shrink:0;">${v.date||''}</span>
+                <button onclick="unlinkSong(${v.id},${al.id})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:.85rem;padding:0 4px;flex-shrink:0;" title="紐付けを解除">✕</button>
+              </div>`).join('')}
+        </div>
+      </div>
+      <div>
+        <div style="font-size:.72rem;color:var(--dim);letter-spacing:.08em;margin-bottom:.5rem;">未収録の${al.member==='vwp'?'V.W.P':al.member}の曲 (${candidates.length}曲)</div>
+        <input id="linkSongSearch" type="text" placeholder="タイトルで絞り込み…" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:.4rem .7rem;color:var(--text);font-size:.78rem;outline:none;margin-bottom:.5rem;">
+        <div id="candidateList" style="display:flex;flex-direction:column;gap:4px;max-height:220px;overflow-y:auto;">
+          ${candidates.length===0?'<div style="font-size:.78rem;color:var(--dim);">対象曲なし</div>':
+            candidates.map(v=>`
+              <div style="display:flex;align-items:center;gap:.5rem;padding:.35rem .5rem;background:var(--surface2);border-radius:5px;font-size:.78rem;" class="link-candidate">
+                <span style="flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.title}</span>
+                <span style="color:var(--dim);flex-shrink:0;">${v.date||''}</span>
+                <button onclick="linkSong(${v.id},${al.id})" style="background:rgba(126,184,247,.15);border:1px solid rgba(126,184,247,.3);color:#7eb8f7;cursor:pointer;font-size:.72rem;padding:2px 8px;border-radius:4px;flex-shrink:0;">紐付け</button>
+              </div>`).join('')}
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:1rem;">
+        <button onclick="document.getElementById('linkSongOverlay').remove()" class="btn btn-s">閉じる</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  // 絞り込み
+  document.getElementById('linkSongSearch')?.addEventListener('input',e=>{
+    const q=e.target.value.toLowerCase();
+    document.querySelectorAll('#candidateList .link-candidate').forEach(row=>{
+      row.style.display=row.textContent.toLowerCase().includes(q)?'flex':'none';
+    });
+  });
+}
+
+async function linkSong(videoId, albumId){
+  try{
+    await updateVideoApi(videoId,{album_id:albumId});
+    const v=videos.find(v=>v.id===videoId);
+    if(v) v.album_id=albumId;
+    document.getElementById('linkSongOverlay')?.remove();
+    const al=albums.find(a=>a.id===albumId);
+    if(al) openLinkSongModal(al);
+    buildSidebar();updateCounts();render();
+  }catch(e){alert('エラー: '+e.message);}
+}
+
+async function unlinkSong(videoId, albumId){
+  try{
+    await updateVideoApi(videoId,{album_id:null});
+    const v=videos.find(v=>v.id===videoId);
+    if(v) v.album_id=null;
+    document.getElementById('linkSongOverlay')?.remove();
+    const al=albums.find(a=>a.id===albumId);
+    if(al) openLinkSongModal(al);
+    buildSidebar();updateCounts();render();
+  }catch(e){alert('エラー: '+e.message);}
+}
+
+// ===== アルバム編集モーダル（ON SALE/SOLD OUT・更新日）=====
+function openEditAlbumModal(al){
+  const overlay=document.createElement('div');
+  overlay.className='mover open';
+  overlay.id='editAlbumOverlay';
+  const today=new Date().toISOString().slice(0,10);
+  overlay.innerHTML=`
+    <div class="modal" style="max-width:400px;">
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:.12em;color:#c084fc;margin-bottom:1.2rem;">⚙ ${al.name} — 編集</h2>
+      <div class="fg">
+        <label>アルバム名</label>
+        <input type="text" id="editAlName" value="${al.name}">
+      </div>
+      <div class="fg">
+        <label>購入ページURL</label>
+        <input type="text" id="editAlUrl" value="${al.purchase_url||''}">
+      </div>
+      <div class="fg" style="display:flex;align-items:center;gap:1rem;">
+        <label style="margin:0;display:flex;align-items:center;gap:.5rem;cursor:pointer;">
+          <input type="checkbox" id="editAlSoldOut" ${al.is_sold_out?'checked':''} style="width:auto;cursor:pointer;">
+          <span>SOLD OUT</span>
+        </label>
+      </div>
+      <div class="fg">
+        <label>最終更新日 <span style="color:var(--dim);font-size:.65rem;">(在庫状況の更新日など)</span></label>
+        <input type="date" id="editAlUpdatedAt" value="${al.status_updated_at||today}">
+      </div>
+      <div id="editAlStatus" style="font-size:.78rem;min-height:1.2rem;margin-bottom:.8rem;"></div>
+      <div style="display:flex;gap:.6rem;justify-content:flex-end;">
+        <button onclick="document.getElementById('editAlbumOverlay').remove()" class="btn btn-s">キャンセル</button>
+        <button id="editAlSaveBtn" class="btn btn-p">保存する</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove();});
+  document.getElementById('editAlSaveBtn')?.addEventListener('click',async()=>{
+    const name=document.getElementById('editAlName').value.trim();
+    const purchase_url=document.getElementById('editAlUrl').value.trim();
+    const is_sold_out=document.getElementById('editAlSoldOut').checked;
+    const status_updated_at=document.getElementById('editAlUpdatedAt').value||null;
+    const st=document.getElementById('editAlStatus');
+    if(!name){st.textContent='アルバム名を入力してください';st.style.color='#fca5a5';return;}
+    st.textContent='保存中…';st.style.color='var(--dim)';
+    try{
+      const updated=await updateAlbumApi(al.id,{name,purchase_url,is_sold_out,status_updated_at});
+      const idx=albums.findIndex(a=>a.id===al.id);
+      if(idx!==-1) albums[idx]={...albums[idx],...updated};
+      overlay.remove();
+      buildSidebar();updateCounts();render();
+    }catch(e){st.textContent='エラー: '+e.message;st.style.color='#fca5a5';}
+  });
+}
 
 function openAlbumModal(member){
   // memberが指定されていれば選択状態にする、なければ先頭メンバーを選択
