@@ -23,3 +23,10 @@
 .howto-icon { font-size:.82rem; opacity:.7; }
 .howto-sep { color:var(--border); font-size:.9rem; }
 @media (max-width:700px) { .howto-bar { padding:.45rem 1rem; font-size:.72rem; gap:.4rem; } }
+/* ===== アルバム在庫バッジ ===== */
+.al-status-badge { display:inline-flex; align-items:center; font-size:.65rem; font-family:'Barlow Condensed',sans-serif; font-weight:700; letter-spacing:.08em; padding:2px 8px; border-radius:3px; }
+.al-status-badge.on-sale { background:rgba(110,231,183,.15); color:#6ee7b7; border:1px solid rgba(110,231,183,.3); }
+.al-status-badge.sold-out { background:rgba(252,165,165,.12); color:#fca5a5; border:1px solid rgba(252,165,165,.25); }
+.al-updated-at { font-size:.65rem; color:var(--dim); letter-spacing:.03em; }
+.al-add-btn { background:rgba(160,170,255,.12); border:1px solid rgba(160,170,255,.25); color:#a0aaff; border-radius:5px; padding:.3rem .7rem; font-size:.72rem; cursor:pointer; white-space:nowrap; transition:all .2s; font-family:'Noto Sans JP',sans-serif; }
+.al-add-btn:hover { background:rgba(160,170,255,.22); }
