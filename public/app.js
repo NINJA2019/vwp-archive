@@ -755,14 +755,14 @@ function openLinkSongModal(al){
   overlay.className='mover open';
   overlay.id='linkSongOverlay';
   // アルバムに紐付いていない同メンバーの曲一覧
-  // V.W.Pアルバムは全メンバー曲を対象、それ以外は同メンバーの曲のみ
+  // memberはスペース区切り（例: "vwp kafu rime"）
   const VWP_MEMBERS=['kafu','rime','harusar','isekai','koko','vwp'];
   const candidates=videos.filter(v=>{
     if(v.album_id) return false;
-    const vMembers=(v.member||'').split(',').map(s=>s.trim());
+    const vMembers=(v.member||'').split(' ').map(s=>s.trim()).filter(Boolean);
     if(al.member==='vwp'){
-      // V.W.Pアルバム：いずれかのメンバーが含まれる曲すべて
-      return vMembers.some(m=>VWP_MEMBERS.includes(m));
+      // V.W.Pアルバム：vwpタグ含む、かつ出演メンバーが2名以下（vwp含め3トークン以下）の曲
+      return vMembers.includes('vwp') && vMembers.length <= 3;
     }
     return vMembers.includes(al.member);
   }).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
