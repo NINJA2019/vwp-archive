@@ -724,16 +724,27 @@ function refreshAlbumSelects(){
       sel.appendChild(opt);
     });
   }
-  // インポートモーダルのアルバム選択を更新
+  // インポートモーダルのアルバム選択を更新（選択メンバーで絞り込み）
+  refreshImportAlbumSelect();
+}
+function refreshImportAlbumSelect(){
   const isel=document.getElementById('importAlbum');
-  if(isel){
-    isel.innerHTML='<option value="">アルバムに紐付けない</option>';
-    albums.forEach(al=>{
+  if(!isel) return;
+  const member=document.getElementById('importMember')?.value||'';
+  isel.innerHTML='<option value="">アルバムに紐付けない</option>';
+  const VWP_MEMBERS=['kafu','rime','harusar','isekai','koko','vwp'];
+  albums
+    .filter(al=>{
+      if(!member) return true;
+      if(member==='vwp') return al.member==='vwp';
+      // 個人メンバー選択時：そのメンバーのアルバム＋V.W.Pアルバムも表示
+      return al.member===member || al.member==='vwp';
+    })
+    .forEach(al=>{
       const opt=document.createElement('option');
       opt.value=al.id;opt.textContent=`📀 ${mbr(al.member)} - ${al.name}`;
       isel.appendChild(opt);
     });
-  }
 }
 function getSelectedMembers(){
   const cbs=document.querySelectorAll('#iMemberCb input[type=checkbox]:checked');
@@ -990,6 +1001,10 @@ document.getElementById('importBtn').addEventListener('click',()=>{
   document.getElementById('importMover').classList.add('open');
   document.getElementById('importStatus').textContent='';
   document.getElementById('importPlaylistId').value='';
+});
+// importMember変更時にアルバム選択を絞り込み
+document.getElementById('importMember')?.addEventListener('change', ()=>{
+  refreshImportAlbumSelect();
 });
 document.getElementById('importMover').addEventListener('click',function(e){
   if(e.target===this) this.classList.remove('open');
