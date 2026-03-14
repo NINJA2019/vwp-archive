@@ -1040,3 +1040,150 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     document.getElementById('importSubmit').disabled=false;
   }
 });
+// ===== TURNTABLE INTRO =====
+(function(){
+  const MEMBERS = [
+    {m:'all',    icon:'✦',  img:null,                         ja:'すべて',     en:'ALL',          spd:'22s', bg:'radial-gradient(circle at 38% 32%,#252360,#0c0b1c)', mc:'#b0b8ff', mglow:'rgba(176,184,255,.35)'},
+    {m:'vwp',    icon:'✦',  img:'/icons/V_W_P.png',           ja:'V.W.P',      en:'V.W.P',        spd:'19s', bg:'radial-gradient(circle at 38% 32%,#2c1e50,#0d0a1e)', mc:'#c4b5fd', mglow:'rgba(196,181,253,.35)'},
+    {m:'kafu',   icon:'🌸', img:'/icons/KAF.png',             ja:'花譜',       en:'KAF',          spd:'25s', bg:'radial-gradient(circle at 38% 32%,#48182a,#180810)', mc:'#ffb7c5', mglow:'rgba(255,183,197,.35)'},
+    {m:'rime',   icon:'🌱', img:'/icons/RIM.png',             ja:'理芽',       en:'RIM',          spd:'21s', bg:'radial-gradient(circle at 38% 32%,#0e284a,#060e1e)', mc:'#7eb8f7', mglow:'rgba(126,184,247,.35)'},
+    {m:'harusar',icon:'🔥', img:'/icons/Harusaruhi.png',      ja:'春猿火',     en:'HARUSARUHI',   spd:'18s', bg:'radial-gradient(circle at 38% 32%,#481010,#180505)', mc:'#ff7070', mglow:'rgba(255,112,112,.35)'},
+    {m:'isekai', icon:'🌼', img:'/icons/isekaijocho.png',     ja:'ヰ世界情緒', en:'ISEKAI JOUCHO',spd:'23s', bg:'radial-gradient(circle at 38% 32%,#282828,#0e0e0e)', mc:'#d8d8d8', mglow:'rgba(220,220,220,.25)'},
+    {m:'koko',   icon:'⚡', img:'/icons/koko.png',            ja:'幸祜',       en:'KOKO',         spd:'20s', bg:'radial-gradient(circle at 38% 32%,#2c1248,#0e061a)', mc:'#c084fc', mglow:'rgba(192,132,252,.35)'},
+  ];
+
+  const stage   = document.getElementById('ttStage');
+  const ttFace  = document.getElementById('ttFace');
+  const ttLabel = document.getElementById('ttRecLabel');
+  const ttPlat  = document.getElementById('ttPlatter');
+  const ttArm   = document.getElementById('ttArm');
+  const infoName= document.getElementById('ttInfoName');
+  const infoJa  = document.getElementById('ttInfoJa');
+  const enterBtn= document.getElementById('ttEnterBtn');
+  const hint    = document.getElementById('ttHint');
+  const intro   = document.getElementById('ttIntro');
+
+  const R = 145, CX = 180, CY = 180;
+  let busy = false, chosen = null;
+
+  // LPを配置
+  MEMBERS.forEach((mb, i) => {
+    const angle = (i / MEMBERS.length) * 2 * Math.PI - Math.PI / 2;
+    const x = CX + R * Math.cos(angle) - 34;
+    const y = CY + R * Math.sin(angle) - 34;
+    const el = document.createElement('div');
+    el.className = 'tt-lp';
+    el.dataset.m = mb.m;
+    el.style.cssText = `left:${x}px;top:${y}px;--spd:${mb.spd};--mc:${mb.mc};--mglow:${mb.mglow};`;
+    const labelInner = mb.img
+      ? `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;opacity:.88;">`
+      : `<span style="font-size:.9rem;">${mb.icon}</span>`;
+    el.innerHTML = `
+      <div class="tt-lp-face" style="background:${mb.bg};">
+        <div class="tt-lp-grooves"></div>
+        <div class="tt-lp-label" style="background:${mb.img?'transparent':mb.mc};">${labelInner}</div>
+        <div class="tt-lp-hole"></div>
+      </div>
+      <div class="tt-lp-name">${mb.en}</div>`;
+    el.addEventListener('click', () => { if(!busy) doSelect(mb, el); });
+    stage.appendChild(el);
+  });
+
+  function doSelect(mb, el){
+    busy = true;
+    document.querySelectorAll('.tt-lp').forEach(l => l.classList.remove('tt-chosen'));
+    el.classList.add('tt-chosen');
+    chosen = mb;
+
+    ttFace.style.opacity = '0';
+    ttPlat.style.animationPlayState = 'paused';
+    ttArm.style.transform = 'rotate(-38deg)';
+    infoName.style.color = 'rgba(200,210,255,0.15)';
+    infoJa.style.color = 'rgba(90,106,144,0.4)';
+    hint.textContent = 'セット中…';
+
+    ttFace.style.background = mb.bg;
+    if(mb.img){
+      ttLabel.innerHTML = `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;opacity:.9;">`;
+      ttLabel.style.background = 'transparent';
+      ttLabel.style.fontSize = '0';
+    } else {
+      ttLabel.innerHTML = '';
+      ttLabel.textContent = mb.icon;
+      ttLabel.style.background = mb.mc;
+      ttLabel.style.fontSize = '1.1rem';
+    }
+
+    setTimeout(() => {
+      ttFace.style.opacity = '1';
+      setTimeout(() => {
+        ttArm.style.transform = 'rotate(-6deg)';
+        setTimeout(() => {
+          ttPlat.style.animationPlayState = 'running';
+          infoName.style.color = mb.mc;
+          infoName.textContent = mb.en;
+          infoJa.style.color = 'rgba(160,170,220,0.65)';
+          infoJa.textContent = mb.ja;
+          // ENTERボタンを有効化
+          enterBtn.style.color = '#ccd4ee';
+          enterBtn.style.borderColor = 'rgba(176,184,255,.45)';
+          enterBtn.style.cursor = 'pointer';
+          enterBtn.style.boxShadow = '0 0 14px rgba(160,150,255,0.18)';
+          hint.textContent = '▶ で入場';
+          busy = false;
+        }, 900);
+      }, 350);
+    }, 250);
+  }
+
+  function enterArchive(){
+    if(!chosen) return;
+
+    // 黒幕を作成してフェードイン → 暗転完了後にアーカイブ表示 → 黒幕フェードアウト
+    const black = document.createElement('div');
+    black.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#000;opacity:0;transition:opacity .55s ease;pointer-events:none;';
+    document.body.appendChild(black);
+
+    // 少し待ってから黒幕フェードイン
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { black.style.opacity = '1'; });
+    });
+
+    setTimeout(() => {
+      // 暗転完了：ターンテーブル画面を非表示
+      intro.style.display = 'none';
+
+      // メンバーフィルタを適用
+      const m = chosen.m;
+      if(m === 'all'){
+        curMembers = [];
+        document.querySelectorAll('.mpill').forEach(p => p.classList.remove('on'));
+        document.querySelector('.mpill[data-m="all"]')?.classList.add('on');
+      } else {
+        curMembers = [m];
+        document.querySelectorAll('.mpill').forEach(p => p.classList.remove('on'));
+        document.querySelector(`.mpill[data-m="${m}"]`)?.classList.add('on');
+      }
+      curTag = null;
+      curSort = 'new';
+      curAlbum = null;
+      resetAndLoad();
+      buildSidebar();
+      updateCounts();
+      render();
+
+      // 黒幕フェードアウト
+      setTimeout(() => {
+        black.style.opacity = '0';
+        setTimeout(() => black.remove(), 600);
+      }, 80);
+    }, 600);
+  }
+
+  enterBtn.addEventListener('click', () => { if(chosen) enterArchive(); });
+
+  // キーボード: Enterでも入場可
+  document.addEventListener('keydown', e => {
+    if(e.key === 'Enter' && chosen && intro.style.display !== 'none') enterArchive();
+  });
+})();

@@ -23,10 +23,63 @@
   gtag('config', 'G-9FTCYNJCHN');
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Shippori+Mincho:wght@400;500&family=Noto+Sans+JP:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Shippori+Mincho:wght@400;500&family=Noto+Sans+JP:wght@300;400&family=Barlow+Condensed:wght@400;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+
+<!-- ===== TURNTABLE INTRO ===== -->
+<div id="ttIntro" style="position:fixed;inset:0;z-index:9999;background:#07090e;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1rem 1.5rem;overflow:hidden;">
+  <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(80,60,180,0.07) 0%,transparent 70%);pointer-events:none;"></div>
+  <div style="text-align:center;margin-bottom:1.4rem;position:relative;">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.05rem;letter-spacing:.45em;color:rgba(200,208,255,0.28);text-transform:uppercase;">V · W · P &nbsp; ARCHIVE</div>
+    <div style="font-size:.62rem;color:rgba(90,106,144,0.6);letter-spacing:.18em;margin-top:.15rem;">LP を選んでターンテーブルへ</div>
+  </div>
+
+  <div id="ttStage" style="position:relative;width:360px;height:360px;flex-shrink:0;">
+    <!-- LPs placed by JS -->
+    <!-- Turntable center -->
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:148px;height:148px;">
+      <div style="width:148px;height:148px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#1e1c2c,#0e0d16);border:1px solid rgba(160,150,255,0.1);box-shadow:0 0 0 6px rgba(255,255,255,0.025),0 8px 40px rgba(0,0,0,.9);position:relative;display:flex;align-items:center;justify-content:center;">
+        <div id="ttPlatter" style="width:116px;height:116px;border-radius:50%;background:repeating-radial-gradient(circle at 50%,transparent 0,transparent 4px,rgba(255,255,255,0.02) 4px,rgba(255,255,255,0.02) 5px);border:1px solid rgba(255,255,255,0.04);position:relative;animation:tt-spin 3.5s linear infinite;animation-play-state:paused;">
+          <div style="position:absolute;inset:6px;border-radius:50%;overflow:hidden;">
+            <div id="ttFace" style="width:100%;height:100%;border-radius:50%;opacity:0;transition:opacity .5s;position:relative;">
+              <div style="position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle at 50%,transparent 0,transparent 3px,rgba(255,255,255,0.03) 3px,rgba(255,255,255,0.03) 4px);"></div>
+              <div id="ttRecLabel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;z-index:2;opacity:.45;"></div>
+              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:5px;height:5px;border-radius:50%;background:#0a0a12;z-index:3;"></div>
+            </div>
+          </div>
+          <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:#777;border:1px solid #aaa;z-index:10;"></div>
+        </div>
+        <div id="ttArm" style="position:absolute;top:6px;right:2px;width:4px;height:62px;background:linear-gradient(to bottom,#999,#666);border-radius:2px;transform-origin:top center;transform:rotate(-38deg);transition:transform 1.1s cubic-bezier(.4,0,.2,1);z-index:15;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:1.4rem;text-align:center;min-height:3rem;">
+    <div id="ttInfoName" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.1rem;letter-spacing:.18em;color:rgba(200,210,255,0.15);transition:color .4s;line-height:1;">SELECT A RECORD</div>
+    <div id="ttInfoJa" style="font-size:.65rem;color:rgba(90,106,144,0.4);letter-spacing:.08em;margin-top:.2rem;transition:color .4s;min-height:.85rem;"></div>
+  </div>
+  <button id="ttEnterBtn" style="margin-top:.9rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.25em;color:rgba(176,184,255,.18);background:none;border:1px solid rgba(176,184,255,0.1);border-radius:20px;padding:.35rem 1.2rem;cursor:default;transition:all .4s;">▶ &nbsp; PLAY ARCHIVE</button>
+  <div id="ttHint" style="font-size:.58rem;color:rgba(90,106,144,0.4);letter-spacing:.1em;margin-top:.5rem;">レコードをクリックしてセット</div>
+</div>
+
+<style>
+@keyframes tt-spin{to{transform:rotate(360deg);}}
+@keyframes lp-groove-spin{to{transform:rotate(360deg);}}
+.tt-lp{position:absolute;width:68px;height:68px;border-radius:50%;cursor:pointer;transition:box-shadow .3s;}
+.tt-lp:hover{z-index:10;}
+.tt-lp-face{width:100%;height:100%;border-radius:50%;overflow:hidden;position:relative;box-shadow:0 4px 22px rgba(0,0,0,.75);}
+.tt-lp-grooves{position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle at 50%,transparent 0,transparent 3px,rgba(255,255,255,0.028) 3px,rgba(255,255,255,0.028) 4px);animation:lp-groove-spin var(--spd,20s) linear infinite;}
+.tt-lp:hover .tt-lp-grooves{animation-duration:calc(var(--spd,20s) * 4);}
+.tt-lp-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.9rem;z-index:2;opacity:.38;transition:opacity .2s;overflow:hidden;}
+.tt-lp:hover .tt-lp-label,.tt-lp.tt-chosen .tt-lp-label{opacity:.7;}
+.tt-lp-hole{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:5px;height:5px;border-radius:50%;background:#0a0a12;z-index:3;}
+.tt-lp-name{position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.52rem;letter-spacing:.1em;color:var(--mc);opacity:.55;white-space:nowrap;transition:opacity .2s;}
+.tt-lp:hover .tt-lp-name,.tt-lp.tt-chosen .tt-lp-name{opacity:1;}
+.tt-lp:hover{box-shadow:0 0 0 2px var(--mc),0 6px 28px rgba(0,0,0,.6);}
+.tt-lp.tt-chosen{box-shadow:0 0 0 2px var(--mc),0 0 20px var(--mglow);}
+</style>
 <header>
   <div class="header-inner">
     <a class="logo" href="#"><em style="font-style:normal;font-size:.55em;letter-spacing:.08em;color:#c4b5fd;display:block;line-height:1;margin-bottom:1px;">UNOFFICIAL</em>V.W.P <em>ARCHIVE</em></a>
@@ -269,6 +322,8 @@
         <div style="display:flex;gap:1.2rem;padding:.9rem 1.1rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;align-items:flex-start;">
           <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.06em;color:#c4b5fd;white-space:nowrap;padding-top:.05rem;">2026/03/13</span>
           <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.3rem;">
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ サイトを開くとレコードプレーヤー選択画面が表示されるように — メンバーのLPを選んでアーカイブへ入場</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ 選んだメンバーのLPをターンテーブルにセットすると、そのメンバーでフィルタリングされた状態でアーカイブに入れるように</li>
             <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ アルバムページに在庫状況（ON SALE / SOLD OUT）を表示</li>
             <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ アルバムの在庫情報の最終更新日を表示</li>
             <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ NEWバッジをメンバー別・最新2曲に変更（各メンバーの最新曲がわかりやすく）</li>
