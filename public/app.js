@@ -1043,13 +1043,13 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
 // ===== TURNTABLE INTRO =====
 (function(){
   const MEMBERS = [
-    {m:'all',    icon:'✦',  img:null,                         ja:'すべて',     en:'ALL',          spd:'22s', bg:'radial-gradient(circle at 38% 32%,#252360,#0c0b1c)', mc:'#b0b8ff', mglow:'rgba(176,184,255,.35)'},
-    {m:'vwp',    icon:'✦',  img:'/icons/V_W_P.png',           ja:'V.W.P',      en:'V.W.P',        spd:'19s', bg:'radial-gradient(circle at 38% 32%,#2c1e50,#0d0a1e)', mc:'#c4b5fd', mglow:'rgba(196,181,253,.35)'},
-    {m:'kafu',   icon:'🌸', img:'/icons/KAF.png',             ja:'花譜',       en:'KAF',          spd:'25s', bg:'radial-gradient(circle at 38% 32%,#48182a,#180810)', mc:'#ffb7c5', mglow:'rgba(255,183,197,.35)'},
-    {m:'rime',   icon:'🌱', img:'/icons/RIM.png',             ja:'理芽',       en:'RIM',          spd:'21s', bg:'radial-gradient(circle at 38% 32%,#0e284a,#060e1e)', mc:'#7eb8f7', mglow:'rgba(126,184,247,.35)'},
-    {m:'harusar',icon:'🔥', img:'/icons/Harusaruhi.png',      ja:'春猿火',     en:'HARUSARUHI',   spd:'18s', bg:'radial-gradient(circle at 38% 32%,#481010,#180505)', mc:'#ff7070', mglow:'rgba(255,112,112,.35)'},
-    {m:'isekai', icon:'🌼', img:'/icons/isekaijocho.png',     ja:'ヰ世界情緒', en:'ISEKAI JOUCHO',spd:'23s', bg:'radial-gradient(circle at 38% 32%,#282828,#0e0e0e)', mc:'#d8d8d8', mglow:'rgba(220,220,220,.25)'},
-    {m:'koko',   icon:'⚡', img:'/icons/koko.png',            ja:'幸祜',       en:'KOKO',         spd:'20s', bg:'radial-gradient(circle at 38% 32%,#2c1248,#0e061a)', mc:'#c084fc', mglow:'rgba(192,132,252,.35)'},
+    {m:'all',    icon:'✦',  img:null,                         ja:'すべて',     en:'ALL',          spd:'48s', bg:'radial-gradient(circle at 38% 32%,#252360,#0c0b1c)', mc:'#b0b8ff', mglow:'rgba(176,184,255,.35)'},
+    {m:'vwp',    icon:'✦',  img:'/icons/V_W_P.png',           ja:'V.W.P',      en:'V.W.P',        spd:'42s', bg:'radial-gradient(circle at 38% 32%,#2c1e50,#0d0a1e)', mc:'#c4b5fd', mglow:'rgba(196,181,253,.35)'},
+    {m:'kafu',   icon:'🌸', img:'/icons/KAF.png',             ja:'花譜',       en:'KAF',          spd:'55s', bg:'radial-gradient(circle at 38% 32%,#48182a,#180810)', mc:'#ffb7c5', mglow:'rgba(255,183,197,.35)'},
+    {m:'rime',   icon:'🌱', img:'/icons/RIM.png',             ja:'理芽',       en:'RIM',          spd:'46s', bg:'radial-gradient(circle at 38% 32%,#0e284a,#060e1e)', mc:'#7eb8f7', mglow:'rgba(126,184,247,.35)'},
+    {m:'harusar',icon:'🔥', img:'/icons/Harusaruhi.png',      ja:'春猿火',     en:'HARUSARUHI',   spd:'40s', bg:'radial-gradient(circle at 38% 32%,#481010,#180505)', mc:'#ff7070', mglow:'rgba(255,112,112,.35)'},
+    {m:'isekai', icon:'🌼', img:'/icons/isekaijocho.png',     ja:'ヰ世界情緒', en:'ISEKAI JOUCHO',spd:'52s', bg:'radial-gradient(circle at 38% 32%,#282828,#0e0e0e)', mc:'#d8d8d8', mglow:'rgba(220,220,220,.25)'},
+    {m:'koko',   icon:'⚡', img:'/icons/koko.png',            ja:'幸祜',       en:'KOKO',         spd:'44s', bg:'radial-gradient(circle at 38% 32%,#2c1248,#0e061a)', mc:'#c084fc', mglow:'rgba(192,132,252,.35)'},
   ];
 
   const stage   = document.getElementById('ttStage');
@@ -1063,23 +1063,25 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
   const hint    = document.getElementById('ttHint');
   const intro   = document.getElementById('ttIntro');
 
-  const R = 200, CX = 250, CY = 250;
+  const R = 218, CX = 280, CY = 280;
   let busy = false, chosen = null;
 
   // LPを配置
   MEMBERS.forEach((mb, i) => {
     const angle = (i / MEMBERS.length) * 2 * Math.PI - Math.PI / 2;
-    const x = CX + R * Math.cos(angle) - 48;
-    const y = CY + R * Math.sin(angle) - 48;
+    const x = CX + R * Math.cos(angle) - 55;
+    const y = CY + R * Math.sin(angle) - 55;
     const el = document.createElement('div');
     el.className = 'tt-lp';
     el.dataset.m = mb.m;
-    el.style.cssText = `left:${x}px;top:${y}px;--spd:${mb.spd};--mc:${mb.mc};--mglow:${mb.mglow};width:96px;height:96px;`;
+    el.style.cssText = `left:${x}px;top:${y}px;--spd:${mb.spd};--mc:${mb.mc};--mglow:${mb.mglow};width:110px;height:110px;`;
     const labelInner = mb.img
-      ? `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;opacity:.88;">`
+      ? `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
       : `<span style="font-size:.9rem;">${mb.icon}</span>`;
+    // 画像ありの場合は背景を黒のみ、画像なしはメンバーカラー背景
+    const faceBg = mb.img ? '#0a0910' : mb.bg;
     el.innerHTML = `
-      <div class="tt-lp-face" style="background:${mb.bg};">
+      <div class="tt-lp-face" style="background:${faceBg};">
         <div class="tt-lp-grooves"></div>
         <div class="tt-lp-label" style="background:${mb.img?'transparent':mb.mc};">${labelInner}</div>
         <div class="tt-lp-hole"></div>
@@ -1102,13 +1104,13 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     infoJa.style.color = 'rgba(90,106,144,0.4)';
     hint.textContent = 'セット中…';
 
-    ttFace.style.background = mb.bg;
+    ttFace.style.background = mb.img ? '#0a0910' : mb.bg;
     if(mb.img){
-      ttLabel.innerHTML = `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;opacity:.9;">`;
+      ttLabel.innerHTML = `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
       ttLabel.style.background = 'transparent';
       ttLabel.style.fontSize = '0';
-      ttLabel.style.width = '52px';
-      ttLabel.style.height = '52px';
+      ttLabel.style.width = '68px';
+      ttLabel.style.height = '68px';
     } else {
       ttLabel.innerHTML = '';
       ttLabel.textContent = mb.icon;
