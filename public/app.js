@@ -1140,10 +1140,16 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
   const hint    = document.getElementById('ttHint');
   const intro   = document.getElementById('ttIntro');
 
-  // 画面サイズに応じてスケール（基準: 560px）
+  // 画面サイズに応じてスケール
+  // ヘッダー(約60px) + 名前テキスト込みのマージン + ボタン類(約120px) を除いた残り高さ
   const baseSize = 560;
-  const maxSize = Math.min(window.innerWidth - 24, window.innerHeight - 180, baseSize);
-  const scale = maxSize / baseSize;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  // 使える縦幅: モバイルはヘッダー+ボタン類で約160px消費、PCは約200px
+  const isMobile = vw < 600;
+  const reservedH = isMobile ? 150 : 200;
+  const maxSize = Math.min(vw - (isMobile ? 16 : 24), vh - reservedH, baseSize);
+  const scale = Math.max(maxSize / baseSize, 0.4); // 最小40%
   const stageSize = Math.round(baseSize * scale);
   const stage2 = document.getElementById('ttStage');
   if(stage2){ stage2.style.width = stageSize+'px'; stage2.style.height = stageSize+'px'; }
@@ -1161,10 +1167,19 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
   const arm2 = document.getElementById('ttArm');
   if(arm2){ arm2.style.height=armH+'px'; }
 
-  // LPラベルサイズ
-  const labelSize = Math.round(86 * scale);
+  // LPラベルサイズ（画像はLP全面）
   document.querySelectorAll('.tt-lp-label').forEach(l=>{
-    l.style.width=labelSize+'px'; l.style.height=labelSize+'px';
+    l.style.width='100%'; l.style.height='100%';
+  });
+
+  // LP名前フォントサイズもスケール
+  const nameFontSize = Math.max(Math.round(16 * scale), 10);
+  const nameWidth = Math.max(Math.round(80 * scale), 50);
+  const nameBottom = Math.max(Math.round(38 * scale), 24);
+  document.querySelectorAll('.tt-lp-name').forEach(n=>{
+    n.style.fontSize = nameFontSize+'px';
+    n.style.width = nameWidth+'px';
+    n.style.bottom = '-'+nameBottom+'px';
   });
 
   const lpSize = Math.round(110 * scale);
