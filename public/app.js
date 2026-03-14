@@ -1138,8 +1138,6 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       ttLabel.innerHTML = `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
       ttLabel.style.background = 'transparent';
       ttLabel.style.fontSize = '0';
-      ttLabel.style.width = '68px';
-      ttLabel.style.height = '68px';
     } else {
       ttLabel.innerHTML = '';
       ttLabel.textContent = mb.icon;

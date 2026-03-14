@@ -45,8 +45,8 @@
           <div style="position:absolute;inset:6px;border-radius:50%;overflow:hidden;">
             <div id="ttFace" style="width:100%;height:100%;border-radius:50%;opacity:0;transition:opacity .5s;position:relative;">
               <div style="position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle at 50%,transparent 0,transparent 3px,rgba(255,255,255,0.03) 3px,rgba(255,255,255,0.03) 4px);"></div>
-              <div id="ttRecLabel" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;z-index:2;opacity:.45;"></div>
-              <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:5px;height:5px;border-radius:50%;background:#0a0a12;z-index:3;"></div>
+              <div id="ttRecLabel" style="position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;z-index:2;opacity:.9;overflow:hidden;"></div>
+              
             </div>
           </div>
           <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;border-radius:50%;background:#777;border:1px solid #aaa;z-index:10;"></div>
@@ -74,7 +74,7 @@
 .tt-lp:hover .tt-lp-grooves{animation-duration:calc(var(--spd,20s) * 12);}
 .tt-lp-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:86px;height:86px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.4rem;z-index:2;opacity:.5;transition:opacity .2s;overflow:hidden;}
 .tt-lp:hover .tt-lp-label,.tt-lp.tt-chosen .tt-lp-label{opacity:.7;}
-.tt-lp-hole{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:5px;height:5px;border-radius:50%;background:#0a0a12;z-index:3;}
+.tt-lp-hole{display:none;}
 .tt-lp-name{position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.52rem;letter-spacing:.1em;color:var(--mc);opacity:.55;white-space:nowrap;transition:opacity .2s;}
 .tt-lp:hover .tt-lp-name,.tt-lp.tt-chosen .tt-lp-name{opacity:1;}
 .tt-lp:hover{box-shadow:0 0 0 2px var(--mc),0 6px 28px rgba(0,0,0,.6);}
