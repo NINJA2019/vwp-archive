@@ -264,11 +264,27 @@ function buildSidebar(){
     });
     const albumSec=document.getElementById('albumSection');
     if(albumSec) albumSec.style.display=memberAlbums.length>0?'block':'none';
+    // シリーズ名で自動グループ化
+    function getSeriesKey(name){
+      // 末尾の数字・ギリシャ文字・スペースを除いた共通プレフィックスをキーに
+      return name.replace(/[\s\d２３４αβγδε１-９LIVE]+$/i,'').trim() || name;
+    }
+    const groups=[];
+    const groupMap={};
     memberAlbums.forEach(al=>{
-      const btn=document.createElement('button');
-      const isOn=curAlbum===al.id;
-      btn.className='cfilt album-filt'+(isOn?' on':'');
-      btn.innerHTML=`<span class="cfilt-label">📀 ${al.name}</span>`;
+      const key=getSeriesKey(al.name);
+      if(!groupMap[key]){ groupMap[key]={key,albums:[]}; groups.push(groupMap[key]); }
+      groupMap[key].albums.push(al);
+    });
+    // グループが1枚だけならグループ化しない（単品として扱う）
+    groups.forEach(g=>{
+      if(g.albums.length===1){
+        // 単品
+        const al=g.albums[0];
+        const btn=document.createElement('button');
+        const isOn=curAlbum===al.id;
+        btn.className='cfilt album-filt'+(isOn?' on':'');
+        btn.innerHTML=`<span class="cfilt-label">📀 ${al.name}</span>`;
       if(isAdmin){
         const del=document.createElement('span');
         del.textContent=' ✕';
@@ -284,10 +300,71 @@ function buildSidebar(){
         btn.appendChild(del);
       }
       btn.addEventListener('click',()=>{
-        curAlbum=isOn?null:al.id;
-        buildSidebar();updateCounts();render();
-      });
-      af.appendChild(btn);
+          curAlbum=isOn?null:al.id;
+          buildSidebar();updateCounts();render();
+        });
+        af.appendChild(btn);
+      } else {
+        // 複数枚シリーズ → 折りたたみグループ
+        const hasActive=g.albums.some(a=>curAlbum===a.id);
+        let grpOpen=hasActive;
+        const header=document.createElement('button');
+        header.className='cfilt'+(hasActive?' on':'');
+        header.style.cssText='padding-left:.3rem;';
+        const arrowSpan=document.createElement('span');
+        arrowSpan.style.cssText='font-size:.65rem;color:var(--dim);transition:transform .2s;display:inline-block;margin-right:.3rem;';
+        arrowSpan.textContent='▶';
+        arrowSpan.style.transform=grpOpen?'rotate(90deg)':'rotate(0deg)';
+        const labelSpan=document.createElement('span');
+        labelSpan.className='cfilt-label';
+        labelSpan.appendChild(arrowSpan);
+        labelSpan.appendChild(document.createTextNode('📀 '+g.key+' '));
+        const cntSpan=document.createElement('span');
+        cntSpan.textContent='('+g.albums.length+')';
+        cntSpan.style.cssText='font-size:.6rem;color:var(--dim);';
+        labelSpan.appendChild(cntSpan);
+        header.appendChild(labelSpan);
+        const children=document.createElement('div');
+        children.style.cssText='overflow:hidden;transition:max-height .25s ease;padding-left:.6rem;';
+        children.style.maxHeight=grpOpen?(g.albums.length*2.2)+'rem':'0';
+        g.albums.forEach(al=>{
+          const isOn2=curAlbum===al.id;
+          const btn2=document.createElement('button');
+          btn2.className='cfilt album-filt'+(isOn2?' on':'');
+          btn2.style.fontSize='.75rem';
+          const lbl2=document.createElement('span');
+          lbl2.className='cfilt-label';
+          lbl2.textContent='  '+al.name;
+          btn2.appendChild(lbl2);
+          if(isAdmin){
+            const del=document.createElement('span');
+            del.textContent=' ✕';
+            del.style.cssText='font-size:.6rem;opacity:.5;margin-left:2px;cursor:pointer;';
+            del.addEventListener('click',async(e)=>{
+              e.stopPropagation();
+              if(!confirm('アルバム「'+al.name+'」を削除しますか？')) return;
+              await deleteAlbumApi(al.id);
+              if(curAlbum===al.id){curAlbum=null;}
+              await loadAlbums();
+              buildSidebar();updateCounts();render();
+            });
+            btn2.appendChild(del);
+          }
+          btn2.addEventListener('click',()=>{
+            const on2=curAlbum===al.id;
+            curAlbum=on2?null:al.id;
+            buildSidebar();updateCounts();render();
+          });
+          children.appendChild(btn2);
+        });
+        header.addEventListener('click',()=>{
+          grpOpen=!grpOpen;
+          children.style.maxHeight=grpOpen?(g.albums.length*2.2)+'rem':'0';
+          arrowSpan.style.transform=grpOpen?'rotate(90deg)':'rotate(0deg)';
+        });
+        af.appendChild(header);
+        af.appendChild(children);
+      }
     });
     // 管理者：アルバム追加ボタン
     if(isAdmin && selectedMembers.length===1){
@@ -1047,7 +1124,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     {m:'vwp',    icon:'✦',  img:'/icons/V_W_P.png',           ja:'V.W.P',      en:'V.W.P',        spd:'42s', bg:'radial-gradient(circle at 38% 32%,#2c1e50,#0d0a1e)', mc:'#c4b5fd', mglow:'rgba(196,181,253,.35)'},
     {m:'kafu',   icon:'🌸', img:'/icons/KAF.png',             ja:'花譜',       en:'KAF',          spd:'55s', bg:'radial-gradient(circle at 38% 32%,#48182a,#180810)', mc:'#ffb7c5', mglow:'rgba(255,183,197,.35)'},
     {m:'rime',   icon:'🌱', img:'/icons/RIM.png',             ja:'理芽',       en:'RIM',          spd:'46s', bg:'radial-gradient(circle at 38% 32%,#0e284a,#060e1e)', mc:'#7eb8f7', mglow:'rgba(126,184,247,.35)'},
-    {m:'harusar',icon:'🔥', img:'/icons/Harusaruhi.png',      ja:'春猿火',     en:'HARUSARUHI',   spd:'40s', bg:'radial-gradient(circle at 38% 32%,#481010,#180505)', mc:'#ff7070', mglow:'rgba(255,112,112,.35)'},
+    {m:'harusar',icon:'🔥', img:'/icons/Harusaruhi.png',      ja:'春猿火',     en:'HARU SARUHI',  spd:'40s', bg:'radial-gradient(circle at 38% 32%,#481010,#180505)', mc:'#ff7070', mglow:'rgba(255,112,112,.35)'},
     {m:'isekai', icon:'🌼', img:'/icons/isekaijocho.png',     ja:'ヰ世界情緒', en:'ISEKAI JOUCHO',spd:'52s', bg:'radial-gradient(circle at 38% 32%,#282828,#0e0e0e)', mc:'#d8d8d8', mglow:'rgba(220,220,220,.25)'},
     {m:'koko',   icon:'⚡', img:'/icons/koko.png',            ja:'幸祜',       en:'KOKO',         spd:'44s', bg:'radial-gradient(circle at 38% 32%,#2c1248,#0e061a)', mc:'#c084fc', mglow:'rgba(192,132,252,.35)'},
   ];
