@@ -1063,18 +1063,18 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
   const hint    = document.getElementById('ttHint');
   const intro   = document.getElementById('ttIntro');
 
-  const R = 145, CX = 180, CY = 180;
+  const R = 200, CX = 250, CY = 250;
   let busy = false, chosen = null;
 
   // LPを配置
   MEMBERS.forEach((mb, i) => {
     const angle = (i / MEMBERS.length) * 2 * Math.PI - Math.PI / 2;
-    const x = CX + R * Math.cos(angle) - 34;
-    const y = CY + R * Math.sin(angle) - 34;
+    const x = CX + R * Math.cos(angle) - 48;
+    const y = CY + R * Math.sin(angle) - 48;
     const el = document.createElement('div');
     el.className = 'tt-lp';
     el.dataset.m = mb.m;
-    el.style.cssText = `left:${x}px;top:${y}px;--spd:${mb.spd};--mc:${mb.mc};--mglow:${mb.mglow};`;
+    el.style.cssText = `left:${x}px;top:${y}px;--spd:${mb.spd};--mc:${mb.mc};--mglow:${mb.mglow};width:96px;height:96px;`;
     const labelInner = mb.img
       ? `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;opacity:.88;">`
       : `<span style="font-size:.9rem;">${mb.icon}</span>`;
@@ -1107,6 +1107,8 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       ttLabel.innerHTML = `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;opacity:.9;">`;
       ttLabel.style.background = 'transparent';
       ttLabel.style.fontSize = '0';
+      ttLabel.style.width = '52px';
+      ttLabel.style.height = '52px';
     } else {
       ttLabel.innerHTML = '';
       ttLabel.textContent = mb.icon;
@@ -1156,18 +1158,18 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       // メンバーフィルタを適用
       const m = chosen.m;
       if(m === 'all'){
-        curMembers = [];
-        document.querySelectorAll('.mpill').forEach(p => p.classList.remove('on'));
-        document.querySelector('.mpill[data-m="all"]')?.classList.add('on');
+        selectedMembers = [];
+        curMember = 'all';
       } else {
-        curMembers = [m];
-        document.querySelectorAll('.mpill').forEach(p => p.classList.remove('on'));
-        document.querySelector(`.mpill[data-m="${m}"]`)?.classList.add('on');
+        selectedMembers = [m];
+        curMember = m;
       }
-      curTag = null;
+      curTag = 'all';
       curSort = 'new';
       curAlbum = null;
-      resetAndLoad();
+      searchQ = '';
+      const sq = document.getElementById('searchInput');
+      if(sq) sq.value = '';
       buildSidebar();
       updateCounts();
       render();
