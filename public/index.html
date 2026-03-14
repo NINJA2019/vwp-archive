@@ -79,6 +79,18 @@
 .tt-lp:hover .tt-lp-name,.tt-lp.tt-chosen .tt-lp-name{opacity:1;}
 .tt-lp:hover{box-shadow:0 0 0 2px var(--mc),0 6px 28px rgba(0,0,0,.6);}
 .tt-lp.tt-chosen{box-shadow:0 0 0 2px var(--mc),0 0 20px var(--mglow);}
+
+/* ===== モバイル対応 ===== */
+@media (max-width: 600px) {
+  #ttStage { width: 320px !important; height: 320px !important; }
+  .tt-lp-label { width: 52px !important; height: 52px !important; }
+}
+@media (max-width: 400px) {
+  #ttStage { width: 280px !important; height: 280px !important; }
+  .tt-lp-label { width: 44px !important; height: 44px !important; }
+}
+/* ターンテーブル画面全体をvhに合わせてスケール */
+#ttIntro { justify-content: center; }
 </style>
 <header>
   <div class="header-inner">

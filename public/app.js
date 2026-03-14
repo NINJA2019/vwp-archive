@@ -1063,18 +1063,47 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
   const hint    = document.getElementById('ttHint');
   const intro   = document.getElementById('ttIntro');
 
-  const R = 218, CX = 280, CY = 280;
+  // 画面サイズに応じてスケール（基準: 560px）
+  const baseSize = 560;
+  const maxSize = Math.min(window.innerWidth - 24, window.innerHeight - 180, baseSize);
+  const scale = maxSize / baseSize;
+  const stageSize = Math.round(baseSize * scale);
+  const stage2 = document.getElementById('ttStage');
+  if(stage2){ stage2.style.width = stageSize+'px'; stage2.style.height = stageSize+'px'; }
+
+  // ターンテーブルもスケール
+  const ttWrap = stage2?.querySelector('div');
+  const ttW = Math.round(230 * scale);
+  const platW = Math.round(182 * scale);
+  const armH = Math.round(96 * scale);
+  if(ttWrap){ ttWrap.style.width=ttW+'px'; ttWrap.style.height=ttW+'px'; }
+  const ttBody2 = ttWrap?.querySelector('div');
+  if(ttBody2){ ttBody2.style.width=ttW+'px'; ttBody2.style.height=ttW+'px'; }
+  const plat2 = document.getElementById('ttPlatter');
+  if(plat2){ plat2.style.width=platW+'px'; plat2.style.height=platW+'px'; }
+  const arm2 = document.getElementById('ttArm');
+  if(arm2){ arm2.style.height=armH+'px'; }
+
+  // LPラベルサイズ
+  const labelSize = Math.round(86 * scale);
+  document.querySelectorAll('.tt-lp-label').forEach(l=>{
+    l.style.width=labelSize+'px'; l.style.height=labelSize+'px';
+  });
+
+  const lpSize = Math.round(110 * scale);
+  const R = Math.round(218 * scale), CX = Math.round(280 * scale), CY = Math.round(280 * scale);
   let busy = false, chosen = null;
 
   // LPを配置
   MEMBERS.forEach((mb, i) => {
     const angle = (i / MEMBERS.length) * 2 * Math.PI - Math.PI / 2;
-    const x = CX + R * Math.cos(angle) - 55;
-    const y = CY + R * Math.sin(angle) - 55;
+    const lpHalf = Math.round(55 * scale);
+    const x = CX + R * Math.cos(angle) - lpHalf;
+    const y = CY + R * Math.sin(angle) - lpHalf;
     const el = document.createElement('div');
     el.className = 'tt-lp';
     el.dataset.m = mb.m;
-    el.style.cssText = `left:${x}px;top:${y}px;--spd:${mb.spd};--mc:${mb.mc};--mglow:${mb.mglow};width:110px;height:110px;`;
+    el.style.cssText = `left:${x}px;top:${y}px;--spd:${mb.spd};--mc:${mb.mc};--mglow:${mb.mglow};width:${lpSize}px;height:${lpSize}px;`;
     const labelInner = mb.img
       ? `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
       : `<span style="font-size:.9rem;">${mb.icon}</span>`;
