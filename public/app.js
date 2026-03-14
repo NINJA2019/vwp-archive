@@ -1047,7 +1047,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     {m:'vwp',    icon:'✦',  img:'/icons/V_W_P.png',           ja:'V.W.P',      en:'V.W.P',        spd:'42s', bg:'radial-gradient(circle at 38% 32%,#2c1e50,#0d0a1e)', mc:'#c4b5fd', mglow:'rgba(196,181,253,.35)'},
     {m:'kafu',   icon:'🌸', img:'/icons/KAF.png',             ja:'花譜',       en:'KAF',          spd:'55s', bg:'radial-gradient(circle at 38% 32%,#48182a,#180810)', mc:'#ffb7c5', mglow:'rgba(255,183,197,.35)'},
     {m:'rime',   icon:'🌱', img:'/icons/RIM.png',             ja:'理芽',       en:'RIM',          spd:'46s', bg:'radial-gradient(circle at 38% 32%,#0e284a,#060e1e)', mc:'#7eb8f7', mglow:'rgba(126,184,247,.35)'},
-    {m:'harusar',icon:'🔥', img:'/icons/Harusaruhi.png',      ja:'春猿火',     en:'HARUSARUHI',   spd:'40s', bg:'radial-gradient(circle at 38% 32%,#481010,#180505)', mc:'#ff7070', mglow:'rgba(255,112,112,.35)'},
+    {m:'harusar',icon:'🔥', img:'/icons/Harusaruhi.png',      ja:'春猿火',     en:'HARU SARUHI',  spd:'40s', bg:'radial-gradient(circle at 38% 32%,#481010,#180505)', mc:'#ff7070', mglow:'rgba(255,112,112,.35)'},
     {m:'isekai', icon:'🌼', img:'/icons/isekaijocho.png',     ja:'ヰ世界情緒', en:'ISEKAI JOUCHO',spd:'52s', bg:'radial-gradient(circle at 38% 32%,#282828,#0e0e0e)', mc:'#d8d8d8', mglow:'rgba(220,220,220,.25)'},
     {m:'koko',   icon:'⚡', img:'/icons/koko.png',            ja:'幸祜',       en:'KOKO',         spd:'44s', bg:'radial-gradient(circle at 38% 32%,#2c1248,#0e061a)', mc:'#c084fc', mglow:'rgba(192,132,252,.35)'},
   ];
