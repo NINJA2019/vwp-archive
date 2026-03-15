@@ -1199,7 +1199,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     const labelInner = mb.img
       ? `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
       : mb.daily
-        ? `<span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:3rem;color:rgba(180,190,255,0.95);line-height:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%;position:relative;z-index:10;">?</span>`
+        ? `<span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:3rem;color:#07090e;line-height:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%;position:relative;z-index:10;">?</span>`
         : `<span style="font-size:.9rem;">${mb.icon}</span>`;
     // 画像ありの場合は背景を黒のみ、画像なしはメンバーカラー背景
     const faceBg = mb.img ? '#0a0910' : mb.bg;
