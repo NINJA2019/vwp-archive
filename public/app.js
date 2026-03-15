@@ -1120,7 +1120,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
 // ===== TURNTABLE INTRO =====
 (function(){
   const MEMBERS = [
-    {m:'all',    icon:'✦',  img:null,                         ja:'すべて',     en:'ALL',          spd:'48s', bg:'radial-gradient(circle at 38% 32%,#252360,#0c0b1c)', mc:'#b0b8ff', mglow:'rgba(176,184,255,.35)'},
+    {m:'all',    icon:'?',  img:null,  daily:true,            ja:'今日の観測', en:'DAILY',        spd:'48s', bg:'radial-gradient(circle at 38% 32%,#3a3880,#1a1860)', mc:'#b0b8ff', mglow:'rgba(176,184,255,.35)'},
     {m:'vwp',    icon:'✦',  img:'/icons/V_W_P.png',           ja:'V.W.P',      en:'V.W.P',        spd:'42s', bg:'radial-gradient(circle at 38% 32%,#2c1e50,#0d0a1e)', mc:'#c4b5fd', mglow:'rgba(196,181,253,.35)'},
     {m:'kafu',   icon:'🌸', img:'/icons/KAF.png',             ja:'花譜',       en:'KAF',          spd:'55s', bg:'radial-gradient(circle at 38% 32%,#48182a,#180810)', mc:'#ffb7c5', mglow:'rgba(255,183,197,.35)'},
     {m:'rime',   icon:'🌱', img:'/icons/RIM.png',             ja:'理芽',       en:'RIM',          spd:'46s', bg:'radial-gradient(circle at 38% 32%,#0e284a,#060e1e)', mc:'#7eb8f7', mglow:'rgba(126,184,247,.35)'},
@@ -1198,7 +1198,9 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     el.style.cssText = `left:${x}px;top:${y}px;--spd:${mb.spd};--mc:${mb.mc};--mglow:${mb.mglow};width:${lpSize}px;height:${lpSize}px;`;
     const labelInner = mb.img
       ? `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
-      : `<span style="font-size:.9rem;">${mb.icon}</span>`;
+      : mb.daily
+        ? `<span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:3rem;color:rgba(180,190,255,0.95);line-height:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%;position:relative;z-index:10;">?</span>`
+        : `<span style="font-size:.9rem;">${mb.icon}</span>`;
     // 画像ありの場合は背景を黒のみ、画像なしはメンバーカラー背景
     const faceBg = mb.img ? '#0a0910' : mb.bg;
     el.innerHTML = `
@@ -1281,12 +1283,13 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       if(m === 'all'){
         selectedMembers = [];
         curMember = 'all';
+        curSort = 'daily'; // 今日の観測モードで入場
       } else {
         selectedMembers = [m];
         curMember = m;
       }
       curTag = 'all';
-      curSort = 'new';
+      if(m !== 'all') curSort = 'new';
       curAlbum = null;
       searchQ = '';
       const sq = document.getElementById('searchInput');
