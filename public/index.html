@@ -32,8 +32,8 @@
 <div id="ttIntro" style="position:fixed;inset:0;z-index:9999;background:#07090e;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(.4rem, 2vh, 1rem) 1rem;overflow:hidden;">
   <div style="position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(80,60,180,0.07) 0%,transparent 70%);pointer-events:none;"></div>
   <div style="text-align:center;margin-bottom:clamp(.3rem,1vh,.7rem);position:relative;">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:400;font-size:.55rem;letter-spacing:.35em;color:rgba(200,208,255,0.2);text-transform:uppercase;margin-bottom:.15rem;">UNOFFICIAL</div><div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.05rem;letter-spacing:.45em;color:rgba(200,208,255,0.28);text-transform:uppercase;">V · W · P &nbsp; ARCHIVE</div>
-    <div style="font-size:.62rem;color:rgba(90,106,144,0.6);letter-spacing:.2em;margin-top:.15rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;">SELECT A RECORD TO BEGIN</div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:400;font-size:.55rem;letter-spacing:.35em;color:rgba(220,228,255,0.55);text-transform:uppercase;margin-bottom:.15rem;">UNOFFICIAL</div><div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.05rem;letter-spacing:.45em;color:rgba(220,228,255,0.7);text-transform:uppercase;">V · W · P &nbsp; ARCHIVE</div>
+    <div style="font-size:.62rem;color:rgba(160,180,230,0.8);letter-spacing:.2em;margin-top:.15rem;font-family:'Barlow Condensed',sans-serif;font-weight:700;">SELECT A RECORD TO BEGIN</div>
   </div>
 
   <div id="ttStage" style="position:relative;width:560px;height:560px;flex-shrink:0;">
@@ -57,11 +57,11 @@
   </div>
 
   <div style="margin-top:clamp(.5rem,1.5vh,1.4rem);text-align:center;min-height:2rem;">
-    <div id="ttInfoName" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.1rem;letter-spacing:.18em;color:rgba(200,210,255,0.15);transition:color .4s;line-height:1;">SELECT A RECORD</div>
-    <div id="ttInfoJa" style="font-size:.65rem;color:rgba(90,106,144,0.4);letter-spacing:.08em;margin-top:.2rem;transition:color .4s;min-height:.85rem;"></div>
+    <div id="ttInfoName" style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.1rem;letter-spacing:.18em;color:rgba(210,220,255,0.55);transition:color .4s;line-height:1;">SELECT A RECORD</div>
+    <div id="ttInfoJa" style="font-size:.65rem;color:rgba(160,180,220,0.7);letter-spacing:.08em;margin-top:.2rem;transition:color .4s;min-height:.85rem;"></div>
   </div>
-  <button id="ttEnterBtn" style="margin-top:clamp(.4rem,1vh,.9rem);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.25em;color:rgba(176,184,255,.18);background:none;border:1px solid rgba(176,184,255,0.1);border-radius:20px;padding:.35rem 1.2rem;cursor:default;transition:all .4s;">▶ &nbsp; PLAY ARCHIVE</button>
-  <div id="ttHint" style="font-size:.58rem;color:rgba(90,106,144,0.4);letter-spacing:.1em;margin-top:.5rem;">レコードをクリックしてセット</div>
+  <button id="ttEnterBtn" style="margin-top:clamp(.4rem,1vh,.9rem);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.25em;color:rgba(176,184,255,.45);background:none;border:1px solid rgba(176,184,255,0.25);border-radius:20px;padding:.35rem 1.2rem;cursor:default;transition:all .4s;">▶ &nbsp; PLAY ARCHIVE</button>
+  <div id="ttHint" style="font-size:.58rem;color:rgba(140,160,210,0.7);letter-spacing:.1em;margin-top:.5rem;">レコードをクリックしてセット</div>
 </div>
 
 <style>
@@ -75,7 +75,7 @@
 .tt-lp-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:86px;height:86px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.4rem;z-index:2;opacity:.5;transition:opacity .2s;overflow:hidden;}
 .tt-lp:hover .tt-lp-label,.tt-lp.tt-chosen .tt-lp-label{opacity:.7;}
 .tt-lp-hole{display:none;}
-.tt-lp-name{position:absolute;bottom:-38px;left:50%;transform:translateX(-50%);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1rem;letter-spacing:.08em;color:var(--mc);opacity:.6;white-space:normal;transition:opacity .2s;text-align:center;width:80px;line-height:1.2;}
+.tt-lp-name{position:absolute;bottom:-26px;left:50%;transform:translateX(-50%);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.75rem;letter-spacing:.08em;color:var(--mc);opacity:.92;white-space:nowrap;transition:opacity .2s;text-align:center;line-height:1.2;}
 .tt-lp:hover .tt-lp-name,.tt-lp.tt-chosen .tt-lp-name{opacity:1;}
 .tt-lp:hover{box-shadow:0 0 0 2px var(--mc),0 6px 28px rgba(0,0,0,.6);}
 .tt-lp.tt-chosen{box-shadow:0 0 0 2px var(--mc),0 0 20px var(--mglow);}

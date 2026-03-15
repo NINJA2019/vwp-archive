@@ -1173,9 +1173,9 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
   });
 
   // LP名前フォントサイズもスケール
-  const nameFontSize = Math.max(Math.round(16 * scale), 10);
-  const nameWidth = Math.max(Math.round(80 * scale), 50);
-  const nameBottom = Math.max(Math.round(38 * scale), 24);
+  const nameFontSize = Math.max(Math.round(12 * scale), 8);
+  const nameWidth = Math.max(Math.round(100 * scale), 60);
+  const nameBottom = Math.max(Math.round(26 * scale), 18);
   document.querySelectorAll('.tt-lp-name').forEach(n=>{
     n.style.fontSize = nameFontSize+'px';
     n.style.width = nameWidth+'px';
