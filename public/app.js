@@ -1312,4 +1312,203 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
   document.addEventListener('keydown', e => {
     if(e.key === 'Enter' && chosen && intro.style.display !== 'none') enterArchive();
   });
+
+  // ===== MOBILE IMMERSIVE UI =====
+  (function initMobUI(){
+    if(window.innerWidth > 700) return; // モバイル専用
+
+    // PC用を非表示、モバイル用を表示
+    intro.style.display = 'none';
+    const mobIntro = document.getElementById('mobIntro');
+    if(!mobIntro) return;
+    mobIntro.style.display = 'flex';
+
+    const stage    = document.getElementById('mobStage');
+    const dotsEl   = document.getElementById('mobDots');
+    const ambient  = document.getElementById('mobAmbient');
+    const platter  = document.getElementById('mobPlatter');
+    const ttFaceEl = document.getElementById('mobTTFace');
+    const ttImgEl  = document.getElementById('mobTTImg');
+    const armEl    = document.getElementById('mobArm');
+    const tnameEl  = document.getElementById('mobTTName');
+    const tjaEl    = document.getElementById('mobTTJa');
+    const enterBtnMob = document.getElementById('mobEnterBtn');
+    const lpArea   = document.getElementById('mobLPArea');
+
+    let mobCur = 0, mobChosen = null, mobBusy = false, mobAnimating = false, mobStartY = 0;
+
+    function makeMobFace(mb){
+      if(mb.daily){
+        return `<div class="mob-lp-face" style="background:${mb.bg};"><div class="mob-grooves" style="--spd:${mb.spd};"></div><div class="mob-lp-q" style="font-size:79px;">?</div></div>`;
+      } else {
+        return `<div class="mob-lp-face" style="background:#0a0910;"><div class="mob-grooves" style="--spd:${mb.spd};"></div><div class="mob-lp-img"><img src="${mb.img||''}" alt="" onerror="this.style.display='none'"></div></div>`;
+      }
+    }
+
+    const mobCards = MEMBERS.map((mb, i) => {
+      const card = document.createElement('div');
+      card.className = 'mob-lp-card';
+      card.style.cssText = `top:50%;left:50%;opacity:0;display:none;`;
+      const disc = document.createElement('div');
+      disc.className = 'mob-lp-disc';
+      disc.innerHTML = makeMobFace(mb);
+      const nm = document.createElement('div');
+      nm.className = 'mob-lp-name';
+      nm.style.color = mb.mc;
+      nm.textContent = mb.en;
+      const ja = document.createElement('div');
+      ja.className = 'mob-lp-ja';
+      ja.style.color = mb.mc;
+      ja.textContent = mb.ja;
+      card.appendChild(disc); card.appendChild(nm); card.appendChild(ja);
+      card.addEventListener('click', () => { if(!mobAnimating && !mobBusy) mobToss(mb, card); });
+      stage.appendChild(card);
+      const dot = document.createElement('div');
+      dot.className = 'mob-vdot' + (i===0?' on':'');
+      dotsEl.appendChild(dot);
+      return card;
+    });
+
+    function setAmbient(mb){
+      if(ambient) ambient.style.background = mb.mglow;
+    }
+
+    function mobCurveIn(card, fromBelow, cb){
+      card.style.display = 'flex';
+      card.style.transition = 'none';
+      const sy = fromBelow ? '+520px' : '-520px';
+      const sx = fromBelow ? '+80px' : '-80px';
+      const sr = fromBelow ? '-540deg' : '540deg';
+      card.style.transform = `translate(calc(-50% + ${sx}), calc(-50% + ${sy})) rotate(${sr}) scale(0.15)`;
+      card.style.opacity = '0';
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        card.style.transition = 'transform .7s cubic-bezier(.15,0,.25,1), opacity .35s ease';
+        card.style.transform = 'translate(-50%, calc(-50% - 20px)) rotate(0deg) scale(1)';
+        card.style.opacity = '1';
+        setTimeout(()=>{ card.style.transition=''; if(cb) cb(); }, 720);
+      }));
+    }
+
+    function mobCurveOut(card, toAbove, cb){
+      const ey = toAbove ? '-520px' : '+520px';
+      const ex = toAbove ? '-80px' : '+80px';
+      const er = toAbove ? '360deg' : '-360deg';
+      card.style.transition = 'transform .46s cubic-bezier(.75,0,.85,1), opacity .3s ease';
+      card.style.transform = `translate(calc(-50% + ${ex}), calc(-50% + ${ey})) rotate(${er}) scale(0.18)`;
+      card.style.opacity = '0';
+      setTimeout(()=>{ card.style.display='none'; card.style.transition=''; if(cb) cb(); }, 480);
+    }
+
+    function mobGoTo(next){
+      if(mobAnimating || next===mobCur || next<0 || next>=MEMBERS.length) return;
+      mobAnimating = true;
+      const goingNext = next > mobCur;
+      const old = mobCards[mobCur];
+      mobCur = next;
+      document.querySelectorAll('.mob-vdot').forEach((d,i)=>d.classList.toggle('on',i===mobCur));
+      setAmbient(MEMBERS[mobCur]);
+      mobCurveOut(old, goingNext, ()=>mobCurveIn(mobCards[mobCur], goingNext, ()=>{ mobAnimating=false; }));
+    }
+
+    function mobToss(mb, card){
+      if(mobBusy) return;
+      mobBusy = true;
+      const ttDisc = document.getElementById('mobTTDisc');
+      const cardDisc = card.querySelector('.mob-lp-disc');
+      const dr = cardDisc.getBoundingClientRect();
+      const mr = mobIntro.getBoundingClientRect();
+      const td = ttDisc.getBoundingClientRect();
+      const sz = 241, tsz = 54;
+      const fly = document.createElement('div');
+      fly.className = 'mob-flying';
+      fly.style.cssText = `width:${sz}px;height:${sz}px;left:${dr.left-mr.left}px;top:${dr.top-mr.top}px;`;
+      fly.innerHTML = makeMobFace(mb);
+      mobIntro.appendChild(fly);
+      card.style.transition = 'opacity .25s';
+      card.style.opacity = '0.15';
+      const tcx = td.left - mr.left + td.width/2;
+      const tcy = td.top  - mr.top  + td.height/2;
+      fly.style.transition = 'none';
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        fly.style.transition = 'left .6s cubic-bezier(.4,0,.2,1), top .6s cubic-bezier(.4,0,.2,1), width .6s, height .6s, transform .6s cubic-bezier(.4,0,.2,1), opacity .5s';
+        fly.style.left  = `${tcx - tsz/2}px`;
+        fly.style.top   = `${tcy - tsz/2}px`;
+        fly.style.width = `${tsz}px`;
+        fly.style.height= `${tsz}px`;
+        fly.style.transform = 'rotate(720deg)';
+        fly.style.opacity = '0.8';
+        setTimeout(()=>{ fly.remove(); mobSettle(mb); }, 620);
+      }));
+    }
+
+    function mobSettle(mb){
+      mobChosen = mb;
+      ttFaceEl.style.opacity = '0';
+      platter.style.animationPlayState = 'paused';
+      armEl.style.transform = 'rotate(-36deg)';
+      tnameEl.style.color = 'rgba(200,210,255,0.2)';
+      tjaEl.style.color = 'rgba(160,180,220,0.35)';
+      if(mb.img){ ttImgEl.src = mb.img; ttImgEl.style.display='block'; } else { ttImgEl.style.display='none'; }
+      setTimeout(()=>{
+        ttFaceEl.style.opacity = '1';
+        setTimeout(()=>{
+          armEl.style.transform = 'rotate(-6deg)';
+          setTimeout(()=>{
+            platter.style.animationPlayState = 'running';
+            tnameEl.textContent = mb.en;
+            tnameEl.style.color = mb.mc;
+            tjaEl.textContent = mb.ja;
+            tjaEl.style.color = mb.mc.replace(')', ',.65)').replace('rgb','rgba');
+            enterBtnMob.style.color = '#e8ecf8';
+            enterBtnMob.style.borderColor = 'rgba(176,184,255,.5)';
+            enterBtnMob.style.background = 'rgba(176,184,255,.07)';
+            enterBtnMob.style.cursor = 'pointer';
+            mobBusy = false;
+          }, 800);
+        }, 300);
+      }, 150);
+    }
+
+    function mobEnterArchive(){
+      if(!mobChosen) return;
+      const black = document.createElement('div');
+      black.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#000;opacity:0;transition:opacity .55s ease;pointer-events:none;';
+      document.body.appendChild(black);
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{ black.style.opacity='1'; }));
+      setTimeout(()=>{
+        mobIntro.style.display = 'none';
+        const m = mobChosen.m;
+        if(m === 'all'){
+          selectedMembers=[]; curMember='all'; curSort='daily';
+        } else {
+          selectedMembers=[m]; curMember=m;
+        }
+        curTag='all'; if(m!=='all') curSort='new';
+        curAlbum=null; searchQ='';
+        const sq=document.getElementById('searchInput'); if(sq) sq.value='';
+        buildSidebar(); updateCounts(); render();
+        setTimeout(()=>{ black.style.opacity='0'; setTimeout(()=>black.remove(),600); }, 80);
+      }, 600);
+    }
+
+    enterBtnMob.addEventListener('click', ()=>{ if(mobChosen) mobEnterArchive(); });
+
+    // スワイプ
+    lpArea.addEventListener('touchstart', e=>{ mobStartY=e.touches[0].clientY; },{passive:true});
+    lpArea.addEventListener('touchend', e=>{
+      const dy=e.changedTouches[0].clientY-mobStartY;
+      if(Math.abs(dy)>40) mobGoTo(dy<0?mobCur+1:mobCur-1);
+    },{passive:true});
+    lpArea.addEventListener('mousedown', e=>{ mobStartY=e.clientY; });
+    lpArea.addEventListener('mouseup', e=>{
+      const dy=e.clientY-mobStartY;
+      if(Math.abs(dy)>40) mobGoTo(dy<0?mobCur+1:mobCur-1);
+    });
+
+    // 初回LP表示
+    mobCards[0].style.display='flex';
+    setAmbient(MEMBERS[0]);
+    mobCurveIn(mobCards[0], true);
+  })();
+
 })();
