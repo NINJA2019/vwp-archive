@@ -3,7 +3,6 @@ exports.handler = async () => {
   const key = process.env.SUPABASE_SECRET_KEY;
   const headers = { apikey: key, Authorization: `Bearer ${key}` };
   try {
-    // Supabaseのmax-rows上限(1000件)を回避するためページネーションで全件取得
     let all = [];
     let offset = 0;
     const pageSize = 1000;
@@ -15,12 +14,16 @@ exports.handler = async () => {
       const data = await res.json();
       if (!Array.isArray(data) || data.length === 0) break;
       all = all.concat(data);
-      if (data.length < pageSize) break; // 最終ページ
+      if (data.length < pageSize) break;
       offset += pageSize;
     }
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // CDNで1時間キャッシュ、ブラウザは5分キャッシュ
+        'Cache-Control': 'public, s-maxage=3600, max-age=300, stale-while-revalidate=86400',
+      },
       body: JSON.stringify(all),
     };
   } catch (e) {
