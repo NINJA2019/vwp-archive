@@ -276,7 +276,7 @@ function buildSidebar(){
     // シリーズ名で自動グループ化
     function getSeriesKey(name){
       // 末尾の数字・ギリシャ文字・スペースを除いた共通プレフィックスをキーに
-      return name.replace(/[\s\d２３４αβγδε１-９LIVE]+$/i,'').trim() || name;
+      return name.replace(/(?:\s*LIVE\d*|\s+\d+|\s*[２３４１-９]|\s*[αβγδε])+$/i,'').trim() || name;
     }
     const groups=[];
     const groupMap={};
@@ -354,7 +354,8 @@ function buildSidebar(){
               if(!confirm('アルバム「'+al.name+'」を削除しますか？')) return;
               await deleteAlbumApi(al.id);
               if(curAlbum===al.id){curAlbum=null;}
-              await loadAlbums();
+              _albumsCacheTime=0;
+              await loadAlbums(true);
               buildSidebar();updateCounts();render();
             });
             btn2.appendChild(del);
@@ -470,7 +471,7 @@ function buildMobFilters(){
 async function del(id,e){
   e.stopPropagation();e.preventDefault();
   if(!confirm(t('delConfirm')))return;
-  try{await deleteVideoApi(id);videos=videos.filter(v=>v.id!==id);buildSidebar();updateCounts();render();}
+  try{await deleteVideoApi(id);_videosCacheTime=0;videos=videos.filter(v=>v.id!==id);buildSidebar();updateCounts();render();}
   catch(err){alert(err.message);}
 }
 
@@ -770,11 +771,13 @@ document.getElementById('mSave').addEventListener('click',async()=>{
   try{
     if(editId){
       const updated=await updateVideoApi(editId,{member,title,tags,date,url,note,spotify_url:spotify,album_id});
+      _videosCacheTime=0;
       const idx=videos.findIndex(v=>v.id===editId);
       if(idx!==-1) videos[idx]={...videos[idx],...updated};
       editId=null;
     } else {
       const nv=await addVideoApi({member,title,tags,date,url,note,spotify_url:spotify,album_id});
+      _videosCacheTime=0;
       videos.unshift(nv);
     }
     document.querySelector('#mover .modal h2').textContent=t('addVideo');
@@ -911,6 +914,7 @@ function openLinkSongModal(al){
 async function linkSong(videoId, albumId){
   try{
     await updateVideoApi(videoId,{album_id:albumId});
+    _videosCacheTime=0;
     const v=videos.find(v=>v.id===videoId);
     if(v) v.album_id=albumId;
     document.getElementById('linkSongOverlay')?.remove();
@@ -923,6 +927,7 @@ async function linkSong(videoId, albumId){
 async function unlinkSong(videoId, albumId){
   try{
     await updateVideoApi(videoId,{album_id:null});
+    _videosCacheTime=0;
     const v=videos.find(v=>v.id===videoId);
     if(v) v.album_id=null;
     document.getElementById('linkSongOverlay')?.remove();
@@ -977,6 +982,7 @@ function openEditAlbumModal(al){
     st.textContent='保存中…';st.style.color='var(--dim)';
     try{
       const updated=await updateAlbumApi(al.id,{name,purchase_url,is_sold_out,status_updated_at});
+      _albumsCacheTime=0;
       const idx=albums.findIndex(a=>a.id===al.id);
       if(idx!==-1) albums[idx]={...albums[idx],...updated};
       overlay.remove();
@@ -1014,7 +1020,9 @@ document.getElementById('albumSave')?.addEventListener('click',async()=>{
   status.textContent='追加中…';status.style.color='var(--dim)';
   try{
     const al=await addAlbumApi({member,name,purchase_url});
-    albums.push(al);
+    // キャッシュをリセットして再取得（確実に最新状態を反映）
+    _albumsCacheTime=0;
+    await loadAlbums(true);
     refreshAlbumSelects();
     document.getElementById('albumMover').classList.remove('open');
     buildSidebar();updateCounts();
