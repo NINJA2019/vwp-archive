@@ -64,6 +64,68 @@
   <div id="ttHint" style="font-size:.58rem;color:rgba(140,160,210,0.7);letter-spacing:.1em;margin-top:.5rem;">レコードをクリックしてセット</div>
 </div>
 
+<!-- ===== MOBILE IMMERSIVE UI ===== -->
+<div id="mobIntro" style="display:none;position:fixed;inset:0;z-index:9999;background:#04040a;flex-direction:column;overflow:hidden;font-family:'Barlow Condensed',sans-serif;">
+  <!-- アンビエントグロー -->
+  <div id="mobAmbient" style="position:absolute;inset:0;pointer-events:none;z-index:0;transition:background 1s ease;border-radius:50%;filter:blur(90px);transform:scale(1.8);opacity:0.35;"></div>
+  <!-- ヘッダー -->
+  <div style="position:relative;z-index:2;height:50px;background:rgba(4,4,10,0.92);border-bottom:1px solid rgba(160,170,220,0.15);display:flex;align-items:center;padding:0 20px;flex-shrink:0;">
+    <div style="font-family:'Cinzel',serif;font-size:.9rem;letter-spacing:0.3em;color:#fff;text-shadow:0 0 24px rgba(180,185,255,0.3);">
+      <em style="font-style:normal;color:rgba(180,185,255,0.45);font-size:.65em;letter-spacing:.18em;">UNOFFICIAL</em>
+      &nbsp;V · W · P&nbsp;<em style="font-style:normal;color:rgba(180,185,255,0.45);font-size:.65em;">ARCHIVE</em>
+    </div>
+  </div>
+  <!-- ミニターンテーブル -->
+  <div style="position:relative;z-index:2;display:flex;align-items:center;gap:14px;padding:12px 20px 10px;background:rgba(4,4,10,0.8);border-bottom:1px solid rgba(160,170,220,0.1);flex-shrink:0;">
+    <div id="mobTTDisc" style="width:72px;height:72px;flex-shrink:0;border-radius:50%;background:linear-gradient(145deg,#1e1c2c,#0c0b18);border:0.5px solid rgba(160,150,255,0.15);display:flex;align-items:center;justify-content:center;position:relative;">
+      <div id="mobPlatter" style="width:60px;height:60px;border-radius:50%;background:repeating-radial-gradient(circle at 50%,transparent 0,transparent 3px,rgba(255,255,255,0.02) 3px,rgba(255,255,255,0.02) 4px);animation:tt-spin 2.5s linear infinite;animation-play-state:paused;display:flex;align-items:center;justify-content:center;">
+        <div id="mobTTFace" style="position:absolute;width:54px;height:54px;border-radius:50%;overflow:hidden;opacity:0;transition:opacity .4s;">
+          <img id="mobTTImg" src="" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+        </div>
+      </div>
+      <div id="mobArm" style="position:absolute;top:3px;right:2px;width:2px;height:28px;background:linear-gradient(to bottom,#999,#555);border-radius:2px;transform-origin:top center;transform:rotate(-36deg);transition:transform .9s cubic-bezier(.4,0,.2,1);"></div>
+      <div id="mobArm" style="display:none;"></div>
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:.52rem;letter-spacing:.18em;color:rgba(200,210,255,0.35);font-weight:700;margin-bottom:2px;">NOW PLAYING</div>
+      <div id="mobTTName" style="font-size:1rem;font-weight:900;letter-spacing:.15em;color:rgba(200,210,255,0.2);transition:color .3s;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">SELECT A RECORD</div>
+      <div id="mobTTJa" style="font-size:.62rem;letter-spacing:.06em;color:rgba(160,180,220,0.35);transition:color .3s;margin-top:2px;">タップしてターンテーブルにセット</div>
+    </div>
+  </div>
+  <!-- メインLP表示エリア -->
+  <div id="mobLPArea" style="position:relative;flex:1;overflow:hidden;z-index:1;">
+    <div id="mobStage" style="position:relative;width:100%;height:100%;"></div>
+    <!-- 縦ドット -->
+    <div id="mobDots" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;z-index:4;"></div>
+    <!-- スワイプヒント -->
+    <div style="position:absolute;left:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:3px;z-index:4;">
+      <div style="font-size:11px;color:rgba(160,170,220,0.22);font-weight:900;line-height:1;">▲</div>
+      <div style="font-size:7px;color:rgba(160,170,220,0.18);letter-spacing:.1em;writing-mode:vertical-rl;">SWIPE</div>
+      <div style="font-size:11px;color:rgba(160,170,220,0.22);font-weight:900;line-height:1;">▼</div>
+    </div>
+  </div>
+  <!-- ボタン -->
+  <div style="position:relative;z-index:2;background:rgba(4,4,10,0.9);padding:6px 20px 0;">
+    <div style="font-size:.55rem;color:rgba(140,160,210,0.55);letter-spacing:.1em;text-align:center;padding-bottom:5px;">レコードをタップしてセット</div>
+    <button id="mobEnterBtn" style="width:100%;height:42px;border-radius:21px;border:1px solid rgba(176,184,255,0.2);background:none;color:rgba(176,184,255,0.35);font-family:'Barlow Condensed',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:.25em;cursor:default;transition:all .4s;margin-bottom:14px;">▶ &nbsp; PLAY ARCHIVE</button>
+  </div>
+</div>
+<style>
+@keyframes mob-groove-spin{to{transform:rotate(360deg);}}
+.mob-lp-card{position:absolute;top:50%;left:50%;display:flex;flex-direction:column;align-items:center;cursor:pointer;will-change:transform,opacity;margin-top:-20px;}
+.mob-lp-disc{width:241px;height:241px;border-radius:50%;position:relative;}
+.mob-lp-face{width:100%;height:100%;border-radius:50%;overflow:hidden;box-shadow:0 8px 48px rgba(0,0,0,.95);}
+.mob-grooves{position:absolute;inset:0;border-radius:50%;background:repeating-radial-gradient(circle at 50%,transparent 0,transparent 3px,rgba(255,255,255,0.025) 3px,rgba(255,255,255,0.025) 4px);animation:mob-groove-spin var(--spd,42s) linear infinite;}
+.mob-lp-img{position:absolute;inset:0;border-radius:50%;overflow:hidden;}
+.mob-lp-img img{width:100%;height:100%;object-fit:cover;}
+.mob-lp-q{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:79px;font-weight:900;color:#07090e;}
+.mob-lp-name{font-size:1.3rem;font-weight:900;letter-spacing:.15em;margin-top:18px;text-align:center;opacity:.9;}
+.mob-lp-ja{font-size:.72rem;letter-spacing:.1em;margin-top:4px;text-align:center;opacity:.6;}
+.mob-vdot{width:5px;height:5px;border-radius:50%;background:rgba(160,170,220,0.18);transition:background .25s;}
+.mob-vdot.on{background:rgba(255,255,255,0.65);}
+.mob-flying{position:absolute;border-radius:50%;pointer-events:none;will-change:transform,opacity;z-index:20;overflow:hidden;}
+</style>
+
 <style>
 @keyframes tt-spin{to{transform:rotate(360deg);}}
 @keyframes lp-groove-spin{to{transform:rotate(360deg);}}
@@ -124,13 +186,7 @@
     <div class="sb-sec"><div class="sb-title" data-i18n="tags">タグ</div><div id="tagFilters"></div></div>
   </aside>
   <div class="content">
-    <div class="howto-bar" id="howtoBar">
-      <span class="howto-item"><span class="howto-icon">🎙</span><span data-i18n="howtoMember"></span></span>
-      <span class="howto-sep">·</span>
-      <span class="howto-item"><span class="howto-icon">🏷</span><span data-i18n="howtoTag"></span></span>
-      <span class="howto-sep">·</span>
-      <span class="howto-item"><span class="howto-icon">✦</span><span data-i18n="howtoDaily"></span></span>
-    </div>
+
     <div class="sort-bar">
       <span data-i18n="sort">並び順:</span>
       <button class="sbtn on" id="sNew" data-i18n="newest">新しい順</button>
