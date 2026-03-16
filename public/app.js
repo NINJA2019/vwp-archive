@@ -56,8 +56,15 @@ function storePw(pw){try{localStorage.setItem(PW_SK,pw);}catch{}}
 let albums=[];
 let curAlbum=null; // 選択中のアルバムid (nullなら未選択)
 
-async function loadAlbums(){
-  try{ const res=await fetch('/api/albums-get'); const d=await res.json(); if(Array.isArray(d)) albums=d; }catch(e){console.error(e);}
+// ブラウザメモリキャッシュ（タブを開いている間は再取得しない）
+let _videosCacheTime = 0, _albumsCacheTime = 0;
+const VIDEOS_CACHE_TTL = 5 * 60 * 1000;  // 5分
+const ALBUMS_CACHE_TTL = 2 * 60 * 1000;  // 2分
+
+async function loadAlbums(force = false){
+  const now = Date.now();
+  if(!force && albums.length > 0 && now - _albumsCacheTime < ALBUMS_CACHE_TTL) return;
+  try{ const res=await fetch('/api/albums-get'); const d=await res.json(); if(Array.isArray(d)){ albums=d; _albumsCacheTime=Date.now(); } }catch(e){console.error(e);}
 }
 async function addAlbumApi(payload){
   const res=await fetch('/api/albums-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:getStoredPw(),...payload})});
@@ -78,8 +85,10 @@ function albumThumb(album){
   const first=videos.find(v=>v.album_id===album.id);
   return first?thumb(first):'';
 }
-async function loadVideos(){
-  try{ const res=await fetch('/api/videos-get'); const d=await res.json(); if(Array.isArray(d)) videos=d; }catch(e){console.error(e);}
+async function loadVideos(force = false){
+  const now = Date.now();
+  if(!force && videos.length > 0 && now - _videosCacheTime < VIDEOS_CACHE_TTL) return;
+  try{ const res=await fetch('/api/videos-get'); const d=await res.json(); if(Array.isArray(d)){ videos=d; _videosCacheTime=Date.now(); } }catch(e){console.error(e);}
 }
 async function addVideoApi(payload){
   const res=await fetch('/api/videos-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:getStoredPw(),...payload})});
@@ -294,7 +303,7 @@ function buildSidebar(){
           if(!confirm(`アルバム「${al.name}」を削除しますか？（収録曲のアルバム紐付けも解除されます）`)) return;
           await deleteAlbumApi(al.id);
           if(curAlbum===al.id){curAlbum=null;}
-          await loadAlbums();
+          await loadAlbums(true);
           buildSidebar();updateCounts();render();
         });
         btn.appendChild(del);
@@ -1110,7 +1119,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     if(!res.ok){ status.textContent='エラー: '+(data.error||res.status); status.style.color='#fca5a5'; return; }
     status.textContent = `✅ ${data.message}`;
     status.style.color='#86efac';
-    await loadVideos(); buildSidebar(); updateCounts(); render();
+    await loadVideos(true); buildSidebar(); updateCounts(); render();
   } catch(e){
     status.textContent='エラー: '+e.message; status.style.color='#fca5a5';
   } finally {
