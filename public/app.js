@@ -1413,7 +1413,10 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     }
 
     function mobGoTo(next){
-      if(mobAnimating || next===mobCur || next<0 || next>=MEMBERS.length) return;
+      // 末尾→先頭、先頭→末尾でループ
+      if(next >= MEMBERS.length) next = 0;
+      if(next < 0) next = MEMBERS.length - 1;
+      if(mobAnimating || next===mobCur) return;
       mobAnimating = true;
       const goingNext = next > mobCur;
       const old = mobCards[mobCur];
