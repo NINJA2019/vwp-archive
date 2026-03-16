@@ -1119,6 +1119,8 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
 });
 // ===== TURNTABLE INTRO =====
 (function(){
+  // スタートページ表示中は裏のページをスクロール固定
+  document.body.style.overflow = 'hidden';
   const MEMBERS = [
     {m:'all',    icon:'?',  img:null,  daily:true,            ja:'今日の観測', en:'DAILY',        spd:'48s', bg:'radial-gradient(circle at 38% 32%,#3a3880,#1a1860)', mc:'#b0b8ff', mglow:'rgba(176,184,255,.35)'},
     {m:'vwp',    icon:'✦',  img:'/icons/V_W_P.png',           ja:'V.W.P',      en:'V.W.P',        spd:'42s', bg:'radial-gradient(circle at 38% 32%,#2c1e50,#0d0a1e)', mc:'#c4b5fd', mglow:'rgba(196,181,253,.35)'},
@@ -1277,6 +1279,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     setTimeout(() => {
       // 暗転完了：ターンテーブル画面を非表示
       intro.style.display = 'none';
+      document.body.style.overflow = '';
 
       // メンバーフィルタを適用
       const m = chosen.m;
@@ -1322,6 +1325,16 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     const mobIntro = document.getElementById('mobIntro');
     if(!mobIntro) return;
     mobIntro.style.display = 'flex';
+
+    // スタートページ表示中は裏ページのスクロールを固定
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+    // touchmoveのデフォルト動作を防ぐ（スタートページ以外へのスクロール防止）
+    const preventScroll = e => {
+      if(!e.target.closest('#mobIntro')) e.preventDefault();
+    };
+    document.addEventListener('touchmove', preventScroll, { passive: false });
+    document.body.style.overflow = 'hidden';
 
     const stage    = document.getElementById('mobStage');
     const dotsEl   = document.getElementById('mobDots');
@@ -1477,6 +1490,11 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       requestAnimationFrame(()=>requestAnimationFrame(()=>{ black.style.opacity='1'; }));
       setTimeout(()=>{
         mobIntro.style.display = 'none';
+        // スクロール固定を解除
+        document.body.style.overflow = '';
+        document.body.style.touchAction = '';
+        document.removeEventListener('touchmove', preventScroll);
+        document.body.style.overflow = '';
         const m = mobChosen.m;
         if(m === 'all'){
           selectedMembers=[]; curMember='all'; curSort='daily';
