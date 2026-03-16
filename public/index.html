@@ -97,11 +97,21 @@
     <div id="mobStage" style="position:relative;width:100%;height:100%;"></div>
     <!-- 縦ドット -->
     <div id="mobDots" style="position:absolute;right:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:7px;z-index:4;"></div>
-    <!-- スワイプヒント -->
-    <div style="position:absolute;left:16px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:center;gap:3px;z-index:4;">
-      <div style="font-size:11px;color:rgba(160,170,220,0.22);font-weight:900;line-height:1;">▲</div>
-      <div style="font-size:7px;color:rgba(160,170,220,0.18);letter-spacing:.1em;writing-mode:vertical-rl;">SWIPE</div>
-      <div style="font-size:11px;color:rgba(160,170,220,0.22);font-weight:900;line-height:1;">▼</div>
+    <!-- 上スワイプガイド -->
+    <div class="mob-swipe-top">
+      <svg width="24" height="14" viewBox="0 0 24 14" fill="none">
+        <path d="M2 12 L12 2 L22 12" stroke="rgba(200,210,255,0.85)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2 12 L12 2 L22 12" stroke="rgba(200,210,255,0.35)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="mob-swipe-txt">SWIPE</div>
+    </div>
+    <!-- 下スワイプガイド -->
+    <div class="mob-swipe-bot">
+      <div class="mob-swipe-txt">SWIPE</div>
+      <svg width="24" height="14" viewBox="0 0 24 14" fill="none">
+        <path d="M2 2 L12 12 L22 2" stroke="rgba(200,210,255,0.85)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2 2 L12 12 L22 2" stroke="rgba(200,210,255,0.35)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     </div>
   </div>
   <!-- ボタン -->
@@ -112,6 +122,11 @@
 </div>
 <style>
 @keyframes mob-groove-spin{to{transform:rotate(360deg);}}
+@keyframes swipe-pulse-up{0%,100%{transform:translate(-50%,0);opacity:.35;}50%{transform:translate(-50%,-6px);opacity:.8;}}
+@keyframes swipe-pulse-dn{0%,100%{transform:translate(-50%,0);opacity:.35;}50%{transform:translate(-50%,6px);opacity:.8;}}
+.mob-swipe-top{position:absolute;top:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:none;z-index:5;animation:swipe-pulse-up 2.2s ease-in-out infinite;}
+.mob-swipe-bot{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:3px;pointer-events:none;z-index:5;animation:swipe-pulse-dn 2.2s ease-in-out infinite;animation-delay:.8s;}
+.mob-swipe-txt{font-family:'Barlow Condensed',sans-serif;font-size:.55rem;letter-spacing:.18em;color:rgba(200,210,255,0.7);font-weight:700;}
 .mob-lp-card{position:absolute;top:50%;left:50%;display:flex;flex-direction:column;align-items:center;cursor:pointer;will-change:transform,opacity;margin-top:-20px;}
 .mob-lp-disc{width:241px;height:241px;border-radius:50%;position:relative;}
 .mob-lp-face{width:100%;height:100%;border-radius:50%;overflow:hidden;box-shadow:0 8px 48px rgba(0,0,0,.95);}
@@ -386,6 +401,20 @@
     <div id="pageUpdate" style="display:none;">
       <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.6rem;letter-spacing:.15em;margin-bottom:1.8rem;color:#c8d0ff;">UPDATE</h2>
       <div style="display:flex;flex-direction:column;gap:.6rem;">
+        <div style="display:flex;gap:1.2rem;padding:.9rem 1.1rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;align-items:flex-start;">
+          <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.06em;color:#c4b5fd;white-space:nowrap;padding-top:.05rem;">2026/03/16</span>
+          <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.3rem;">
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ モバイル版にイマーシブなLP選択画面を追加 — 上下スワイプでレコードを選び、タップするとターンテーブルへトス</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ スワイプで最後のLPまで行くと先頭に戻るループ対応</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ アルバム一覧をシリーズでグループ化（I SCREAM、魔法、寓話など）</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ スタートページのLP名前テキストを小さく・読みやすく調整</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ DAILYレコードの絵柄を「?」マークに変更 — 今日の観測モードで入場</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ スタート画面を開いている間は背景のスクロールを固定</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ サイト全体の文字・輪郭の明度を調整（より読みやすく）</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ ページ上部のヒントバーを削除（よりすっきりとした表示に）</li>
+            <li style="font-size:.78rem;color:var(--dim);line-height:1.7;">✦ モバイルでの管理者ログインボタンを非表示に</li>
+          </ul>
+        </div>
         <div style="display:flex;gap:1.2rem;padding:.9rem 1.1rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;align-items:flex-start;">
           <span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.78rem;letter-spacing:.06em;color:#c4b5fd;white-space:nowrap;padding-top:.05rem;">2026/03/13</span>
           <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:.3rem;">
