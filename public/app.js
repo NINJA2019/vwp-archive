@@ -49,8 +49,8 @@ let filteredCache=[],curPage=0;
 const PAGE_SIZE=30;
 let ioObserver=null;
 const PW_SK='vwp_admin_pw';
-function getStoredPw(){try{return localStorage.getItem(PW_SK)||'';}catch{return '';}}
-function storePw(pw){try{localStorage.setItem(PW_SK,pw);}catch{}}
+function getStoredPw(){try{return sessionStorage.getItem(PW_SK)||'';}catch{return '';}}
+function storePw(pw){try{sessionStorage.setItem(PW_SK,pw);}catch{}}
 
 
 let albums=[];
@@ -109,9 +109,13 @@ function fmtDate(d){if(!d)return '';const dt=new Date(d+'T00:00:00');return `${d
 function parseTags(v){const raw=v.tags||v.tag||'';return raw.split(/[ ,]+/).map(s=>s.replace(/^#/,'')).filter(Boolean);}
 function parseMembers(v){return (v.member||'').split(/[ ,]+/).filter(Boolean);}
 function tTag(tag){ return (I18N[lang].tagMap||{})[tag] || tag; }
-function tagPills(v){return parseTags(v).map(tag=>`<span class="pill">#${tTag(tag)}</span>`).join('');}
-function mbPill(mid){return `<span class="pill ${MBR_CLS[mid]||''}">${mbr(mid)}</span>`;}
-function spotifyBtn(v){if(!v.spotify_url)return '';return `<a class="spotify-btn" href="${v.spotify_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">♫ ${t('spotify')}</a>`;}
+// XSS対策: HTML文字列エスケープ
+function esc(s){ const d=document.createElement('div'); d.textContent=String(s==null?'':s); return d.innerHTML; }
+// XSS対策: href/onclickに使うURLをhttps?://のみ許可
+function safeUrl(url){ if(!url) return '#'; return /^https?:\/\//i.test(url) ? url : '#'; }
+function tagPills(v){return parseTags(v).map(tag=>`<span class="pill">#${esc(tTag(tag))}</span>`).join('');}
+function mbPill(mid){return `<span class="pill ${MBR_CLS[mid]||''}">${esc(mbr(mid))}</span>`;}
+function spotifyBtn(v){if(!v.spotify_url)return '';const u=safeUrl(v.spotify_url);if(u==='#')return '';return `<a class="spotify-btn" href="${u}" target="_blank" rel="noopener" onclick="event.stopPropagation()">♫ ${t('spotify')}</a>`;}
 
 
 // ===== 今日の観測 =====
@@ -293,7 +297,7 @@ function buildSidebar(){
         const btn=document.createElement('button');
         const isOn=curAlbum===al.id;
         btn.className='cfilt album-filt'+(isOn?' on':'');
-        btn.innerHTML=`<span class="cfilt-label">📀 ${al.name}</span>`;
+        btn.innerHTML=`<span class="cfilt-label">📀 ${esc(al.name)}</span>`;
       if(isAdmin){
         const del=document.createElement('span');
         del.textContent=' ✕';
@@ -499,21 +503,21 @@ function showMb(v){return curMember==='all'?parseMembers(v).map(m=>mbPill(m)).jo
 function renderGrid(list){
   if(!list.length)return `<div class="empty"><div class="empty-i">🌙</div><h3>${t('notFound')}</h3></div>`;
   return `<div class="vgrid">`+list.map((v,i)=>`
-    <div class="vcard" style="animation-delay:${i*.022}s" onclick="window.open('${v.url}','_blank')">
+    <div class="vcard" style="animation-delay:${i*.022}s" onclick="window.open('${safeUrl(v.url)}','_blank')">
       <div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div>
       <div class="cbody">
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div>
-        <div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${v.title}</div>
-        <div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${v.note}</span>`:''}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div>
+        <div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div>
+        <div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div>
       </div>
     </div>`).join('')+`</div>`;
 }
 function renderList(list){
   if(!list.length)return `<div class="empty"><div class="empty-i">🌙</div><h3>${t('notFound')}</h3></div>`;
   return `<div class="vlist">`+list.map((v,i)=>`
-    <a class="litem" style="animation-delay:${i*.022}s" href="${v.url}" target="_blank" rel="noopener">
+    <a class="litem" style="animation-delay:${i*.022}s" href="${safeUrl(v.url)}" target="_blank" rel="noopener">
       <div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div>
-      <div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${v.title}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${v.note}</span>`:''}</div></div>
+      <div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>
       ${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
     </a>`).join('')+`</div>`;
 }
@@ -523,11 +527,11 @@ function renderTimeline(list){
   list.forEach((v,i)=>{
     const y=v.date?v.date.slice(0,4):'?';
     if(y!==yr){yr=y;html+=`<div class="tl-yr">${y}</div>`;}
-    html+=`<div class="tl-row" style="animation-delay:${i*.022}s" onclick="window.open('${v.url}','_blank')">
+    html+=`<div class="tl-row" style="animation-delay:${i*.022}s" onclick="window.open('${safeUrl(v.url)}','_blank')">
       <div class="tl-dot"></div>
       <div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div>
-      <div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${v.title}</div>
-      <div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${v.note}</span>`:''}</div></div>
+      <div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div>
+      <div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>
       ${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
     </div>`;
   });
@@ -555,8 +559,8 @@ function loadMoreItems(){
     chunk.forEach((v,i)=>{
       const div=document.createElement('div');
       div.className='vcard';div.style.animationDelay=((start+i)*.022)+'s';
-      div.onclick=()=>window.open(v.url,'_blank');
-      div.innerHTML=`<div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div><div class="cbody"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div><div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${v.title}</div><div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${v.note}</span>`:''}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div></div>`;
+      div.onclick=()=>window.open(safeUrl(v.url),'_blank');
+      div.innerHTML=`<div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div><div class="cbody"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div><div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div></div>`;
       wrap.appendChild(div);
     });
   } else if(curView==='list'){
@@ -564,8 +568,8 @@ function loadMoreItems(){
     chunk.forEach((v,i)=>{
       const a=document.createElement('a');
       a.className='litem';a.style.animationDelay=((start+i)*.022)+'s';
-      a.href=v.url;a.target='_blank';a.rel='noopener';
-      a.innerHTML=`<div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div><div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${v.title}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${v.note}</span>`:''}</div></div>${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
+      a.href=safeUrl(v.url);a.target='_blank';a.rel='noopener';
+      a.innerHTML=`<div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div><div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
       wrap.appendChild(a);
     });
   } else {
@@ -585,8 +589,8 @@ function loadMoreItems(){
       }
       const row=document.createElement('div');
       row.className='tl-row';row.style.animationDelay=((start+i)*.022)+'s';
-      row.onclick=()=>window.open(v.url,'_blank');
-      row.innerHTML=`<div class="tl-dot"></div><div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div><div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${v.title}</div><div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${v.note}</span>`:''}</div></div>${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
+      row.onclick=()=>window.open(safeUrl(v.url),'_blank');
+      row.innerHTML=`<div class="tl-dot"></div><div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div><div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
       tl.appendChild(row);
     });
   }
@@ -629,10 +633,10 @@ function render(){
         ah.innerHTML=`
           <div class="al-thumb-wrap">${th?`<img src="${th}" alt="" class="al-thumb">`:''}</div>
           <div class="al-info">
-            <div class="al-name">${al.name}</div>
-            <div class="al-member">${mbr(al.member)}</div>
+            <div class="al-name">${esc(al.name)}</div>
+            <div class="al-member">${esc(mbr(al.member))}</div>
             <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
-              ${al.purchase_url?`<a class="al-buy-btn" href="${al.purchase_url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🛒 購入ページ</a>`:''}
+              ${al.purchase_url?`<a class="al-buy-btn" href="${safeUrl(al.purchase_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">🛒 購入ページ</a>`:''}
               ${soldBadge}${updLabel}
             </div>
           </div>
@@ -870,15 +874,15 @@ function openLinkSongModal(al){
   const linked=videos.filter(v=>v.album_id===al.id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
   overlay.innerHTML=`
     <div class="modal" style="max-width:520px;max-height:85vh;overflow-y:auto;">
-      <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:.12em;color:#7eb8f7;margin-bottom:1rem;">🔗 ${al.name} — 曲の管理</h2>
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:.12em;color:#7eb8f7;margin-bottom:1rem;">🔗 ${esc(al.name)} — 曲の管理</h2>
       <div style="margin-bottom:1.2rem;">
         <div style="font-size:.72rem;color:var(--dim);letter-spacing:.08em;margin-bottom:.5rem;">収録曲 (${linked.length}曲)</div>
         <div id="linkedList" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto;">
           ${linked.length===0?'<div style="font-size:.78rem;color:var(--dim);padding:.3rem 0;">まだ収録曲がありません</div>':
             linked.map(v=>`
               <div style="display:flex;align-items:center;gap:.5rem;padding:.35rem .5rem;background:var(--surface2);border-radius:5px;font-size:.78rem;">
-                <span style="flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.title}</span>
-                <span style="color:var(--dim);flex-shrink:0;">${v.date||''}</span>
+                <span style="flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(v.title)}</span>
+                <span style="color:var(--dim);flex-shrink:0;">${esc(v.date||'')}</span>
                 <button onclick="unlinkSong(${v.id},${al.id})" style="background:none;border:none;color:#fca5a5;cursor:pointer;font-size:.85rem;padding:0 4px;flex-shrink:0;" title="紐付けを解除">✕</button>
               </div>`).join('')}
         </div>
@@ -890,8 +894,8 @@ function openLinkSongModal(al){
           ${candidates.length===0?'<div style="font-size:.78rem;color:var(--dim);">対象曲なし</div>':
             candidates.map(v=>`
               <div style="display:flex;align-items:center;gap:.5rem;padding:.35rem .5rem;background:var(--surface2);border-radius:5px;font-size:.78rem;" class="link-candidate">
-                <span style="flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${v.title}</span>
-                <span style="color:var(--dim);flex-shrink:0;">${v.date||''}</span>
+                <span style="flex:1;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(v.title)}</span>
+                <span style="color:var(--dim);flex-shrink:0;">${esc(v.date||'')}</span>
                 <button onclick="linkSong(${v.id},${al.id})" style="background:rgba(126,184,247,.15);border:1px solid rgba(126,184,247,.3);color:#7eb8f7;cursor:pointer;font-size:.72rem;padding:2px 8px;border-radius:4px;flex-shrink:0;">紐付け</button>
               </div>`).join('')}
         </div>
@@ -945,14 +949,14 @@ function openEditAlbumModal(al){
   const today=new Date().toISOString().slice(0,10);
   overlay.innerHTML=`
     <div class="modal" style="max-width:400px;">
-      <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:.12em;color:#c084fc;margin-bottom:1.2rem;">⚙ ${al.name} — 編集</h2>
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.3rem;letter-spacing:.12em;color:#c084fc;margin-bottom:1.2rem;">⚙ ${esc(al.name)} — 編集</h2>
       <div class="fg">
         <label>アルバム名</label>
-        <input type="text" id="editAlName" value="${al.name}">
+        <input type="text" id="editAlName" value="${esc(al.name)}">
       </div>
       <div class="fg">
         <label>購入ページURL</label>
-        <input type="text" id="editAlUrl" value="${al.purchase_url||''}">
+        <input type="text" id="editAlUrl" value="${esc(al.purchase_url||'')}">
       </div>
       <div class="fg" style="display:flex;align-items:center;gap:1rem;">
         <label style="margin:0;display:flex;align-items:center;gap:.5rem;cursor:pointer;">

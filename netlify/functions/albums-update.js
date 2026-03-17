@@ -2,9 +2,16 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch(e) { return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
-  const { password, id, ...fields } = body;
+  const { password, id, name, purchase_url, is_sold_out, status_updated_at } = body;
   if (password !== process.env.ADMIN_PASSWORD) return { statusCode: 401, body: JSON.stringify({ error: 'パスワードが違います' }) };
   if (!id) return { statusCode: 400, body: JSON.stringify({ error: 'idが必要です' }) };
+  // ホワイトリスト: 更新を許可するフィールドのみ抽出
+  const fields = {};
+  if (name !== undefined) fields.name = name;
+  if (purchase_url !== undefined) fields.purchase_url = purchase_url;
+  if (is_sold_out !== undefined) fields.is_sold_out = is_sold_out;
+  if (status_updated_at !== undefined) fields.status_updated_at = status_updated_at;
+  if (Object.keys(fields).length === 0) return { statusCode: 400, body: JSON.stringify({ error: '更新するフィールドがありません' }) };
   const supaUrl = process.env.SUPABASE_URL;
   const supaKey = process.env.SUPABASE_SECRET_KEY;
   if (!supaUrl || !supaKey) return { statusCode: 500, body: JSON.stringify({ error: 'Supabase env vars missing' }) };
