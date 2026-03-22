@@ -36,3 +36,183 @@
   .al-name { font-size:.8rem; }
   .al-info { min-width:0; }
 }
+
+/* =============================================
+   MOBILE OPTIMIZATION — appended 2026-03-22
+   CSS-only changes. No existing rules deleted.
+   ============================================= */
+
+/* --- 1. Header: touch targets & spacing --- */
+@media (max-width: 700px) {
+  .vbtn {
+    min-width: 32px !important;
+    min-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: .32rem .55rem !important;
+  }
+  .theme-btn {
+    min-width: 32px !important;
+    min-height: 32px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+/* iPhone SE (375px): hide "ARCHIVE" part of logo */
+@media (max-width: 390px) {
+  .logo em {
+    display: none !important;
+  }
+  .header-inner {
+    gap: .4rem !important;
+  }
+}
+
+/* --- 2. Grid cards: 2-col forced on narrow screens --- */
+@media (max-width: 400px) {
+  .vgrid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .cbody {
+    padding: .45rem .6rem .55rem !important;
+  }
+  .ctitle {
+    font-size: .82rem !important;
+  }
+  .cmeta {
+    font-size: .66rem !important;
+  }
+}
+
+/* --- 3. Sort bar: wrap on narrow screens --- */
+@media (max-width: 700px) {
+  .sort-bar {
+    flex-wrap: wrap !important;
+    gap: .4rem .7rem !important;
+  }
+  .rcnt {
+    margin-left: 0 !important;
+    width: 100%;
+    text-align: right;
+    font-size: .7rem !important;
+  }
+}
+
+/* --- 4. Mobile filter bar: touch & scroll improvements --- */
+@media (max-width: 700px) {
+  .mob-chip {
+    min-height: 34px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+  .mob-scroll {
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x proximity;
+  }
+  .mob-chip {
+    scroll-snap-align: start;
+  }
+}
+
+/* --- 5. List & Timeline: smaller thumbs on mobile --- */
+@media (max-width: 700px) {
+  .lthumb {
+    width: 80px !important;
+  }
+  .litem {
+    padding: .5rem 1rem !important;
+    gap: .65rem !important;
+  }
+  .ltitle {
+    font-size: .86rem !important;
+  }
+  .tl-th {
+    width: 72px !important;
+  }
+  .tl {
+    padding: .9rem 1rem !important;
+  }
+  .tl-line {
+    left: 2.6rem !important;
+  }
+  .tl-yr {
+    margin-left: 1.9rem !important;
+  }
+  .tl-row {
+    gap: .55rem !important;
+  }
+}
+
+/* --- 6. Album header: mobile refinement --- */
+@media (max-width: 700px) {
+  #albumHeader {
+    flex-wrap: wrap !important;
+    padding: .65rem .75rem !important;
+    gap: .5rem !important;
+  }
+  .al-thumb-wrap {
+    width: 64px !important;
+    height: 64px !important;
+  }
+  .al-add-btn {
+    font-size: .65rem !important;
+    padding: .25rem .55rem !important;
+  }
+  .al-buy-btn {
+    font-size: .65rem !important;
+    padding: 2px 8px !important;
+  }
+}
+
+/* --- 7. Modals: mobile sizing --- */
+@media (max-width: 700px) {
+  .modal {
+    width: 94% !important;
+    padding: 1.2rem !important;
+    max-height: 88vh !important;
+    border-radius: 10px !important;
+  }
+  .modal h2 {
+    font-size: .82rem !important;
+    margin-bottom: 1rem !important;
+  }
+  .fg input, .fg select, .fg textarea {
+    font-size: 16px !important; /* prevents iOS zoom on focus */
+  }
+}
+
+/* --- 8. Safe area: FAB & bottom elements --- */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .fab {
+    bottom: calc(1.2rem + env(safe-area-inset-bottom)) !important;
+  }
+  @media (max-width: 700px) {
+    .mob-filters {
+      padding-bottom: calc(.7rem + env(safe-area-inset-bottom, 0px)) !important;
+    }
+  }
+}
+
+/* --- 9. Accessibility: reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .vcard, .litem, .tl-row {
+    animation: none !important;
+  }
+  .tw img {
+    transition: none !important;
+  }
+  .tov {
+    transition: none !important;
+  }
+  .mpill, .cfilt, .mob-chip, .vbtn, .sbtn, .btn, .theme-btn {
+    transition: none !important;
+  }
+  @keyframes badge-pulse {
+    0%, 100% { opacity: 1; }
+  }
+  body {
+    transition: none !important;
+  }
+}
