@@ -44,6 +44,21 @@ function closePage(){
   document.body.style.overflow='';
 }
 
+// ===== FETCH ERROR TOAST =====
+function showFetchError(msg){
+  let toast=document.getElementById('fetchErrToast');
+  if(!toast){
+    toast=document.createElement('div');
+    toast.id='fetchErrToast';
+    toast.style.cssText='position:fixed;top:62px;left:50%;transform:translateX(-50%);z-index:9999;background:rgba(252,165,165,.15);border:1px solid rgba(252,165,165,.35);color:#fca5a5;padding:.5rem 1.2rem;border-radius:6px;font-size:.78rem;backdrop-filter:blur(8px);transition:opacity .4s;';
+    document.body.appendChild(toast);
+  }
+  toast.textContent=msg;
+  toast.style.opacity='1';
+  clearTimeout(toast._tid);
+  toast._tid=setTimeout(()=>{toast.style.opacity='0';},5000);
+}
+
 let videos=[],curMember='all',selectedMembers=[],curTag='all',curSort='new',curView='grid',searchQ='',isAdmin=false,editId=null;
 let filteredCache=[],curPage=0;
 const PAGE_SIZE=30;
@@ -85,7 +100,7 @@ const ALBUMS_CACHE_TTL = 2 * 60 * 1000;  // 2分
 async function loadAlbums(force = false){
   const now = Date.now();
   if(!force && albums.length > 0 && now - _albumsCacheTime < ALBUMS_CACHE_TTL) return;
-  try{ const res=await fetch('/api/albums-get'); const d=await res.json(); if(Array.isArray(d)){ albums=d; _albumsCacheTime=Date.now(); } }catch(e){console.error(e);}
+  try{ const res=await fetch('/api/albums-get'); const d=await res.json(); if(Array.isArray(d)){ albums=d; _albumsCacheTime=Date.now(); } }catch(e){console.error(e);showFetchError('アルバムデータの取得に失敗しました');}
 }
 async function addAlbumApi(payload){
   const res=await fetch('/api/albums-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:getStoredPw(),...payload})});
@@ -109,7 +124,7 @@ function albumThumb(album){
 async function loadVideos(force = false){
   const now = Date.now();
   if(!force && videos.length > 0 && now - _videosCacheTime < VIDEOS_CACHE_TTL) return;
-  try{ const res=await fetch('/api/videos-get'); const d=await res.json(); if(Array.isArray(d)){ videos=d; _videosCacheTime=Date.now(); } }catch(e){console.error(e);}
+  try{ const res=await fetch('/api/videos-get'); const d=await res.json(); if(Array.isArray(d)){ videos=d; _videosCacheTime=Date.now(); } }catch(e){console.error(e);showFetchError('動画データの取得に失敗しました');}
 }
 async function addVideoApi(payload){
   const res=await fetch('/api/videos-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:getStoredPw(),...payload})});
@@ -162,7 +177,7 @@ function getDailyPicks(){
   const today = getTodayJST();
   try {
     const stored = JSON.parse(localStorage.getItem(DAILY_SK)||'null');
-    if(stored && stored.date === today) return stored.picks;
+    if(stored && stored.date === today) return stored.picks.map(id=>videos.find(v=>v.id===id)).filter(Boolean);
   } catch(e){}
 
   // シード = 日付文字列をハッシュ化
@@ -639,7 +654,7 @@ function updateNewBadgeIds(){
   const members=['kafu','rime','harusar','isekai','koko','vwp'];
   newBadgeIds=new Set();
   members.forEach(m=>{
-    const mv=[...videos].filter(v=>(v.member||'').split(',').map(s=>s.trim()).includes(m));
+    const mv=[...videos].filter(v=>parseMembers(v).includes(m));
     mv.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
     mv.slice(0,2).forEach(v=>newBadgeIds.add(v.id));
   });

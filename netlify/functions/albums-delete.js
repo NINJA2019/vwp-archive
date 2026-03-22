@@ -14,7 +14,7 @@ exports.handler = async (event) => {
   const key = process.env.SUPABASE_SECRET_KEY;
   try {
     // アルバム曲のalbum_idをnullに戻す
-    await fetch(`${url}/rest/v1/videos?album_id=eq.${id}`, {
+    const patchRes = await fetch(`${url}/rest/v1/videos?album_id=eq.${id}`, {
       method: 'PATCH',
       headers: {
         apikey: key, Authorization: `Bearer ${key}`,
@@ -22,6 +22,10 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({ album_id: null })
     });
+    if (!patchRes.ok) {
+      const t = await patchRes.text();
+      return { statusCode: patchRes.status, body: JSON.stringify({ error: 'album_id解除に失敗: ' + t }) };
+    }
     // アルバム削除
     const res = await fetch(`${url}/rest/v1/albums?id=eq.${id}`, {
       method: 'DELETE',

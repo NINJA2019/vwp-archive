@@ -1,10 +1,10 @@
 exports.handler = async (event) => {
   const videoId = event.queryStringParameters?.id;
 
-  if (!videoId) {
+  if (!videoId || !/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
     return {
       statusCode: 400,
-      body: JSON.stringify({ error: 'Missing video id' }),
+      body: JSON.stringify({ error: 'Invalid video id' }),
     };
   }
 
