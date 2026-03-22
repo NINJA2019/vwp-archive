@@ -49,6 +49,27 @@ let filteredCache=[],curPage=0;
 const PAGE_SIZE=30;
 let ioObserver=null;
 const PW_SK='vwp_admin_pw';
+
+// ===== GA4 TRACKING HELPERS =====
+function _gtag(...args){ if(typeof gtag==='function') gtag(...args); }
+function trackSongClick(id, url){
+  const v=videos.find(x=>x.id===id);
+  if(v) _gtag('event','song_click',{
+    song_title:  v.title||'',
+    member_name: v.member||'',
+    video_date:  v.date||'',
+    album_id:    v.album_id?String(v.album_id):'',
+  });
+  window.open(url,'_blank');
+}
+function trackExternalLink(url, type, label){
+  _gtag('event','external_link_click',{
+    link_url:   url,
+    link_type:  type,
+    item_label: label||'',
+  });
+}
+// ================================
 function getStoredPw(){try{return sessionStorage.getItem(PW_SK)||'';}catch{return '';}}
 function storePw(pw){try{sessionStorage.setItem(PW_SK,pw);}catch{}}
 
@@ -115,7 +136,7 @@ function esc(s){ const d=document.createElement('div'); d.textContent=String(s==
 function safeUrl(url){ if(!url) return '#'; return /^https?:\/\//i.test(url) ? url : '#'; }
 function tagPills(v){return parseTags(v).map(tag=>`<span class="pill">#${esc(tTag(tag))}</span>`).join('');}
 function mbPill(mid){return `<span class="pill ${MBR_CLS[mid]||''}">${esc(mbr(mid))}</span>`;}
-function spotifyBtn(v){if(!v.spotify_url)return '';const u=safeUrl(v.spotify_url);if(u==='#')return '';return `<a class="spotify-btn" href="${u}" target="_blank" rel="noopener" onclick="event.stopPropagation()">♫ ${t('spotify')}</a>`;}
+function spotifyBtn(v){if(!v.spotify_url)return '';const u=safeUrl(v.spotify_url);if(u==='#')return '';const _t=(v.title||'').replace(/'/g,"\\'");return `<a class="spotify-btn" href="${u}" target="_blank" rel="noopener" onclick="trackExternalLink('${u}','spotify','${_t}');event.stopPropagation()">♫ ${t('spotify')}</a>`;}
 
 
 // ===== 今日の観測 =====
@@ -249,6 +270,11 @@ function buildSidebar(){
     btn.innerHTML=`<span class="mpill-icon">${m.emoji}</span><span class="mpill-name">${mbr(m.id)}</span><span class="mpill-cnt" id="mc-${m.id}">0</span>`;
     btn.addEventListener('click',()=>{
       if(dimmed) return; // 組み合わせなし・上限時はクリック無効
+      _gtag('event','member_filter_select',{
+        member_name:    m.id,
+        action:         m.id==='all'?'reset':selectedMembers.includes(m.id)?'deselect':'select',
+        selected_count: selectedMembers.length,
+      });
       if(m.id==='all'){
         selectedMembers=[];curMember='all';
       } else {
@@ -314,6 +340,7 @@ function buildSidebar(){
       }
       btn.addEventListener('click',()=>{
           curAlbum=isOn?null:al.id;
+          if(curAlbum!==null) _gtag('event','album_open',{album_title:al.name,member_name:al.member});
           buildSidebar();updateCounts();render();
         });
         af.appendChild(btn);
@@ -367,6 +394,7 @@ function buildSidebar(){
           btn2.addEventListener('click',()=>{
             const on2=curAlbum===al.id;
             curAlbum=on2?null:al.id;
+            if(curAlbum!==null) _gtag('event','album_open',{album_title:al.name,member_name:al.member});
             buildSidebar();updateCounts();render();
           });
           children.appendChild(btn2);
@@ -503,7 +531,7 @@ function showMb(v){return curMember==='all'?parseMembers(v).map(m=>mbPill(m)).jo
 function renderGrid(list){
   if(!list.length)return `<div class="empty"><div class="empty-i">🌙</div><h3>${t('notFound')}</h3></div>`;
   return `<div class="vgrid">`+list.map((v,i)=>`
-    <div class="vcard" style="animation-delay:${i*.022}s" onclick="window.open('${safeUrl(v.url)}','_blank')">
+    <div class="vcard" style="animation-delay:${i*.022}s" onclick="trackSongClick(${v.id},'${safeUrl(v.url)}')">
       <div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div>
       <div class="cbody">
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div>
@@ -527,7 +555,7 @@ function renderTimeline(list){
   list.forEach((v,i)=>{
     const y=v.date?v.date.slice(0,4):'?';
     if(y!==yr){yr=y;html+=`<div class="tl-yr">${y}</div>`;}
-    html+=`<div class="tl-row" style="animation-delay:${i*.022}s" onclick="window.open('${safeUrl(v.url)}','_blank')">
+    html+=`<div class="tl-row" style="animation-delay:${i*.022}s" onclick="trackSongClick(${v.id},'${safeUrl(v.url)}')">
       <div class="tl-dot"></div>
       <div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div>
       <div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div>
@@ -559,7 +587,7 @@ function loadMoreItems(){
     chunk.forEach((v,i)=>{
       const div=document.createElement('div');
       div.className='vcard';div.style.animationDelay=((start+i)*.022)+'s';
-      div.onclick=()=>window.open(safeUrl(v.url),'_blank');
+      div.onclick=()=>trackSongClick(v.id,safeUrl(v.url));
       div.innerHTML=`<div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div><div class="cbody"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div><div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div></div>`;
       wrap.appendChild(div);
     });
@@ -569,6 +597,7 @@ function loadMoreItems(){
       const a=document.createElement('a');
       a.className='litem';a.style.animationDelay=((start+i)*.022)+'s';
       a.href=safeUrl(v.url);a.target='_blank';a.rel='noopener';
+      a.addEventListener('click',()=>_gtag('event','song_click',{song_title:v.title||'',member_name:v.member||'',video_date:v.date||'',album_id:v.album_id?String(v.album_id):''}));
       a.innerHTML=`<div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div><div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
       wrap.appendChild(a);
     });
@@ -589,7 +618,7 @@ function loadMoreItems(){
       }
       const row=document.createElement('div');
       row.className='tl-row';row.style.animationDelay=((start+i)*.022)+'s';
-      row.onclick=()=>window.open(safeUrl(v.url),'_blank');
+      row.onclick=()=>trackSongClick(v.id,safeUrl(v.url));
       row.innerHTML=`<div class="tl-dot"></div><div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div><div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
       tl.appendChild(row);
     });
@@ -1304,6 +1333,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
 
       // メンバーフィルタを適用
       const m = chosen.m;
+      _gtag('event','archive_enter',{member_name:m,view_mode:m==='all'?'daily_obs':'member'});
       if(m === 'all'){
         selectedMembers = [];
         curMember = 'all';
@@ -1520,6 +1550,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
         document.removeEventListener('touchmove', preventScroll);
         document.body.style.overflow = '';
         const m = mobChosen.m;
+        _gtag('event','archive_enter',{member_name:m,view_mode:m==='all'?'daily_obs':'member'});
         if(m === 'all'){
           selectedMembers=[]; curMember='all'; curSort='daily';
         } else {
