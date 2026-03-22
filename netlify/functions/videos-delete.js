@@ -3,7 +3,14 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const { password, id } = JSON.parse(event.body || '{}');
+  let body;
+  try {
+    body = JSON.parse(event.body || '{}');
+  } catch {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
+  }
+
+  const { password, id } = body;
 
   // パスワード認証
   if (password !== process.env.ADMIN_PASSWORD) {
@@ -18,13 +25,18 @@ exports.handler = async (event) => {
   const supaKey = process.env.SUPABASE_SECRET_KEY;
 
   try {
-    await fetch(`${supaUrl}/rest/v1/videos?id=eq.${id}`, {
+    const res = await fetch(`${supaUrl}/rest/v1/videos?id=eq.${id}`, {
       method: 'DELETE',
       headers: {
         apikey: supaKey,
         Authorization: `Bearer ${supaKey}`,
+        Prefer: 'return=minimal',
       },
     });
+    if (!res.ok) {
+      const t = await res.text();
+      return { statusCode: res.status, body: JSON.stringify({ error: t }) };
+    }
     return { statusCode: 200, body: JSON.stringify({ ok: true }) };
   } catch (e) {
     return { statusCode: 500, body: JSON.stringify({ error: e.message }) };

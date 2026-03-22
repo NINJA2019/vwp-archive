@@ -13,7 +13,7 @@ exports.handler = async (event) => {
   let allItems = [];
   let pageToken = '';
   while (true) {
-    const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${encodeURIComponent(playlistId)}&key=${apiKey}${pageToken ? '&pageToken=' + pageToken : ''}`;
+    const url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId=${encodeURIComponent(playlistId)}&key=${apiKey}${pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : ''}`;
     const res = await fetch(url);
     const data = await res.json();
     if (data.error) return { statusCode: 400, body: JSON.stringify({ error: data.error.message }) };
