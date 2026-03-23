@@ -1,6 +1,8 @@
 exports.handler = async () => {
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SECRET_KEY;
+  // 読み取り専用: anon key を使用（RLS で制御）
+  // フォールバック: SUPABASE_ANON_KEY 未設定時は SECRET_KEY を使用
+  const key = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SECRET_KEY;
   try {
     const res = await fetch(`${url}/rest/v1/albums?select=*&order=created_at.asc`, {
       headers: { apikey: key, Authorization: `Bearer ${key}` }
