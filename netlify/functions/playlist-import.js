@@ -5,6 +5,10 @@ exports.handler = async (event) => {
   const { playlistId, member, tags, password, album_id } = body;
   if (!password || password !== process.env.ADMIN_PASSWORD) return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
   if (!playlistId || !member) return { statusCode: 400, body: JSON.stringify({ error: 'playlistId and member required' }) };
+  // YouTube playlist ID: "PL" + 英数字・ハイフン・アンダースコア（16〜64文字）
+  if (!/^PL[a-zA-Z0-9_-]{16,64}$/.test(playlistId)) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid playlist ID format' }) };
+  }
   const apiKey = process.env.YOUTUBE_API_KEY;
   const supaUrl = process.env.SUPABASE_URL;
   const supaKey = process.env.SUPABASE_SECRET_KEY;
