@@ -295,6 +295,7 @@ body.light .shelf-overlay {
   border-radius: 14px;
   width: 90%;
   max-width: 640px;
+  min-height: min(420px, 70vh);
   max-height: 85vh;
   overflow: hidden;
   display: flex;
@@ -401,6 +402,8 @@ body.light .shelf-overlay {
   transition: transform .4s cubic-bezier(.4,0,.2,1);
   pointer-events: none;
   z-index: 2;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 .shelf-detail.shelf-detail-open {
   transform: translateX(0);
@@ -410,11 +413,12 @@ body.light .shelf-overlay {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 1.2rem;
-  padding: 2rem 1.5rem;
+  gap: .8rem;
+  padding: 1.2rem 1.5rem;
   text-align: center;
   max-width: 360px;
   width: 100%;
+  min-width: 0;
 }
 .shelf-detail-back {
   position: absolute;
@@ -433,8 +437,9 @@ body.light .shelf-overlay {
 
 /* Vinyl disc */
 .shelf-vinyl {
-  width: 160px;
-  height: 160px;
+  width: clamp(100px, 25vw, 160px);
+  height: clamp(100px, 25vw, 160px);
+  flex-shrink: 0;
 }
 .shelf-vinyl-disc {
   width: 100%;
@@ -466,6 +471,12 @@ body.light .shelf-vinyl-disc {
   font-size: 1.05rem;
   color: var(--text);
   line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 .shelf-detail-member {
   font-size: .78rem;
