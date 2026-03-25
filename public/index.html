@@ -448,20 +448,70 @@
   </div>
 </div>
 <!-- === MY SHELF OVERLAY === -->
-<div id="shelfOverlay" class="shelf-overlay">
-  <div class="shelf-panel">
-    <div class="shelf-header">
-      <h2 class="shelf-title">MY SHELF</h2>
-      <span class="shelf-count" id="shelfCount"></span>
-      <button class="shelf-close" id="shelfClose" aria-label="Close">&times;</button>
-    </div>
-    <div class="shelf-body" id="shelfBody"></div>
-    <!-- Detail slide-in panel -->
-    <div class="shelf-detail" id="shelfDetail">
-      <div class="shelf-detail-inner">
-        <button class="shelf-detail-back" id="shelfDetailBack" aria-label="Back">&larr;</button>
-        <div class="shelf-vinyl" id="shelfVinyl"></div>
-        <div class="shelf-detail-info" id="shelfDetailInfo"></div>
+<div id="my-shelf-overlay" class="shelf-overlay" role="dialog" aria-modal="true" aria-label="MY SHELF" style="display:none;">
+  <div class="shelf-overlay-backdrop"></div>
+  <div class="shelf-overlay-content">
+    <button class="shelf-overlay-close" aria-label="閉じる">✕</button>
+    <div class="wrap">
+      <div class="concrete-bg"></div>
+      <div class="concrete-overlay"></div>
+      <div class="shelf-area">
+        <div class="shelf-label">MY SHELF — <span id="shelf-count">0</span>曲</div>
+        <div class="shelf-block">
+          <div class="shelf-row" id="row0"></div>
+          <div class="wood-board-wrap"><div class="wood-board"></div><div class="wood-shadow"></div></div>
+        </div>
+        <div class="shelf-block">
+          <div class="shelf-row" id="row1"></div>
+          <div class="wood-board-wrap"><div class="wood-board"></div><div class="wood-shadow"></div></div>
+        </div>
+      </div>
+      <div class="hint-row" id="hint">— ジャケットをタップして詳細 —</div>
+      <div class="panel-host">
+        <div class="detail-panel" id="detail-panel">
+          <div class="dp-inner" id="dp-inner">
+            <div class="dp-stage" id="dp-stage">
+              <div class="dp-jacket" id="dp-jacket"></div>
+              <div class="dp-vinyl" id="dp-vinyl">
+                <svg class="vinyl-spinning" id="vinyl-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="50" cy="50" r="49" fill="#0d0d0f"/>
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.025)" stroke-width="0.8"/>
+                  <circle cx="50" cy="50" r="38" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="0.8"/>
+                  <circle cx="50" cy="50" r="32" fill="none" stroke="rgba(255,255,255,0.025)" stroke-width="0.8"/>
+                  <circle cx="50" cy="50" r="26" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="0.8"/>
+                  <circle cx="50" cy="50" r="20" fill="none" stroke="rgba(255,255,255,0.02)" stroke-width="0.8"/>
+                  <circle cx="50" cy="50" r="15" fill="#121420"/>
+                  <circle cx="50" cy="50" r="15" fill="none" stroke="rgba(176,184,255,0.22)" stroke-width="0.6"/>
+                  <circle cx="50" cy="50" r="11" fill="#0d0f1c"/>
+                  <circle cx="50" cy="50" r="4" fill="#252848"/>
+                  <circle cx="50" cy="50" r="2" fill="#4050a8"/>
+                  <circle cx="50" cy="50" r="0.8" fill="#8090d0"/>
+                  <circle cx="50" cy="50" r="49" fill="none" stroke="rgba(255,255,255,0.055)" stroke-width="0.5"/>
+                </svg>
+              </div>
+            </div>
+            <div class="dp-info" id="dp-info">
+              <div class="dp-member" id="dp-member"></div>
+              <div class="dp-title" id="dp-title"></div>
+              <div class="dp-sub">V.W.P ARCHIVE</div>
+              <div class="dp-actions">
+                <a class="dp-btn-yt" id="dp-yt" href="#" target="_blank" rel="noopener noreferrer">
+                  <svg class="yt-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z" fill="rgba(255,80,80,0.9)"/>
+                    <path d="M9.75 15.02V8.98L15.5 12l-5.75 3.02z" fill="white"/>
+                  </svg>
+                  YouTubeで聴く
+                </a>
+                <button class="dp-btn-close" aria-label="パネルを閉じる">✕</button>
+              </div>
+              <div class="dp-divider"></div>
+              <div class="dp-meta" id="dp-meta"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="shelf-empty" id="shelf-empty" style="display:none;">
+        <p>曲カードの 📌 ボタンで棚に追加できます</p>
       </div>
     </div>
   </div>

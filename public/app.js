@@ -1607,7 +1607,10 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
 (function(){
 const SHELF_KEY = 'vwp_shelf';
 const SHELF_MAX = 10;
+let shelfCurrentIdx = null;
+let shelfSongs = [];
 
+// --- localStorage read/write ---
 function getShelf(){ try{ return JSON.parse(localStorage.getItem(SHELF_KEY)||'[]'); }catch{ return []; } }
 function setShelf(ids){ localStorage.setItem(SHELF_KEY, JSON.stringify(ids.slice(0, SHELF_MAX))); updateShelfNavCnt(); }
 function isOnShelf(id){ return getShelf().includes(id); }
@@ -1633,6 +1636,191 @@ function updateShelfNavCnt(){
   if(el){ const c=getShelf().length; el.textContent=c>0?c:''; }
 }
 
+// --- Member color map ---
+const MEMBER_COLORS = {
+  kafu:'#ffb7c5', rime:'#7eb8f7', harusar:'#ff7070',
+  isekai:'#d8d8d8', koko:'#c084fc', vwp:'#c4b5fd'
+};
+function getMemberColor(memberStr){
+  if(!memberStr) return '#b0b8ff';
+  for(const [id, color] of Object.entries(MEMBER_COLORS)){
+    if(memberStr.includes(id)) return color;
+  }
+  return '#b0b8ff';
+}
+
+// --- Build shelf UI ---
+function buildShelfUI(){
+  const shelfIds = getShelf();
+  shelfSongs = shelfIds.map(id => videos.find(v => v.id === id)).filter(Boolean);
+
+  document.getElementById('shelf-count').textContent = shelfSongs.length;
+
+  const emptyEl = document.getElementById('shelf-empty');
+  const blocks = document.querySelectorAll('#my-shelf-overlay .shelf-block');
+  if(shelfSongs.length === 0){
+    emptyEl.style.display = '';
+    blocks.forEach(b => b.style.display = 'none');
+    document.getElementById('hint').style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  blocks.forEach(b => b.style.display = '');
+  document.getElementById('hint').style.display = '';
+
+  const heights = [[90,96,93,88,94],[92,88,95,90,87]];
+  const tilts   = [[0,1.2,-0.8,1.5,-0.5],[-0.5,1,-1,0.8,1.2]];
+
+  [0,1].forEach(ri => {
+    const row = document.getElementById('row'+ri);
+    if(!row) return;
+    const slice = shelfSongs.slice(ri * 5, (ri + 1) * 5);
+    row.innerHTML = slice.map((s, i) => {
+      const idx = ri * 5 + i;
+      const vid = ytId(s.url);
+      const thumb = vid ? 'url(https://img.youtube.com/vi/'+vid+'/mqdefault.jpg)' : 'none';
+      const h = heights[ri]?.[i] || 90;
+      const tt = tilts[ri]?.[i] || 0;
+      return '<div class="sj" id="sj'+idx+'"'+
+        ' style="background-image:'+thumb+';background-size:cover;background-position:center;height:'+h+'px;transform:rotate('+tt+'deg);"'+
+        ' onclick="shelfOpenPanel('+idx+')"></div>';
+    }).join('');
+  });
+
+  // Hide 2nd row if <=5 songs
+  if(shelfSongs.length <= 5){
+    blocks[1] && (blocks[1].style.display = 'none');
+  }
+}
+
+// --- Detail panel ---
+window.shelfOpenPanel = function(i){
+  if(shelfCurrentIdx === i){ shelfClosePanel(); return; }
+  if(shelfCurrentIdx !== null){
+    const prev = document.getElementById('sj'+shelfCurrentIdx);
+    if(prev) prev.classList.remove('active');
+    shelfResetVinyl();
+    document.getElementById('dp-info').classList.remove('show');
+  }
+  shelfCurrentIdx = i;
+  const sjEl = document.getElementById('sj'+i);
+  if(sjEl) sjEl.classList.add('active');
+  document.getElementById('hint').style.opacity = '0';
+
+  const s = shelfSongs[i];
+  if(!s) return;
+
+  const panel = document.getElementById('detail-panel');
+  const panelW = panel.offsetWidth - 40;
+  const jacketSize = Math.min(96, Math.floor(panelW * 0.28));
+  const vinylSize  = jacketSize;
+  const slideX     = Math.floor(jacketSize * 0.58);
+
+  const vid = ytId(s.url);
+  const jacket = document.getElementById('dp-jacket');
+  jacket.style.width  = jacketSize + 'px';
+  jacket.style.height = jacketSize + 'px';
+  if(vid){
+    jacket.style.backgroundImage = 'url(https://img.youtube.com/vi/'+vid+'/mqdefault.jpg)';
+    jacket.style.backgroundSize = 'cover';
+    jacket.style.backgroundPosition = 'center';
+  }
+
+  const vinylSvg = document.getElementById('vinyl-svg');
+  vinylSvg.setAttribute('width',  vinylSize);
+  vinylSvg.setAttribute('height', vinylSize);
+
+  const stage = document.getElementById('dp-stage');
+  stage.style.width  = (jacketSize + slideX) + 'px';
+  stage.style.height = jacketSize + 'px';
+
+  const vinylEl = document.getElementById('dp-vinyl');
+  vinylEl.style.setProperty('--slide-x', slideX + 'px');
+
+  const members = parseMembers(s).map(m => mbr(m)).join(', ');
+  const memberColor = getMemberColor(s.member);
+  document.getElementById('dp-member').textContent = members;
+  document.getElementById('dp-member').style.color = memberColor;
+  document.getElementById('dp-title').textContent = s.title || '';
+
+  // YouTube button
+  const ytBtn = document.getElementById('dp-yt');
+  ytBtn.href = safeUrl(s.url);
+  ytBtn.onclick = function(e){
+    e.preventDefault();
+    shelfPlaySong(s);
+  };
+
+  // Tags
+  const tags = parseTags(s);
+  document.getElementById('dp-meta').innerHTML = tags.map(function(tg){
+    return '<div class="dp-tag">'+esc(tg)+'</div>';
+  }).join('');
+
+  // Expand panel
+  panel.classList.add('open');
+  document.querySelector('.panel-host')?.classList.add('expanded');
+
+  setTimeout(function(){
+    vinylEl.classList.add('out');
+    setTimeout(function(){
+      vinylSvg.classList.add('spin');
+      document.getElementById('dp-info').classList.add('show');
+    }, 300);
+  }, 120);
+};
+
+function shelfClosePanel(){
+  if(shelfCurrentIdx !== null){
+    const el = document.getElementById('sj'+shelfCurrentIdx);
+    if(el) el.classList.remove('active');
+    shelfCurrentIdx = null;
+  }
+  document.getElementById('dp-info').classList.remove('show');
+  shelfResetVinyl();
+  document.getElementById('detail-panel').classList.remove('open');
+  const host = document.querySelector('.panel-host');
+  if(host) host.classList.remove('expanded');
+  setTimeout(function(){
+    const hint = document.getElementById('hint');
+    if(hint) hint.style.opacity = '1';
+  }, 320);
+}
+
+function shelfResetVinyl(){
+  const v = document.getElementById('dp-vinyl');
+  if(v) v.classList.remove('out');
+  const svg = document.getElementById('vinyl-svg');
+  if(svg) svg.classList.remove('spin');
+}
+
+// --- YouTube play ---
+function shelfPlaySong(song){
+  _gtag('event','shelf_play',{
+    song_title: song.title,
+    member_name: song.member
+  });
+  trackExternalLink(song.url, 'shelf_play', song.title||'');
+  window.open(safeUrl(song.url), '_blank', 'noopener,noreferrer');
+}
+
+// --- Overlay open/close ---
+window.openShelf = function(){
+  buildShelfUI();
+  const overlay = document.getElementById('my-shelf-overlay');
+  if(!overlay) return;
+  overlay.style.display = '';
+  document.body.style.overflow = 'hidden';
+  _gtag('event','shelf_open',{song_count:getShelf().length});
+};
+
+function closeShelfOverlay(){
+  shelfClosePanel();
+  const overlay = document.getElementById('my-shelf-overlay');
+  if(overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
 // --- Shelf pin button (injected into card cmeta) ---
 window.toggleShelfPin = function(id, e){
   e.stopPropagation(); e.preventDefault();
@@ -1641,15 +1829,15 @@ window.toggleShelfPin = function(id, e){
   } else {
     if(!addToShelf(id)) return;
   }
-  // Re-render pin buttons without full re-render
-  document.querySelectorAll(`.shelf-pin[data-sid="${id}"]`).forEach(btn=>{
+  document.querySelectorAll('.shelf-pin[data-sid="'+id+'"]').forEach(function(btn){
     const on = isOnShelf(id);
     btn.textContent = on ? '📌' : '＋';
     btn.title = on ? t('shelfRemove') : (getShelf().length>=SHELF_MAX ? t('shelfFull') : t('shelfAdd'));
     btn.classList.toggle('shelf-pin-on', on);
   });
   // Update overlay if open
-  if(document.getElementById('shelfOverlay').classList.contains('shelf-open')) renderShelfBody();
+  const overlay = document.getElementById('my-shelf-overlay');
+  if(overlay && overlay.style.display !== 'none') buildShelfUI();
 };
 
 // Generate pin button HTML (called from renderGrid/loadMoreItems)
@@ -1657,104 +1845,25 @@ window.shelfPinHtml = function(id){
   const on = isOnShelf(id);
   const full = getShelf().length >= SHELF_MAX && !on;
   const tip = on ? t('shelfRemove') : (full ? t('shelfFull') : t('shelfAdd'));
-  return `<button class="shelf-pin${on?' shelf-pin-on':''}" data-sid="${id}" title="${esc(tip)}" onclick="toggleShelfPin(${id},event)"${full?' disabled':''}>${on?'📌':'＋'}</button>`;
+  return '<button class="shelf-pin'+(on?' shelf-pin-on':'')+'" data-sid="'+id+'" title="'+esc(tip)+'" onclick="toggleShelfPin('+id+',event)"'+(full?' disabled':'')+'>'+(on?'📌':'＋')+'</button>';
 };
 
-// --- Overlay ---
-window.openShelf = function(){
-  const overlay = document.getElementById('shelfOverlay');
-  overlay.classList.add('shelf-open');
-  document.body.style.overflow = 'hidden';
-  _gtag('event','shelf_open',{song_count:getShelf().length});
-  renderShelfBody();
-  closeShelfDetail();
-};
-function closeShelf(){
-  document.getElementById('shelfOverlay').classList.remove('shelf-open');
-  document.body.style.overflow = '';
-  closeShelfDetail();
-}
-
-document.getElementById('shelfClose').addEventListener('click', closeShelf);
-document.getElementById('shelfOverlay').addEventListener('click', function(e){ if(e.target===this) closeShelf(); });
+// --- Event bindings ---
+// Close button
+document.querySelector('.shelf-overlay-close')?.addEventListener('click', closeShelfOverlay);
+// Backdrop click
+document.querySelector('.shelf-overlay-backdrop')?.addEventListener('click', closeShelfOverlay);
+// ESC key
 document.addEventListener('keydown', function(e){
-  if(e.key==='Escape' && document.getElementById('shelfOverlay').classList.contains('shelf-open')){
-    if(document.getElementById('shelfDetail').classList.contains('shelf-detail-open')){
-      closeShelfDetail();
-    } else {
-      closeShelf();
+  if(e.key==='Escape'){
+    const overlay = document.getElementById('my-shelf-overlay');
+    if(overlay && overlay.style.display !== 'none'){
+      closeShelfOverlay();
     }
   }
 });
-
-function renderShelfBody(){
-  const body = document.getElementById('shelfBody');
-  const shelf = getShelf();
-  const cnt = document.getElementById('shelfCount');
-  cnt.textContent = shelf.length + ' / ' + SHELF_MAX;
-
-  if(!shelf.length){
-    body.innerHTML = `<div class="shelf-empty"><div style="font-size:2rem;opacity:.3;margin-bottom:.5rem;">📌</div><p>${t('shelfEmpty')}</p></div>`;
-    return;
-  }
-  const items = shelf.map(id=>videos.find(v=>v.id===id)).filter(Boolean);
-  body.innerHTML = `<div class="shelf-grid">${items.map(v=>{
-    const vid = ytId(v.url);
-    const src = vid ? `https://img.youtube.com/vi/${vid}/mqdefault.jpg` : '';
-    return `<div class="shelf-jacket" data-vid="${v.id}" tabindex="0">
-      <img src="${src}" alt="${esc(v.title)}" loading="lazy">
-      <div class="shelf-jacket-title">${esc(v.title)}</div>
-    </div>`;
-  }).join('')}</div>`;
-
-  body.querySelectorAll('.shelf-jacket').forEach(el=>{
-    el.addEventListener('click', ()=> openShelfDetail(parseInt(el.dataset.vid)));
-    el.addEventListener('keydown', e=>{ if(e.key==='Enter') openShelfDetail(parseInt(el.dataset.vid)); });
-  });
-}
-
-// --- Detail panel with vinyl animation ---
-let shelfDetailId = null;
-function openShelfDetail(id){
-  const v = videos.find(x=>x.id===id);
-  if(!v) return;
-  shelfDetailId = id;
-  const detail = document.getElementById('shelfDetail');
-  const info = document.getElementById('shelfDetailInfo');
-  const vinyl = document.getElementById('shelfVinyl');
-
-  const vid = ytId(v.url);
-  const src = vid ? `https://img.youtube.com/vi/${vid}/mqdefault.jpg` : '';
-  const members = parseMembers(v).map(m=>mbr(m)).join(', ');
-
-  vinyl.innerHTML = `<div class="shelf-vinyl-disc"><img src="${src}" alt=""></div>`;
-  info.innerHTML = `
-    <div class="shelf-detail-title">${esc(v.title)}</div>
-    <div class="shelf-detail-member">${esc(members)}</div>
-    <div class="shelf-detail-actions">
-      <a class="shelf-yt-btn" href="${safeUrl(v.url)}" target="_blank" rel="noopener noreferrer" id="shelfYtBtn">▶ ${t('shelfListenYt')}</a>
-      <button class="shelf-del-btn" id="shelfDelBtn">${t('shelfRemove')}</button>
-    </div>`;
-
-  document.getElementById('shelfYtBtn').addEventListener('click', function(e){
-    trackExternalLink(v.url, 'shelf_play', v.title||'');
-  });
-  document.getElementById('shelfDelBtn').addEventListener('click', function(){
-    removeFromShelf(id);
-    closeShelfDetail();
-    renderShelfBody();
-  });
-
-  // Trigger animation
-  detail.classList.remove('shelf-detail-open');
-  void detail.offsetWidth; // force reflow
-  detail.classList.add('shelf-detail-open');
-}
-function closeShelfDetail(){
-  document.getElementById('shelfDetail').classList.remove('shelf-detail-open');
-  shelfDetailId = null;
-}
-document.getElementById('shelfDetailBack').addEventListener('click', closeShelfDetail);
+// Panel close button
+document.querySelector('.dp-btn-close')?.addEventListener('click', shelfClosePanel);
 
 // Init nav count on load
 updateShelfNavCnt();

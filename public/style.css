@@ -270,267 +270,335 @@
   cursor: not-allowed;
 }
 
-/* Overlay */
+/* --- Concrete × Walnut Shelf Overlay --- */
 .shelf-overlay {
-  display: none;
   position: fixed;
   inset: 0;
-  background: rgba(7,9,14,.92);
-  backdrop-filter: blur(14px);
-  z-index: 400;
+  z-index: 500;
+  display: flex;
   align-items: center;
   justify-content: center;
 }
-body.light .shelf-overlay {
-  background: rgba(244,245,249,.92);
+.shelf-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
 }
-.shelf-overlay.shelf-open {
-  display: flex;
-}
-
-/* Panel */
-.shelf-panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  width: 90%;
-  max-width: 640px;
-  min-height: min(420px, 70vh);
-  max-height: 85vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+.shelf-overlay-content {
   position: relative;
-  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.shelf-overlay-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 10;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-size: 18px;
+  cursor: pointer;
+}
+.shelf-overlay-close:hover { color: rgba(255,255,255,0.8); }
+
+/* Wrap container */
+.wrap {
+  position: relative;
+  background: var(--bg);
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 20px 16px 12px;
 }
 
-.shelf-header {
+/* Concrete texture */
+.concrete-bg {
+  position: absolute;
+  inset: 0;
+  background-color: #2c2e38;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.012) 2px, rgba(255,255,255,0.012) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.008) 2px, rgba(255,255,255,0.008) 4px);
+  opacity: 0.7;
+}
+.concrete-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7,9,14,0.3) 0%, rgba(7,9,14,0.6) 100%);
+}
+
+/* Shelf area */
+.shelf-area {
+  position: relative;
+  z-index: 2;
+}
+.shelf-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.25);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.shelf-block {
+  margin-bottom: 8px;
+}
+.shelf-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 0 6px;
+  min-height: 90px;
+}
+
+/* Walnut wood board */
+.wood-board-wrap {
+  position: relative;
+}
+.wood-board {
+  height: 10px;
+  background: linear-gradient(180deg, #4a3020 0%, #2a1c0c 60%, #120a04 100%);
+  border-radius: 0 0 2px 2px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
+}
+.wood-shadow {
+  height: 8px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 100%);
+  border-radius: 0 0 4px 4px;
+}
+
+/* Shelf jacket */
+.sj {
+  width: 72px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 1px 2px 6px rgba(0,0,0,0.4);
+  background-color: var(--surface2);
+}
+.sj:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 2px 6px 16px rgba(0,0,0,0.5);
+}
+.sj.active {
+  transform: translateY(-8px) !important;
+  box-shadow: 2px 8px 20px rgba(192,132,252,0.3);
+  outline: 2px solid rgba(192,132,252,0.5);
+}
+
+/* Hint row */
+.hint-row {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255,255,255,0.18);
+  padding: 10px 0 4px;
+  transition: opacity 0.3s;
+}
+
+/* Panel host (overflow fix) */
+.panel-host {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.panel-host.expanded {
+  max-height: 300px;
+}
+
+/* Detail panel */
+.detail-panel {
+  background: var(--surface);
+  border-radius: 10px;
+  margin: 4px 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.32s, transform 0.32s;
+}
+.detail-panel.open {
+  opacity: 1;
+  transform: translateY(0);
+}
+.dp-inner {
   display: flex;
   align-items: center;
-  gap: .7rem;
-  padding: 1rem 1.3rem;
-  border-bottom: 1px solid var(--border);
+  gap: 14px;
+  padding: 14px 16px;
 }
-.shelf-title {
-  font-family: 'Barlow Condensed', sans-serif;
-  font-weight: 900;
-  font-size: 1.1rem;
-  letter-spacing: .15em;
-  color: #c084fc;
+.dp-stage {
+  position: relative;
+  flex-shrink: 0;
+}
+.dp-jacket {
+  border-radius: 4px;
+  box-shadow: 2px 2px 10px rgba(0,0,0,0.4);
+  position: relative;
+  z-index: 2;
+}
+.dp-vinyl {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dp-vinyl.out {
+  transform: translate(var(--slide-x, 30px), -50%);
+}
+.vinyl-spinning {
+  display: block;
+}
+.vinyl-spinning.spin {
+  animation: shelf-vinyl-spin 2.5s linear infinite;
+}
+@keyframes shelf-vinyl-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.dp-info {
   flex: 1;
+  min-width: 0;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: opacity 0.3s 0.1s, transform 0.3s 0.1s;
 }
-.shelf-count {
-  font-size: .72rem;
+.dp-info.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+.dp-member {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.dp-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.dp-sub {
+  font-size: 9px;
   color: var(--dim);
-  font-family: 'Barlow Condensed', sans-serif;
-  letter-spacing: .08em;
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
 }
-.shelf-close {
+.dp-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.dp-btn-yt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  background: none;
+}
+.dp-btn-yt:hover {
+  background: rgba(255,255,255,0.06);
+}
+.dp-btn-yt .yt-icon {
+  width: 16px;
+  height: 16px;
+}
+.dp-btn-close {
   background: none;
   border: none;
   color: var(--dim);
-  font-size: 1.5rem;
   cursor: pointer;
-  padding: 0 .3rem;
-  line-height: 1;
-  transition: color .2s;
+  font-size: 14px;
+  padding: 2px 6px;
+  transition: color 0.2s;
 }
-.shelf-close:hover { color: var(--text); }
-
-.shelf-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem 1.3rem;
+.dp-btn-close:hover {
+  color: var(--text);
+}
+.dp-divider {
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 6px;
+}
+.dp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.dp-tag {
+  font-size: 10px;
+  color: var(--dim);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 6px;
 }
 
 /* Empty state */
 .shelf-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1rem;
-  color: var(--dim);
-  text-align: center;
-  font-size: .85rem;
-}
-
-/* Grid of jackets */
-.shelf-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-.shelf-jacket {
-  cursor: pointer;
-  border-radius: 6px;
-  overflow: hidden;
-  background: var(--surface2);
-  transition: transform .2s, box-shadow .2s;
   position: relative;
-}
-.shelf-jacket:hover, .shelf-jacket:focus-visible {
-  transform: scale(1.04);
-  box-shadow: 0 4px 20px rgba(192,132,252,.25);
-  outline: none;
-}
-.shelf-jacket img {
-  width: 100%;
-  aspect-ratio: 16/9;
-  object-fit: cover;
-  display: block;
-}
-.shelf-jacket-title {
-  font-size: .68rem;
-  color: var(--text);
-  padding: .35rem .5rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: 'Shippori Mincho', serif;
-}
-
-/* Detail panel (slide-in) */
-.shelf-detail {
-  position: absolute;
-  inset: 0;
-  background: var(--surface);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: translateX(100%);
-  transition: transform .4s cubic-bezier(.4,0,.2,1);
-  pointer-events: none;
   z-index: 2;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-.shelf-detail.shelf-detail-open {
-  transform: translateX(0);
-  pointer-events: auto;
-}
-.shelf-detail-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .8rem;
-  padding: 1.2rem 1.5rem;
   text-align: center;
-  max-width: 360px;
-  width: 100%;
-  min-width: 0;
-}
-.shelf-detail-back {
-  position: absolute;
-  top: 1rem;
-  left: 1rem;
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--dim);
-  cursor: pointer;
-  padding: .3rem .7rem;
-  border-radius: 5px;
-  font-size: .85rem;
-  transition: color .2s;
-}
-.shelf-detail-back:hover { color: var(--text); }
-
-/* Vinyl disc */
-.shelf-vinyl {
-  width: clamp(100px, 25vw, 160px);
-  height: clamp(100px, 25vw, 160px);
-  flex-shrink: 0;
-}
-.shelf-vinyl-disc {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: #1a1a2e;
-  border: 3px solid rgba(192,132,252,.3);
-  overflow: hidden;
-  box-shadow: 0 0 30px rgba(192,132,252,.15);
-  animation: shelf-spin .8s cubic-bezier(.2,0,.3,1) forwards;
-}
-.shelf-vinyl-disc img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50%;
-}
-body.light .shelf-vinyl-disc {
-  background: #e8e8f0;
+  padding: 40px 20px;
+  color: rgba(255,255,255,0.25);
+  font-size: 13px;
 }
 
-@keyframes shelf-spin {
-  from { transform: rotate(-180deg) scale(.7); opacity: 0; }
-  to { transform: rotate(0deg) scale(1); opacity: 1; }
-}
+/* Light theme overrides */
+body.light .shelf-overlay-backdrop { background: rgba(255,255,255,0.7); }
+body.light .shelf-overlay-close { color: rgba(0,0,0,0.4); }
+body.light .shelf-overlay-close:hover { color: rgba(0,0,0,0.8); }
+body.light .wrap { background: var(--bg); }
+body.light .concrete-bg { background-color: #e8e8ec; }
+body.light .detail-panel { background: var(--surface); }
+body.light .dp-title { color: var(--text); }
+body.light .dp-btn-yt { color: var(--text); border-color: var(--border); }
+body.light .dp-btn-close { color: var(--dim); }
+body.light .dp-tag { color: var(--dim); border-color: var(--border); }
+body.light .shelf-label { color: var(--dim); }
+body.light .hint-row { color: var(--dim); }
+body.light .shelf-empty { color: var(--dim); }
 
-.shelf-detail-title {
-  font-family: 'Shippori Mincho', serif;
-  font-size: 1.05rem;
-  color: var(--text);
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-.shelf-detail-member {
-  font-size: .78rem;
-  color: var(--dim);
-  letter-spacing: .05em;
-}
-.shelf-detail-actions {
-  display: flex;
-  flex-direction: column;
-  gap: .5rem;
-  align-items: center;
-  margin-top: .5rem;
-}
-.shelf-yt-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: rgba(192,132,252,.15);
-  color: #c084fc;
-  border: 1px solid rgba(192,132,252,.35);
-  border-radius: 6px;
-  padding: .5rem 1.2rem;
-  font-size: .82rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background .2s;
-  font-family: 'Barlow Condensed', sans-serif;
-  letter-spacing: .08em;
-}
-.shelf-yt-btn:hover {
-  background: rgba(192,132,252,.28);
-}
-.shelf-del-btn {
-  background: none;
-  border: none;
-  color: var(--dim);
-  cursor: pointer;
-  font-size: .72rem;
-  padding: .3rem .6rem;
-  transition: color .2s;
-  font-family: 'Noto Sans JP', sans-serif;
-}
-.shelf-del-btn:hover { color: #fca5a5; }
-
-/* Mobile: hide MY SHELF entirely */
+/* PC only — hide on mobile */
 @media (max-width: 700px) {
-  .shelf-nav-btn { display: none !important; }
-  .shelf-overlay { display: none !important; }
+  #my-shelf-overlay,
+  .shelf-nav-btn {
+    display: none !important;
+  }
   .shelf-pin { display: none !important; }
 }
 
-/* Reduced motion */
+/* Accessibility */
 @media (prefers-reduced-motion: reduce) {
-  .shelf-detail { transition: none !important; }
-  .shelf-vinyl-disc { animation: none !important; }
-  .shelf-jacket { transition: none !important; }
+  .sj,
+  .detail-panel,
+  .dp-vinyl,
+  .dp-info,
+  .vinyl-spinning,
+  .hint-row {
+    transition: none !important;
+    animation: none !important;
+  }
 }
