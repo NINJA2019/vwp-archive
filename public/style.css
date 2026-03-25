@@ -287,8 +287,8 @@
 }
 .shelf-overlay-content {
   position: relative;
-  width: 95vw;
-  max-width: none;
+  width: 90vw;
+  max-width: 900px;
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -379,6 +379,7 @@
 .sj {
   flex: 1;
   min-width: 0;
+  max-width: 162px;
   aspect-ratio: 16 / 9;
   border-radius: 3px;
   cursor: pointer;
