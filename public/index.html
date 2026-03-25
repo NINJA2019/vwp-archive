@@ -451,22 +451,22 @@
 <div id="my-shelf-overlay" class="shelf-overlay" role="dialog" aria-modal="true" aria-label="MY SHELF" style="display:none;">
   <div class="shelf-overlay-backdrop"></div>
   <div class="shelf-overlay-content">
-    <button class="shelf-overlay-close" aria-label="閉じる">✕</button>
-    <div class="wrap">
-      <div class="concrete-bg"></div>
-      <div class="concrete-overlay"></div>
+    <button class="shelf-overlay-close">✕</button>
+    <div class="shelf-wrap">
+      <div class="shelf-concrete-bg"></div>
+      <div class="shelf-concrete-overlay"></div>
       <div class="shelf-area">
-        <div class="shelf-label">MY SHELF — <span id="shelf-count">0</span>曲</div>
+        <div class="shelf-label" id="shelf-label"></div>
         <div class="shelf-block">
-          <div class="shelf-row" id="row0"></div>
+          <div class="shelf-row" id="shelf-row0"></div>
           <div class="wood-board-wrap"><div class="wood-board"></div><div class="wood-shadow"></div></div>
         </div>
         <div class="shelf-block">
-          <div class="shelf-row" id="row1"></div>
+          <div class="shelf-row" id="shelf-row1"></div>
           <div class="wood-board-wrap"><div class="wood-board"></div><div class="wood-shadow"></div></div>
         </div>
       </div>
-      <div class="hint-row" id="hint">— ジャケットをタップして詳細 —</div>
+      <div class="shelf-hint" id="shelf-hint"></div>
       <div class="panel-host">
         <div class="detail-panel" id="detail-panel">
           <div class="dp-inner" id="dp-inner">
@@ -500,9 +500,8 @@
                     <path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46A2.78 2.78 0 0 0 1.46 6.42 29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58 2.78 2.78 0 0 0 1.95 1.96C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z" fill="rgba(255,80,80,0.9)"/>
                     <path d="M9.75 15.02V8.98L15.5 12l-5.75 3.02z" fill="white"/>
                   </svg>
-                  YouTubeで聴く
                 </a>
-                <button class="dp-btn-close" aria-label="パネルを閉じる">✕</button>
+                <button class="dp-btn-close">✕</button>
               </div>
               <div class="dp-divider"></div>
               <div class="dp-meta" id="dp-meta"></div>
@@ -510,9 +509,7 @@
           </div>
         </div>
       </div>
-      <div class="shelf-empty" id="shelf-empty" style="display:none;">
-        <p>曲カードの 📌 ボタンで棚に追加できます</p>
-      </div>
+      <div class="shelf-empty" id="shelf-empty" style="display:none;"></div>
     </div>
   </div>
 </div>
