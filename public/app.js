@@ -1622,6 +1622,7 @@ function addToShelf(id){
   setShelf(shelf);
   const v = videos.find(x=>x.id===id);
   if(v) _gtag('event','shelf_add_song',{song_title:v.title||'',member_name:v.member||''});
+  notifyExtension();
   return true;
 }
 function removeFromShelf(id){
@@ -1629,12 +1630,48 @@ function removeFromShelf(id){
   setShelf(shelf);
   const v = videos.find(x=>x.id===id);
   if(v) _gtag('event','shelf_remove_song',{song_title:v.title||''});
+  notifyExtension();
 }
 
 function updateShelfNavCnt(){
   const el = document.getElementById('shelfNavCnt');
   if(el){ const c=getShelf().length; el.textContent=c>0?c:''; }
 }
+
+// === Chrome拡張連携 ===
+function _extractVideoId(url){
+  if(!url) return null;
+  if(/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+  try{
+    const u=new URL(url);
+    if(u.hostname.includes('youtube.com')) return u.searchParams.get('v');
+    if(u.hostname==='youtu.be') return u.pathname.slice(1);
+  }catch(_){}
+  const m=url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m?m[1]:null;
+}
+
+function notifyExtension(){
+  const shelfIds=getShelf();
+  const shelfData=shelfIds.map(id=>{
+    const video=videos.find(v=>String(v.id)===String(id));
+    if(!video) return null;
+    return {
+      id:video.id,
+      title:video.title,
+      member:(video.member||'vwp').split(' ')[0],
+      year:video.date?new Date(video.date).getFullYear():null,
+      url:video.url,
+      videoId:_extractVideoId(video.url),
+    };
+  }).filter(Boolean);
+  window.postMessage({type:'VWP_SHELF_UPDATE',data:shelfData},'*');
+}
+
+window.addEventListener('message',function(e){
+  if(e.source!==window) return;
+  if(e.data&&e.data.type==='VWP_SHELF_REQUEST') notifyExtension();
+});
 
 // --- Member color map ---
 const MEMBER_COLORS = {
