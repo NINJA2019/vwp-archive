@@ -1,16 +1,16 @@
 const I18N = {
   ja: { howtoMember:'メンバーで絞り込む', howtoTag:'タグで探す', howtoDaily:'今日の観測でランダムに発見', members:'メンバー', tags:'タグ', sort:'並び順:', newest:'新しい順', oldest:'古い順', addVideo:'動画を追加', fetch:'取得', titleLabel:'タイトル', memberLabel:'メンバー', tagsLabel:'タグ', tagHint:'（#をつけてEnterで追加）', pubdate:'公開日', note:'メモ', cancel:'キャンセル', addBtn:'追加する', adminLogin:'管理者ログイン', loginDesc:'パスワードを入力すると動画の追加・削除ができます。', password:'パスワード', login:'ログイン', notFound:'動画が見つかりません', fetching:'取得中…', fetchOk:'✓ タイトル・公開日・サムネイルを取得しました', delConfirm:'この動画を削除しますか？', adding:'追加中…', searchPh:'タイトルで検索…', spotify:'Spotify', allTag:'すべて', dailyObs:'✦ 今日の観測',
     mbr:{ all:'すべて', kafu:'花譜', rime:'理芽', harusar:'春猿火', isekai:'ヰ世界情緒', koko:'幸祜', vwp:'V.W.P' },
-    tagMap:{}, shelfAdd:'棚に追加', shelfRemove:'棚から削除', shelfFull:'棚がいっぱいです（10曲まで）', shelfEmpty:'曲カードの📌ボタンで棚に追加できます', shelfListenYt:'YouTubeで聴く', shelfAdded:'追加しました', shelfRemoved:'削除しました' },
+    tagMap:{}, shelfAdd:'棚に追加', shelfRemove:'棚から削除', shelfFull:'棚がいっぱいです（10曲まで）', shelfEmpty:'曲カードの📌ボタンで棚に追加できます', shelfListenYt:'YouTubeで聴く', shelfAdded:'追加しました', shelfRemoved:'削除しました', shelfHint:'— ジャケットをタップして詳細 —', shelfSongs:'曲', shelfClose:'閉じる', shelfPanelClose:'パネルを閉じる' },
   en: { howtoMember:'Filter by member', howtoTag:'Search by tag', howtoDaily:'Discover randomly with Today\'s Observation', members:'Members', tags:'Tags', sort:'Sort:', newest:'Newest', oldest:'Oldest', addVideo:'Add Video', fetch:'Fetch', titleLabel:'Title', memberLabel:'Member', tagsLabel:'Tags', tagHint:'(type #tag + Enter)', pubdate:'Publish Date', note:'Notes', cancel:'Cancel', addBtn:'Add', adminLogin:'Admin Login', loginDesc:'Enter password to add/delete videos.', password:'Password', login:'Login', notFound:'No videos found', fetching:'Fetching…', fetchOk:'✓ Loaded title, date & thumbnail', delConfirm:'Delete this video?', adding:'Adding…', searchPh:'Search by title…', spotify:'Spotify', allTag:'All', dailyObs:'✦ Today\'s Observation',
     mbr:{ all:'All', kafu:'KAF', rime:'RIM', harusar:'HARUSARUHI', isekai:'ISEKAIJOUCHO', koko:'KOKO', vwp:'V.W.P' },
-    tagMap:{ 'シングル':'Single', 'アニメ':'Anime', 'ゲーム':'Game', '映画':'Film', 'クインテット':'Quintet', 'デュエット':'Duet', 'トリオ':'Trio', '拡声曲':'Amplified', '系譜曲':'Lineage', 'Covered':'Covered', 'Remix':'Remix', 'sinka':'sinka', '社外コラボ':'Collab', 'ライブ':'Live', 'カバー':'Cover', 'コラボ':'Collab' }, shelfAdd:'Add to Shelf', shelfRemove:'Remove from Shelf', shelfFull:'Shelf is full (max 10)', shelfEmpty:'Pin songs with the 📌 button on cards', shelfListenYt:'Listen on YouTube', shelfAdded:'Added', shelfRemoved:'Removed' },
+    tagMap:{ 'シングル':'Single', 'アニメ':'Anime', 'ゲーム':'Game', '映画':'Film', 'クインテット':'Quintet', 'デュエット':'Duet', 'トリオ':'Trio', '拡声曲':'Amplified', '系譜曲':'Lineage', 'Covered':'Covered', 'Remix':'Remix', 'sinka':'sinka', '社外コラボ':'Collab', 'ライブ':'Live', 'カバー':'Cover', 'コラボ':'Collab' }, shelfAdd:'Add to Shelf', shelfRemove:'Remove from Shelf', shelfFull:'Shelf is full (max 10)', shelfEmpty:'Pin songs with the 📌 button on cards', shelfListenYt:'Listen on YouTube', shelfAdded:'Added', shelfRemoved:'Removed', shelfHint:'— Tap a jacket for details —', shelfSongs:'songs', shelfClose:'Close', shelfPanelClose:'Close panel' },
   zh: { howtoMember:'按成员筛选', howtoTag:'按标签搜索', howtoDaily:'用今日观测随机发现', members:'成员', tags:'标签', sort:'排序:', newest:'最新', oldest:'最旧', addVideo:'添加视频', fetch:'获取', titleLabel:'标题', memberLabel:'成员', tagsLabel:'标签', tagHint:'（输入#标签后按Enter）', pubdate:'发布日期', note:'备注', cancel:'取消', addBtn:'添加', adminLogin:'管理员登录', loginDesc:'输入密码以添加或删除视频。', password:'密码', login:'登录', notFound:'未找到视频', fetching:'获取中…', fetchOk:'✓ 已获取标题、日期和缩略图', delConfirm:'确认删除此视频？', adding:'添加中…', searchPh:'按标题搜索…', spotify:'Spotify', allTag:'全部', dailyObs:'✦ 今日的观测',
     mbr:{ all:'全部', kafu:'花谱', rime:'理芽', harusar:'春猿火', isekai:'异世界情绪', koko:'幸祜', vwp:'V.W.P' },
-    tagMap:{ 'シングル':'单曲', 'アニメ':'动漫', 'ゲーム':'游戏', '映画':'电影', 'クインテット':'五重唱', 'デュエット':'二重唱', 'トリオ':'三重唱', '拡声曲':'扩声曲', '系譜曲':'系谱曲', 'Covered':'翻唱', 'Remix':'混音', 'sinka':'深化', '社外コラボ':'联动', 'ライブ':'现场', 'カバー':'翻唱', 'コラボ':'合作' } },
+    tagMap:{ 'シングル':'单曲', 'アニメ':'动漫', 'ゲーム':'游戏', '映画':'电影', 'クインテット':'五重唱', 'デュエット':'二重唱', 'トリオ':'三重唱', '拡声曲':'扩声曲', '系譜曲':'系谱曲', 'Covered':'翻唱', 'Remix':'混音', 'sinka':'深化', '社外コラボ':'联动', 'ライブ':'现场', 'カバー':'翻唱', 'コラボ':'合作' }, shelfAdd:'添加到书架', shelfRemove:'从书架移除', shelfFull:'书架已满（最多10首）', shelfEmpty:'点击曲卡上的📌按钮添加到书架', shelfListenYt:'在YouTube收听', shelfAdded:'已添加', shelfRemoved:'已移除', shelfHint:'— 点击封面查看详情 —', shelfSongs:'首', shelfClose:'关闭', shelfPanelClose:'关闭面板' },
   ko: { howtoMember:'멤버로 필터링', howtoTag:'태그로 검색', howtoDaily:'오늘의 관측으로 랜덤 발견', members:'멤버', tags:'태그', sort:'정렬:', newest:'최신순', oldest:'오래된순', addVideo:'동영상 추가', fetch:'가져오기', titleLabel:'제목', memberLabel:'멤버', tagsLabel:'태그', tagHint:'(#태그 입력 후 Enter)', pubdate:'공개일', note:'메모', cancel:'취소', addBtn:'추가하기', adminLogin:'관리자 로그인', loginDesc:'비밀번호를 입력하면 동영상 추가·삭제가 가능합니다.', password:'비밀번호', login:'로그인', notFound:'동영상을 찾을 수 없습니다', fetching:'가져오는 중…', fetchOk:'✓ 제목·공개일·썸네일을 가져왔습니다', delConfirm:'이 동영상을 삭제하시겠습니까?', adding:'추가 중…', searchPh:'제목으로 검색…', spotify:'Spotify', allTag:'전체', dailyObs:'✦ 오늘의 관측',
     mbr:{ all:'전체', kafu:'카후', rime:'리메', harusar:'하루사루히', isekai:'이세카이죠초', koko:'코코', vwp:'V.W.P' },
-    tagMap:{ 'シングル':'싱글', 'アニメ':'애니메이션', 'ゲーム':'게임', '映画':'영화', 'クインテット':'퀸텟', 'デュエット':'듀엣', 'トリオ':'트리오', '拡声曲':'확성곡', '系譜曲':'계보곡', 'Covered':'커버됨', 'Remix':'리믹스', 'sinka':'심화', '社外コラボ':'콜라보', 'ライブ':'라이브', 'カバー':'커버', 'コラボ':'콜라보' } }
+    tagMap:{ 'シングル':'싱글', 'アニメ':'애니메이션', 'ゲーム':'게임', '映画':'영화', 'クインテット':'퀸텟', 'デュエット':'듀엣', 'トリオ':'트리오', '拡声曲':'확성곡', '系譜曲':'계보곡', 'Covered':'커버됨', 'Remix':'리믹스', 'sinka':'심화', '社外コラボ':'콜라보', 'ライブ':'라이브', 'カバー':'커버', 'コラボ':'콜라보' }, shelfAdd:'선반에 추가', shelfRemove:'선반에서 제거', shelfFull:'선반이 가득 찼습니다 (최대 10곡)', shelfEmpty:'곡 카드의 📌 버튼으로 선반에 추가할 수 있습니다', shelfListenYt:'YouTube에서 듣기', shelfAdded:'추가됨', shelfRemoved:'제거됨', shelfHint:'— 재킷을 탭하여 상세 보기 —', shelfSongs:'곡', shelfClose:'닫기', shelfPanelClose:'패널 닫기' }
 };
 let lang = 'ja';
 function t(k){ return (I18N[lang]||I18N.ja)[k] || I18N.ja[k] || k; }
@@ -1649,47 +1649,147 @@ function getMemberColor(memberStr){
   return '#b0b8ff';
 }
 
+// --- Canvas LP disc ---
+function drawVinylDisc(canvas, memberColor, size){
+  const ctx = canvas.getContext('2d');
+  const c = size / 2;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, size, size);
+
+  // Base: member color
+  ctx.beginPath();
+  ctx.arc(c, c, c - 1, 0, Math.PI * 2);
+  ctx.fillStyle = memberColor;
+  ctx.globalAlpha = 0.55;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Dark overlay for depth
+  ctx.beginPath();
+  ctx.arc(c, c, c - 1, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fill();
+
+  // Grooves
+  for(var r = c * 0.35; r < c * 0.9; r += 3.5){
+    ctx.beginPath();
+    ctx.arc(c, c, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+  }
+
+  // Gloss
+  var grad = ctx.createRadialGradient(c * 0.7, c * 0.7, 0, c, c, c);
+  grad.addColorStop(0, 'rgba(255,255,255,0.06)');
+  grad.addColorStop(1, 'transparent');
+  ctx.beginPath();
+  ctx.arc(c, c, c - 1, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Label center
+  ctx.beginPath();
+  ctx.arc(c, c, c * 0.22, 0, Math.PI * 2);
+  ctx.fillStyle = '#121420';
+  ctx.fill();
+
+  // Label ring (member color)
+  ctx.beginPath();
+  ctx.arc(c, c, c * 0.22, 0, Math.PI * 2);
+  ctx.strokeStyle = memberColor;
+  ctx.globalAlpha = 0.3;
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Label inner
+  ctx.beginPath();
+  ctx.arc(c, c, c * 0.16, 0, Math.PI * 2);
+  ctx.fillStyle = '#0d0f1c';
+  ctx.fill();
+
+  // Spindle
+  ctx.beginPath();
+  ctx.arc(c, c, c * 0.06, 0, Math.PI * 2);
+  ctx.fillStyle = '#252848';
+  ctx.fill();
+
+  // Spindle center (member color)
+  ctx.beginPath();
+  ctx.arc(c, c, c * 0.03, 0, Math.PI * 2);
+  ctx.fillStyle = memberColor;
+  ctx.globalAlpha = 0.6;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(c, c, c - 1, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+}
+
 // --- Build shelf UI ---
 function buildShelfUI(){
   const shelfIds = getShelf();
   shelfSongs = shelfIds.map(id => videos.find(v => v.id === id)).filter(Boolean);
 
-  document.getElementById('shelf-count').textContent = shelfSongs.length;
+  const labelEl = document.getElementById('shelf-label');
+  if(labelEl) labelEl.textContent = 'MY SHELF — ' + shelfSongs.length + ' ' + t('shelfSongs');
+
+  const container = document.getElementById('shelf-rows-container');
+  if(!container) return;
+  container.innerHTML = '';
 
   const emptyEl = document.getElementById('shelf-empty');
-  const blocks = document.querySelectorAll('#my-shelf-overlay .shelf-block');
+  const hintEl = document.getElementById('shelf-hint');
+
   if(shelfSongs.length === 0){
-    emptyEl.style.display = '';
-    blocks.forEach(b => b.style.display = 'none');
-    document.getElementById('hint').style.display = 'none';
+    if(emptyEl) emptyEl.style.display = '';
+    if(hintEl) hintEl.style.display = 'none';
+    shelfClosePanel();
     return;
   }
-  emptyEl.style.display = 'none';
-  blocks.forEach(b => b.style.display = '');
-  document.getElementById('hint').style.display = '';
+  if(emptyEl) emptyEl.style.display = 'none';
+  if(hintEl) hintEl.style.display = '';
 
-  const heights = [[90,96,93,88,94],[92,88,95,90,87]];
-  const tilts   = [[0,1.2,-0.8,1.5,-0.5],[-0.5,1,-1,0.8,1.2]];
+  var ROW_SIZE = 5;
+  var rowCount = Math.ceil(shelfSongs.length / ROW_SIZE);
+  var tilts = [0, 1.2, -0.8, 1.5, -0.5, -0.5, 1, -1, 0.8, 1.2];
 
-  [0,1].forEach(ri => {
-    const row = document.getElementById('row'+ri);
-    if(!row) return;
-    const slice = shelfSongs.slice(ri * 5, (ri + 1) * 5);
-    row.innerHTML = slice.map((s, i) => {
-      const idx = ri * 5 + i;
-      const vid = ytId(s.url);
-      const thumb = vid ? 'url(https://img.youtube.com/vi/'+vid+'/mqdefault.jpg)' : 'none';
-      const h = heights[ri]?.[i] || 90;
-      const tt = tilts[ri]?.[i] || 0;
+  for(var ri = 0; ri < rowCount; ri++){
+    var start = ri * ROW_SIZE;
+    var rowSongs = shelfSongs.slice(start, start + ROW_SIZE);
+
+    var block = document.createElement('div');
+    block.className = 'shelf-block';
+
+    var row = document.createElement('div');
+    row.className = 'shelf-row';
+    row.innerHTML = rowSongs.map(function(s, i){
+      var idx = start + i;
+      var tilt = tilts[idx % tilts.length] || 0;
+      var vid = ytId(s.url);
+      var thumb = vid ? 'url(https://img.youtube.com/vi/'+vid+'/mqdefault.jpg)' : 'none';
       return '<div class="sj" id="sj'+idx+'"'+
-        ' style="background-image:'+thumb+';background-size:cover;background-position:center;height:'+h+'px;transform:rotate('+tt+'deg);"'+
+        ' style="background-image:'+thumb+';background-size:cover;background-position:center;transform:rotate('+tilt+'deg);"'+
         ' onclick="shelfOpenPanel('+idx+')"></div>';
     }).join('');
-  });
 
-  // Hide 2nd row if <=5 songs
-  if(shelfSongs.length <= 5){
-    blocks[1] && (blocks[1].style.display = 'none');
+    var board = document.createElement('div');
+    board.className = 'wood-board-wrap';
+    board.innerHTML = '<div class="wood-board"></div><div class="wood-shadow"></div>';
+
+    block.appendChild(row);
+    block.appendChild(board);
+    container.appendChild(block);
   }
 }
 
@@ -1705,16 +1805,16 @@ window.shelfOpenPanel = function(i){
   shelfCurrentIdx = i;
   const sjEl = document.getElementById('sj'+i);
   if(sjEl) sjEl.classList.add('active');
-  document.getElementById('hint').style.opacity = '0';
+  document.getElementById('shelf-hint').style.opacity = '0';
 
   const s = shelfSongs[i];
   if(!s) return;
 
   const panel = document.getElementById('detail-panel');
   const panelW = panel.offsetWidth - 40;
-  const jacketSize = Math.min(96, Math.floor(panelW * 0.28));
+  const jacketSize = Math.min(200, Math.floor(panelW * 0.18));
   const vinylSize  = jacketSize;
-  const slideX     = Math.floor(jacketSize * 0.58);
+  const slideX     = Math.floor(jacketSize * 0.5);
 
   const vid = ytId(s.url);
   const jacket = document.getElementById('dp-jacket');
@@ -1726,9 +1826,8 @@ window.shelfOpenPanel = function(i){
     jacket.style.backgroundPosition = 'center';
   }
 
-  const vinylSvg = document.getElementById('vinyl-svg');
-  vinylSvg.setAttribute('width',  vinylSize);
-  vinylSvg.setAttribute('height', vinylSize);
+  const vinylCanvas = document.getElementById('shelf-vinyl-canvas');
+  if(vinylCanvas) drawVinylDisc(vinylCanvas, getMemberColor(s.member), vinylSize);
 
   const stage = document.getElementById('dp-stage');
   stage.style.width  = (jacketSize + slideX) + 'px';
@@ -1764,7 +1863,6 @@ window.shelfOpenPanel = function(i){
   setTimeout(function(){
     vinylEl.classList.add('out');
     setTimeout(function(){
-      vinylSvg.classList.add('spin');
       document.getElementById('dp-info').classList.add('show');
     }, 300);
   }, 120);
@@ -1782,7 +1880,7 @@ function shelfClosePanel(){
   const host = document.querySelector('.panel-host');
   if(host) host.classList.remove('expanded');
   setTimeout(function(){
-    const hint = document.getElementById('hint');
+    const hint = document.getElementById('shelf-hint');
     if(hint) hint.style.opacity = '1';
   }, 320);
 }
@@ -1790,8 +1888,6 @@ function shelfClosePanel(){
 function shelfResetVinyl(){
   const v = document.getElementById('dp-vinyl');
   if(v) v.classList.remove('out');
-  const svg = document.getElementById('vinyl-svg');
-  if(svg) svg.classList.remove('spin');
 }
 
 // --- YouTube play ---
@@ -1807,12 +1903,30 @@ function shelfPlaySong(song){
 // --- Overlay open/close ---
 window.openShelf = function(){
   buildShelfUI();
+  updateShelfI18n();
   const overlay = document.getElementById('my-shelf-overlay');
   if(!overlay) return;
   overlay.style.display = '';
   document.body.style.overflow = 'hidden';
   _gtag('event','shelf_open',{song_count:getShelf().length});
 };
+
+function updateShelfI18n(){
+  const hint = document.getElementById('shelf-hint');
+  if(hint) hint.textContent = t('shelfHint');
+  const empty = document.getElementById('shelf-empty');
+  if(empty) empty.innerHTML = '<p>'+esc(t('shelfEmpty'))+'</p>';
+  const ytBtn = document.getElementById('dp-yt');
+  if(ytBtn){
+    const svg = ytBtn.querySelector('.yt-icon');
+    const svgHtml = svg ? svg.outerHTML : '';
+    ytBtn.innerHTML = svgHtml + ' ' + esc(t('shelfListenYt'));
+  }
+  const closeBtn = document.querySelector('.shelf-overlay-close');
+  if(closeBtn) closeBtn.setAttribute('aria-label', t('shelfClose'));
+  const panelClose = document.querySelector('.dp-btn-close');
+  if(panelClose) panelClose.setAttribute('aria-label', t('shelfPanelClose'));
+}
 
 function closeShelfOverlay(){
   shelfClosePanel();
