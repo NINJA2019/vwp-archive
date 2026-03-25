@@ -1669,7 +1669,7 @@ function buildShelfUI(){
   blocks.forEach(b => b.style.display = '');
   document.getElementById('shelf-hint').style.display = '';
 
-  const heights = [[120,126,123,118,124],[122,118,125,120,117]];
+  const heights = [[148,156,152,145,153],[150,146,155,149,144]];
   const tilts   = [[0,1.2,-0.8,1.5,-0.5],[-0.5,1,-1,0.8,1.2]];
 
   [0,1].forEach(ri => {
@@ -1713,9 +1713,9 @@ window.shelfOpenPanel = function(i){
 
   const panel = document.getElementById('detail-panel');
   const panelW = panel.offsetWidth - 40;
-  const jacketSize = Math.min(120, Math.floor(panelW * 0.28));
+  const jacketSize = Math.min(160, Math.floor(panelW * 0.22));
   const vinylSize  = jacketSize;
-  const slideX     = Math.floor(jacketSize * 0.45);
+  const slideX     = Math.floor(jacketSize * 0.5);
 
   const vid = ytId(s.url);
   const jacket = document.getElementById('dp-jacket');

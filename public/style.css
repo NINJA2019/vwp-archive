@@ -288,7 +288,7 @@
 .shelf-overlay-content {
   position: relative;
   width: 90vw;
-  max-width: 900px;
+  max-width: 1800px;
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -352,7 +352,7 @@
   align-items: flex-end;
   gap: 8px;
   padding: 0 6px;
-  min-height: 130px;
+  min-height: 160px;
 }
 
 /* Walnut wood board */
@@ -468,7 +468,7 @@
 .dp-info {
   flex: 1;
   min-width: 0;
-  padding-left: 28px;
+  padding-left: 32px;
   opacity: 0;
   transform: translateX(10px);
   transition: opacity 0.3s 0.1s, transform 0.3s 0.1s;
