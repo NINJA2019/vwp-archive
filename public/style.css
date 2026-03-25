@@ -216,3 +216,310 @@
     transition: none !important;
   }
 }
+
+/* ===========================
+   === MY SHELF ===
+   =========================== */
+
+/* Nav button */
+.shelf-nav-btn {
+  color: #c084fc !important;
+  position: relative;
+}
+.shelf-nav-cnt {
+  font-size: .55rem;
+  background: #c084fc;
+  color: var(--bg);
+  border-radius: 8px;
+  padding: 0 4px;
+  min-width: 14px;
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.3;
+  vertical-align: top;
+}
+.shelf-nav-cnt:empty { display: none; }
+
+/* Pin button on cards */
+.shelf-pin {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--dim);
+  cursor: pointer;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: .68rem;
+  transition: all .2s;
+  flex-shrink: 0;
+  opacity: 0;
+  line-height: 1;
+}
+.vcard:hover .shelf-pin,
+.litem:hover .shelf-pin,
+.tl-row:hover .shelf-pin {
+  opacity: 1;
+}
+.shelf-pin-on {
+  opacity: 1 !important;
+  color: #c084fc;
+  border-color: rgba(192,132,252,.4);
+  background: rgba(192,132,252,.12);
+}
+.shelf-pin:disabled {
+  opacity: .3 !important;
+  cursor: not-allowed;
+}
+
+/* Overlay */
+.shelf-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(7,9,14,.92);
+  backdrop-filter: blur(14px);
+  z-index: 400;
+  align-items: center;
+  justify-content: center;
+}
+body.light .shelf-overlay {
+  background: rgba(244,245,249,.92);
+}
+.shelf-overlay.shelf-open {
+  display: flex;
+}
+
+/* Panel */
+.shelf-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 90%;
+  max-width: 640px;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+}
+
+.shelf-header {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: 1rem 1.3rem;
+  border-bottom: 1px solid var(--border);
+}
+.shelf-title {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 900;
+  font-size: 1.1rem;
+  letter-spacing: .15em;
+  color: #c084fc;
+  flex: 1;
+}
+.shelf-count {
+  font-size: .72rem;
+  color: var(--dim);
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: .08em;
+}
+.shelf-close {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0 .3rem;
+  line-height: 1;
+  transition: color .2s;
+}
+.shelf-close:hover { color: var(--text); }
+
+.shelf-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.3rem;
+}
+
+/* Empty state */
+.shelf-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1rem;
+  color: var(--dim);
+  text-align: center;
+  font-size: .85rem;
+}
+
+/* Grid of jackets */
+.shelf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.shelf-jacket {
+  cursor: pointer;
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface2);
+  transition: transform .2s, box-shadow .2s;
+  position: relative;
+}
+.shelf-jacket:hover, .shelf-jacket:focus-visible {
+  transform: scale(1.04);
+  box-shadow: 0 4px 20px rgba(192,132,252,.25);
+  outline: none;
+}
+.shelf-jacket img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  display: block;
+}
+.shelf-jacket-title {
+  font-size: .68rem;
+  color: var(--text);
+  padding: .35rem .5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: 'Shippori Mincho', serif;
+}
+
+/* Detail panel (slide-in) */
+.shelf-detail {
+  position: absolute;
+  inset: 0;
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(100%);
+  transition: transform .4s cubic-bezier(.4,0,.2,1);
+  pointer-events: none;
+  z-index: 2;
+}
+.shelf-detail.shelf-detail-open {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+.shelf-detail-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  max-width: 360px;
+  width: 100%;
+}
+.shelf-detail-back {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--dim);
+  cursor: pointer;
+  padding: .3rem .7rem;
+  border-radius: 5px;
+  font-size: .85rem;
+  transition: color .2s;
+}
+.shelf-detail-back:hover { color: var(--text); }
+
+/* Vinyl disc */
+.shelf-vinyl {
+  width: 160px;
+  height: 160px;
+}
+.shelf-vinyl-disc {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: #1a1a2e;
+  border: 3px solid rgba(192,132,252,.3);
+  overflow: hidden;
+  box-shadow: 0 0 30px rgba(192,132,252,.15);
+  animation: shelf-spin .8s cubic-bezier(.2,0,.3,1) forwards;
+}
+.shelf-vinyl-disc img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+body.light .shelf-vinyl-disc {
+  background: #e8e8f0;
+}
+
+@keyframes shelf-spin {
+  from { transform: rotate(-180deg) scale(.7); opacity: 0; }
+  to { transform: rotate(0deg) scale(1); opacity: 1; }
+}
+
+.shelf-detail-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 1.05rem;
+  color: var(--text);
+  line-height: 1.45;
+}
+.shelf-detail-member {
+  font-size: .78rem;
+  color: var(--dim);
+  letter-spacing: .05em;
+}
+.shelf-detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  align-items: center;
+  margin-top: .5rem;
+}
+.shelf-yt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(192,132,252,.15);
+  color: #c084fc;
+  border: 1px solid rgba(192,132,252,.35);
+  border-radius: 6px;
+  padding: .5rem 1.2rem;
+  font-size: .82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background .2s;
+  font-family: 'Barlow Condensed', sans-serif;
+  letter-spacing: .08em;
+}
+.shelf-yt-btn:hover {
+  background: rgba(192,132,252,.28);
+}
+.shelf-del-btn {
+  background: none;
+  border: none;
+  color: var(--dim);
+  cursor: pointer;
+  font-size: .72rem;
+  padding: .3rem .6rem;
+  transition: color .2s;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+.shelf-del-btn:hover { color: #fca5a5; }
+
+/* Mobile: hide MY SHELF entirely */
+@media (max-width: 700px) {
+  .shelf-nav-btn { display: none !important; }
+  .shelf-overlay { display: none !important; }
+  .shelf-pin { display: none !important; }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .shelf-detail { transition: none !important; }
+  .shelf-vinyl-disc { animation: none !important; }
+  .shelf-jacket { transition: none !important; }
+}

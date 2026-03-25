@@ -1,10 +1,10 @@
 const I18N = {
   ja: { howtoMember:'メンバーで絞り込む', howtoTag:'タグで探す', howtoDaily:'今日の観測でランダムに発見', members:'メンバー', tags:'タグ', sort:'並び順:', newest:'新しい順', oldest:'古い順', addVideo:'動画を追加', fetch:'取得', titleLabel:'タイトル', memberLabel:'メンバー', tagsLabel:'タグ', tagHint:'（#をつけてEnterで追加）', pubdate:'公開日', note:'メモ', cancel:'キャンセル', addBtn:'追加する', adminLogin:'管理者ログイン', loginDesc:'パスワードを入力すると動画の追加・削除ができます。', password:'パスワード', login:'ログイン', notFound:'動画が見つかりません', fetching:'取得中…', fetchOk:'✓ タイトル・公開日・サムネイルを取得しました', delConfirm:'この動画を削除しますか？', adding:'追加中…', searchPh:'タイトルで検索…', spotify:'Spotify', allTag:'すべて', dailyObs:'✦ 今日の観測',
     mbr:{ all:'すべて', kafu:'花譜', rime:'理芽', harusar:'春猿火', isekai:'ヰ世界情緒', koko:'幸祜', vwp:'V.W.P' },
-    tagMap:{} },
+    tagMap:{}, shelfAdd:'棚に追加', shelfRemove:'棚から削除', shelfFull:'棚がいっぱいです（10曲まで）', shelfEmpty:'曲カードの📌ボタンで棚に追加できます', shelfListenYt:'YouTubeで聴く', shelfAdded:'追加しました', shelfRemoved:'削除しました' },
   en: { howtoMember:'Filter by member', howtoTag:'Search by tag', howtoDaily:'Discover randomly with Today\'s Observation', members:'Members', tags:'Tags', sort:'Sort:', newest:'Newest', oldest:'Oldest', addVideo:'Add Video', fetch:'Fetch', titleLabel:'Title', memberLabel:'Member', tagsLabel:'Tags', tagHint:'(type #tag + Enter)', pubdate:'Publish Date', note:'Notes', cancel:'Cancel', addBtn:'Add', adminLogin:'Admin Login', loginDesc:'Enter password to add/delete videos.', password:'Password', login:'Login', notFound:'No videos found', fetching:'Fetching…', fetchOk:'✓ Loaded title, date & thumbnail', delConfirm:'Delete this video?', adding:'Adding…', searchPh:'Search by title…', spotify:'Spotify', allTag:'All', dailyObs:'✦ Today\'s Observation',
     mbr:{ all:'All', kafu:'KAF', rime:'RIM', harusar:'HARUSARUHI', isekai:'ISEKAIJOUCHO', koko:'KOKO', vwp:'V.W.P' },
-    tagMap:{ 'シングル':'Single', 'アニメ':'Anime', 'ゲーム':'Game', '映画':'Film', 'クインテット':'Quintet', 'デュエット':'Duet', 'トリオ':'Trio', '拡声曲':'Amplified', '系譜曲':'Lineage', 'Covered':'Covered', 'Remix':'Remix', 'sinka':'sinka', '社外コラボ':'Collab', 'ライブ':'Live', 'カバー':'Cover', 'コラボ':'Collab' } },
+    tagMap:{ 'シングル':'Single', 'アニメ':'Anime', 'ゲーム':'Game', '映画':'Film', 'クインテット':'Quintet', 'デュエット':'Duet', 'トリオ':'Trio', '拡声曲':'Amplified', '系譜曲':'Lineage', 'Covered':'Covered', 'Remix':'Remix', 'sinka':'sinka', '社外コラボ':'Collab', 'ライブ':'Live', 'カバー':'Cover', 'コラボ':'Collab' }, shelfAdd:'Add to Shelf', shelfRemove:'Remove from Shelf', shelfFull:'Shelf is full (max 10)', shelfEmpty:'Pin songs with the 📌 button on cards', shelfListenYt:'Listen on YouTube', shelfAdded:'Added', shelfRemoved:'Removed' },
   zh: { howtoMember:'按成员筛选', howtoTag:'按标签搜索', howtoDaily:'用今日观测随机发现', members:'成员', tags:'标签', sort:'排序:', newest:'最新', oldest:'最旧', addVideo:'添加视频', fetch:'获取', titleLabel:'标题', memberLabel:'成员', tagsLabel:'标签', tagHint:'（输入#标签后按Enter）', pubdate:'发布日期', note:'备注', cancel:'取消', addBtn:'添加', adminLogin:'管理员登录', loginDesc:'输入密码以添加或删除视频。', password:'密码', login:'登录', notFound:'未找到视频', fetching:'获取中…', fetchOk:'✓ 已获取标题、日期和缩略图', delConfirm:'确认删除此视频？', adding:'添加中…', searchPh:'按标题搜索…', spotify:'Spotify', allTag:'全部', dailyObs:'✦ 今日的观测',
     mbr:{ all:'全部', kafu:'花谱', rime:'理芽', harusar:'春猿火', isekai:'异世界情绪', koko:'幸祜', vwp:'V.W.P' },
     tagMap:{ 'シングル':'单曲', 'アニメ':'动漫', 'ゲーム':'游戏', '映画':'电影', 'クインテット':'五重唱', 'デュエット':'二重唱', 'トリオ':'三重唱', '拡声曲':'扩声曲', '系譜曲':'系谱曲', 'Covered':'翻唱', 'Remix':'混音', 'sinka':'深化', '社外コラボ':'联动', 'ライブ':'现场', 'カバー':'翻唱', 'コラボ':'合作' } },
@@ -551,7 +551,7 @@ function renderGrid(list){
       <div class="cbody">
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div>
         <div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div>
-        <div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div>
+        <div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div>
       </div>
     </div>`).join('')+`</div>`;
 }
@@ -561,7 +561,7 @@ function renderList(list){
     <a class="litem" style="animation-delay:${i*.022}s" href="${safeUrl(v.url)}" target="_blank" rel="noopener">
       <div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div>
       <div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>
-      ${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
+      ${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
     </a>`).join('')+`</div>`;
 }
 function renderTimeline(list){
@@ -575,7 +575,7 @@ function renderTimeline(list){
       <div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div>
       <div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div>
       <div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>
-      ${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
+      ${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
     </div>`;
   });
   return html+'</div>';
@@ -603,7 +603,7 @@ function loadMoreItems(){
       const div=document.createElement('div');
       div.className='vcard';div.style.animationDelay=((start+i)*.022)+'s';
       div.onclick=()=>trackSongClick(v.id,safeUrl(v.url));
-      div.innerHTML=`<div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div><div class="cbody"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div><div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div></div>`;
+      div.innerHTML=`<div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div><div class="cbody"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div><div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div></div>`;
       wrap.appendChild(div);
     });
   } else if(curView==='list'){
@@ -613,7 +613,7 @@ function loadMoreItems(){
       a.className='litem';a.style.animationDelay=((start+i)*.022)+'s';
       a.href=safeUrl(v.url);a.target='_blank';a.rel='noopener';
       a.addEventListener('click',()=>_gtag('event','song_click',{song_title:v.title||'',member_name:v.member||'',video_date:v.date||'',album_id:v.album_id?String(v.album_id):''}));
-      a.innerHTML=`<div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div><div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
+      a.innerHTML=`<div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div><div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
       wrap.appendChild(a);
     });
   } else {
@@ -634,7 +634,7 @@ function loadMoreItems(){
       const row=document.createElement('div');
       row.className='tl-row';row.style.animationDelay=((start+i)*.022)+'s';
       row.onclick=()=>trackSongClick(v.id,safeUrl(v.url));
-      row.innerHTML=`<div class="tl-dot"></div><div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div><div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
+      row.innerHTML=`<div class="tl-dot"></div><div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div><div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
       tl.appendChild(row);
     });
   }
@@ -1599,4 +1599,163 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     mobCurveIn(mobCards[0], true);
   })();
 
+})();
+
+// ===========================
+// === MY SHELF ===
+// ===========================
+(function(){
+const SHELF_KEY = 'vwp_shelf';
+const SHELF_MAX = 10;
+
+function getShelf(){ try{ return JSON.parse(localStorage.getItem(SHELF_KEY)||'[]'); }catch{ return []; } }
+function setShelf(ids){ localStorage.setItem(SHELF_KEY, JSON.stringify(ids.slice(0, SHELF_MAX))); updateShelfNavCnt(); }
+function isOnShelf(id){ return getShelf().includes(id); }
+
+function addToShelf(id){
+  const shelf = getShelf();
+  if(shelf.length >= SHELF_MAX || shelf.includes(id)) return false;
+  shelf.push(id);
+  setShelf(shelf);
+  const v = videos.find(x=>x.id===id);
+  if(v) _gtag('event','shelf_add_song',{song_title:v.title||'',member_name:v.member||''});
+  return true;
+}
+function removeFromShelf(id){
+  const shelf = getShelf().filter(x=>x!==id);
+  setShelf(shelf);
+  const v = videos.find(x=>x.id===id);
+  if(v) _gtag('event','shelf_remove_song',{song_title:v.title||''});
+}
+
+function updateShelfNavCnt(){
+  const el = document.getElementById('shelfNavCnt');
+  if(el){ const c=getShelf().length; el.textContent=c>0?c:''; }
+}
+
+// --- Shelf pin button (injected into card cmeta) ---
+window.toggleShelfPin = function(id, e){
+  e.stopPropagation(); e.preventDefault();
+  if(isOnShelf(id)){
+    removeFromShelf(id);
+  } else {
+    if(!addToShelf(id)) return;
+  }
+  // Re-render pin buttons without full re-render
+  document.querySelectorAll(`.shelf-pin[data-sid="${id}"]`).forEach(btn=>{
+    const on = isOnShelf(id);
+    btn.textContent = on ? '📌' : '＋';
+    btn.title = on ? t('shelfRemove') : (getShelf().length>=SHELF_MAX ? t('shelfFull') : t('shelfAdd'));
+    btn.classList.toggle('shelf-pin-on', on);
+  });
+  // Update overlay if open
+  if(document.getElementById('shelfOverlay').classList.contains('shelf-open')) renderShelfBody();
+};
+
+// Generate pin button HTML (called from renderGrid/loadMoreItems)
+window.shelfPinHtml = function(id){
+  const on = isOnShelf(id);
+  const full = getShelf().length >= SHELF_MAX && !on;
+  const tip = on ? t('shelfRemove') : (full ? t('shelfFull') : t('shelfAdd'));
+  return `<button class="shelf-pin${on?' shelf-pin-on':''}" data-sid="${id}" title="${esc(tip)}" onclick="toggleShelfPin(${id},event)"${full?' disabled':''}>${on?'📌':'＋'}</button>`;
+};
+
+// --- Overlay ---
+window.openShelf = function(){
+  const overlay = document.getElementById('shelfOverlay');
+  overlay.classList.add('shelf-open');
+  document.body.style.overflow = 'hidden';
+  _gtag('event','shelf_open',{song_count:getShelf().length});
+  renderShelfBody();
+  closeShelfDetail();
+};
+function closeShelf(){
+  document.getElementById('shelfOverlay').classList.remove('shelf-open');
+  document.body.style.overflow = '';
+  closeShelfDetail();
+}
+
+document.getElementById('shelfClose').addEventListener('click', closeShelf);
+document.getElementById('shelfOverlay').addEventListener('click', function(e){ if(e.target===this) closeShelf(); });
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape' && document.getElementById('shelfOverlay').classList.contains('shelf-open')){
+    if(document.getElementById('shelfDetail').classList.contains('shelf-detail-open')){
+      closeShelfDetail();
+    } else {
+      closeShelf();
+    }
+  }
+});
+
+function renderShelfBody(){
+  const body = document.getElementById('shelfBody');
+  const shelf = getShelf();
+  const cnt = document.getElementById('shelfCount');
+  cnt.textContent = shelf.length + ' / ' + SHELF_MAX;
+
+  if(!shelf.length){
+    body.innerHTML = `<div class="shelf-empty"><div style="font-size:2rem;opacity:.3;margin-bottom:.5rem;">📌</div><p>${t('shelfEmpty')}</p></div>`;
+    return;
+  }
+  const items = shelf.map(id=>videos.find(v=>v.id===id)).filter(Boolean);
+  body.innerHTML = `<div class="shelf-grid">${items.map(v=>{
+    const vid = ytId(v.url);
+    const src = vid ? `https://img.youtube.com/vi/${vid}/mqdefault.jpg` : '';
+    return `<div class="shelf-jacket" data-vid="${v.id}" tabindex="0">
+      <img src="${src}" alt="${esc(v.title)}" loading="lazy">
+      <div class="shelf-jacket-title">${esc(v.title)}</div>
+    </div>`;
+  }).join('')}</div>`;
+
+  body.querySelectorAll('.shelf-jacket').forEach(el=>{
+    el.addEventListener('click', ()=> openShelfDetail(parseInt(el.dataset.vid)));
+    el.addEventListener('keydown', e=>{ if(e.key==='Enter') openShelfDetail(parseInt(el.dataset.vid)); });
+  });
+}
+
+// --- Detail panel with vinyl animation ---
+let shelfDetailId = null;
+function openShelfDetail(id){
+  const v = videos.find(x=>x.id===id);
+  if(!v) return;
+  shelfDetailId = id;
+  const detail = document.getElementById('shelfDetail');
+  const info = document.getElementById('shelfDetailInfo');
+  const vinyl = document.getElementById('shelfVinyl');
+
+  const vid = ytId(v.url);
+  const src = vid ? `https://img.youtube.com/vi/${vid}/mqdefault.jpg` : '';
+  const members = parseMembers(v).map(m=>mbr(m)).join(', ');
+
+  vinyl.innerHTML = `<div class="shelf-vinyl-disc"><img src="${src}" alt=""></div>`;
+  info.innerHTML = `
+    <div class="shelf-detail-title">${esc(v.title)}</div>
+    <div class="shelf-detail-member">${esc(members)}</div>
+    <div class="shelf-detail-actions">
+      <a class="shelf-yt-btn" href="${safeUrl(v.url)}" target="_blank" rel="noopener noreferrer" id="shelfYtBtn">▶ ${t('shelfListenYt')}</a>
+      <button class="shelf-del-btn" id="shelfDelBtn">${t('shelfRemove')}</button>
+    </div>`;
+
+  document.getElementById('shelfYtBtn').addEventListener('click', function(e){
+    trackExternalLink(v.url, 'shelf_play', v.title||'');
+  });
+  document.getElementById('shelfDelBtn').addEventListener('click', function(){
+    removeFromShelf(id);
+    closeShelfDetail();
+    renderShelfBody();
+  });
+
+  // Trigger animation
+  detail.classList.remove('shelf-detail-open');
+  void detail.offsetWidth; // force reflow
+  detail.classList.add('shelf-detail-open');
+}
+function closeShelfDetail(){
+  document.getElementById('shelfDetail').classList.remove('shelf-detail-open');
+  shelfDetailId = null;
+}
+document.getElementById('shelfDetailBack').addEventListener('click', closeShelfDetail);
+
+// Init nav count on load
+updateShelfNavCnt();
 })();
