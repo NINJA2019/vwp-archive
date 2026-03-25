@@ -1649,6 +1649,93 @@ function getMemberColor(memberStr){
   return '#b0b8ff';
 }
 
+// --- Canvas LP disc ---
+function drawVinylDisc(canvas, memberColor, size){
+  const ctx = canvas.getContext('2d');
+  const c = size / 2;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, size, size);
+
+  // Base: member color
+  ctx.beginPath();
+  ctx.arc(c, c, c - 1, 0, Math.PI * 2);
+  ctx.fillStyle = memberColor;
+  ctx.globalAlpha = 0.55;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Dark overlay for depth
+  ctx.beginPath();
+  ctx.arc(c, c, c - 1, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fill();
+
+  // Grooves
+  for(var r = c * 0.35; r < c * 0.9; r += 3.5){
+    ctx.beginPath();
+    ctx.arc(c, c, r, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+  }
+
+  // Gloss
+  var grad = ctx.createRadialGradient(c * 0.7, c * 0.7, 0, c, c, c);
+  grad.addColorStop(0, 'rgba(255,255,255,0.06)');
+  grad.addColorStop(1, 'transparent');
+  ctx.beginPath();
+  ctx.arc(c, c, c - 1, 0, Math.PI * 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Label center
+  ctx.beginPath();
+  ctx.arc(c, c, c * 0.22, 0, Math.PI * 2);
+  ctx.fillStyle = '#121420';
+  ctx.fill();
+
+  // Label ring (member color)
+  ctx.beginPath();
+  ctx.arc(c, c, c * 0.22, 0, Math.PI * 2);
+  ctx.strokeStyle = memberColor;
+  ctx.globalAlpha = 0.3;
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Label inner
+  ctx.beginPath();
+  ctx.arc(c, c, c * 0.16, 0, Math.PI * 2);
+  ctx.fillStyle = '#0d0f1c';
+  ctx.fill();
+
+  // Spindle
+  ctx.beginPath();
+  ctx.arc(c, c, c * 0.06, 0, Math.PI * 2);
+  ctx.fillStyle = '#252848';
+  ctx.fill();
+
+  // Spindle center (member color)
+  ctx.beginPath();
+  ctx.arc(c, c, c * 0.03, 0, Math.PI * 2);
+  ctx.fillStyle = memberColor;
+  ctx.globalAlpha = 0.6;
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Outer ring
+  ctx.beginPath();
+  ctx.arc(c, c, c - 1, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+  ctx.lineWidth = 0.5;
+  ctx.stroke();
+}
+
 // --- Build shelf UI ---
 function buildShelfUI(){
   const shelfIds = getShelf();
@@ -1669,7 +1756,7 @@ function buildShelfUI(){
   blocks.forEach(b => b.style.display = '');
   document.getElementById('shelf-hint').style.display = '';
 
-  const heights = [[148,156,152,145,153],[150,146,155,149,144]];
+  const heights = [[188,196,192,185,194],[190,186,195,189,184]];
   const tilts   = [[0,1.2,-0.8,1.5,-0.5],[-0.5,1,-1,0.8,1.2]];
 
   [0,1].forEach(ri => {
@@ -1713,7 +1800,7 @@ window.shelfOpenPanel = function(i){
 
   const panel = document.getElementById('detail-panel');
   const panelW = panel.offsetWidth - 40;
-  const jacketSize = Math.min(160, Math.floor(panelW * 0.22));
+  const jacketSize = Math.min(200, Math.floor(panelW * 0.18));
   const vinylSize  = jacketSize;
   const slideX     = Math.floor(jacketSize * 0.5);
 
@@ -1727,9 +1814,8 @@ window.shelfOpenPanel = function(i){
     jacket.style.backgroundPosition = 'center';
   }
 
-  const vinylSvg = document.getElementById('vinyl-svg');
-  vinylSvg.setAttribute('width',  vinylSize);
-  vinylSvg.setAttribute('height', vinylSize);
+  const vinylCanvas = document.getElementById('shelf-vinyl-canvas');
+  if(vinylCanvas) drawVinylDisc(vinylCanvas, getMemberColor(s.member), vinylSize);
 
   const stage = document.getElementById('dp-stage');
   stage.style.width  = (jacketSize + slideX) + 'px';
@@ -1765,7 +1851,6 @@ window.shelfOpenPanel = function(i){
   setTimeout(function(){
     vinylEl.classList.add('out');
     setTimeout(function(){
-      vinylSvg.classList.add('spin');
       document.getElementById('dp-info').classList.add('show');
     }, 300);
   }, 120);
@@ -1791,8 +1876,6 @@ function shelfClosePanel(){
 function shelfResetVinyl(){
   const v = document.getElementById('dp-vinyl');
   if(v) v.classList.remove('out');
-  const svg = document.getElementById('vinyl-svg');
-  if(svg) svg.classList.remove('spin');
 }
 
 // --- YouTube play ---

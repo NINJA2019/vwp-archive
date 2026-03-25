@@ -287,8 +287,8 @@
 }
 .shelf-overlay-content {
   position: relative;
-  width: 90vw;
-  max-width: 1800px;
+  width: 95vw;
+  max-width: none;
   max-height: 90vh;
   overflow-y: auto;
 }
@@ -334,6 +334,7 @@
 .shelf-area {
   position: relative;
   z-index: 2;
+  padding: 28px 24px 0;
 }
 .shelf-label {
   font-family: 'Barlow Condensed', sans-serif;
@@ -350,14 +351,15 @@
 .shelf-row {
   display: flex;
   align-items: flex-end;
-  gap: 8px;
+  gap: 12px;
   padding: 0 6px;
-  min-height: 160px;
+  min-height: 200px;
 }
 
 /* Walnut wood board */
 .wood-board-wrap {
   position: relative;
+  margin: 0 -24px;
 }
 .wood-board {
   height: 10px;
@@ -411,7 +413,7 @@
   transition: max-height 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .panel-host.expanded {
-  max-height: 300px;
+  max-height: 400px;
 }
 
 /* Detail panel */
@@ -432,7 +434,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
+  padding: 28px 32px;
 }
 .dp-stage {
   position: relative;
@@ -446,24 +448,14 @@
 }
 .dp-vinyl {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  left: 0;
   z-index: 1;
-  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transform: translateX(0);
+  transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .dp-vinyl.out {
-  transform: translate(var(--slide-x, 30px), -50%);
-}
-.vinyl-spinning {
-  display: block;
-}
-.vinyl-spinning.spin {
-  animation: shelf-vinyl-spin 2.5s linear infinite;
-}
-@keyframes shelf-vinyl-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  transform: translateX(var(--slide-x));
 }
 .dp-info {
   flex: 1;
@@ -597,7 +589,6 @@ body.light .shelf-empty { color: var(--dim); }
   .detail-panel,
   .dp-vinyl,
   .dp-info,
-  .vinyl-spinning,
   .shelf-hint {
     transition: none !important;
     animation: none !important;
