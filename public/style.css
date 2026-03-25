@@ -216,3 +216,389 @@
     transition: none !important;
   }
 }
+
+/* ===========================
+   === MY SHELF ===
+   =========================== */
+
+/* Nav button */
+.shelf-nav-btn {
+  color: #c084fc !important;
+  position: relative;
+}
+.shelf-nav-cnt {
+  font-size: .55rem;
+  background: #c084fc;
+  color: var(--bg);
+  border-radius: 8px;
+  padding: 0 4px;
+  min-width: 14px;
+  text-align: center;
+  font-weight: 700;
+  line-height: 1.3;
+  vertical-align: top;
+}
+.shelf-nav-cnt:empty { display: none; }
+
+/* Pin button on cards */
+.shelf-pin {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--dim);
+  cursor: pointer;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: .68rem;
+  transition: all .2s;
+  flex-shrink: 0;
+  opacity: 0;
+  line-height: 1;
+}
+.vcard:hover .shelf-pin,
+.litem:hover .shelf-pin,
+.tl-row:hover .shelf-pin {
+  opacity: 1;
+}
+.shelf-pin-on {
+  opacity: 1 !important;
+  color: #c084fc;
+  border-color: rgba(192,132,252,.4);
+  background: rgba(192,132,252,.12);
+}
+.shelf-pin:disabled {
+  opacity: .3 !important;
+  cursor: not-allowed;
+}
+
+/* --- Concrete × Walnut Shelf Overlay --- */
+.shelf-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.shelf-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+.shelf-overlay-content {
+  position: relative;
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.shelf-overlay-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  z-index: 10;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  font-size: 18px;
+  cursor: pointer;
+}
+.shelf-overlay-close:hover { color: rgba(255,255,255,0.8); }
+
+/* Wrap container */
+.wrap {
+  position: relative;
+  background: var(--bg);
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 20px 16px 12px;
+}
+
+/* Concrete texture */
+.concrete-bg {
+  position: absolute;
+  inset: 0;
+  background-color: #2c2e38;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.012) 2px, rgba(255,255,255,0.012) 4px),
+    repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255,255,255,0.008) 2px, rgba(255,255,255,0.008) 4px);
+  opacity: 0.7;
+}
+.concrete-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7,9,14,0.3) 0%, rgba(7,9,14,0.6) 100%);
+}
+
+/* Shelf area */
+.shelf-area {
+  position: relative;
+  z-index: 2;
+}
+.shelf-label {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.25);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.shelf-block {
+  margin-bottom: 8px;
+}
+.shelf-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 0 6px;
+  min-height: 90px;
+}
+
+/* Walnut wood board */
+.wood-board-wrap {
+  position: relative;
+}
+.wood-board {
+  height: 10px;
+  background: linear-gradient(180deg, #4a3020 0%, #2a1c0c 60%, #120a04 100%);
+  border-radius: 0 0 2px 2px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset;
+}
+.wood-shadow {
+  height: 8px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 100%);
+  border-radius: 0 0 4px 4px;
+}
+
+/* Shelf jacket */
+.sj {
+  width: 72px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 1px 2px 6px rgba(0,0,0,0.4);
+  background-color: var(--surface2);
+}
+.sj:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 2px 6px 16px rgba(0,0,0,0.5);
+}
+.sj.active {
+  transform: translateY(-8px) !important;
+  box-shadow: 2px 8px 20px rgba(192,132,252,0.3);
+  outline: 2px solid rgba(192,132,252,0.5);
+}
+
+/* Hint row */
+.hint-row {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  font-size: 11px;
+  color: rgba(255,255,255,0.18);
+  padding: 10px 0 4px;
+  transition: opacity 0.3s;
+}
+
+/* Panel host (overflow fix) */
+.panel-host {
+  position: relative;
+  z-index: 2;
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.panel-host.expanded {
+  max-height: 300px;
+}
+
+/* Detail panel */
+.detail-panel {
+  background: var(--surface);
+  border-radius: 10px;
+  margin: 4px 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.32s, transform 0.32s;
+}
+.detail-panel.open {
+  opacity: 1;
+  transform: translateY(0);
+}
+.dp-inner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+.dp-stage {
+  position: relative;
+  flex-shrink: 0;
+}
+.dp-jacket {
+  border-radius: 4px;
+  box-shadow: 2px 2px 10px rgba(0,0,0,0.4);
+  position: relative;
+  z-index: 2;
+}
+.dp-vinyl {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dp-vinyl.out {
+  transform: translate(var(--slide-x, 30px), -50%);
+}
+.vinyl-spinning {
+  display: block;
+}
+.vinyl-spinning.spin {
+  animation: shelf-vinyl-spin 2.5s linear infinite;
+}
+@keyframes shelf-vinyl-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.dp-info {
+  flex: 1;
+  min-width: 0;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: opacity 0.3s 0.1s, transform 0.3s 0.1s;
+}
+.dp-info.show {
+  opacity: 1;
+  transform: translateX(0);
+}
+.dp-member {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.dp-title {
+  font-family: 'Shippori Mincho', serif;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.dp-sub {
+  font-size: 9px;
+  color: var(--dim);
+  letter-spacing: 0.15em;
+  margin-bottom: 8px;
+}
+.dp-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.dp-btn-yt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  background: none;
+}
+.dp-btn-yt:hover {
+  background: rgba(255,255,255,0.06);
+}
+.dp-btn-yt .yt-icon {
+  width: 16px;
+  height: 16px;
+}
+.dp-btn-close {
+  background: none;
+  border: none;
+  color: var(--dim);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  transition: color 0.2s;
+}
+.dp-btn-close:hover {
+  color: var(--text);
+}
+.dp-divider {
+  height: 1px;
+  background: var(--border);
+  margin-bottom: 6px;
+}
+.dp-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.dp-tag {
+  font-size: 10px;
+  color: var(--dim);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 6px;
+}
+
+/* Empty state */
+.shelf-empty {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 40px 20px;
+  color: rgba(255,255,255,0.25);
+  font-size: 13px;
+}
+
+/* Light theme overrides */
+body.light .shelf-overlay-backdrop { background: rgba(255,255,255,0.7); }
+body.light .shelf-overlay-close { color: rgba(0,0,0,0.4); }
+body.light .shelf-overlay-close:hover { color: rgba(0,0,0,0.8); }
+body.light .wrap { background: var(--bg); }
+body.light .concrete-bg { background-color: #e8e8ec; }
+body.light .detail-panel { background: var(--surface); }
+body.light .dp-title { color: var(--text); }
+body.light .dp-btn-yt { color: var(--text); border-color: var(--border); }
+body.light .dp-btn-close { color: var(--dim); }
+body.light .dp-tag { color: var(--dim); border-color: var(--border); }
+body.light .shelf-label { color: var(--dim); }
+body.light .hint-row { color: var(--dim); }
+body.light .shelf-empty { color: var(--dim); }
+
+/* PC only — hide on mobile */
+@media (max-width: 700px) {
+  #my-shelf-overlay,
+  .shelf-nav-btn {
+    display: none !important;
+  }
+  .shelf-pin { display: none !important; }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .sj,
+  .detail-panel,
+  .dp-vinyl,
+  .dp-info,
+  .vinyl-spinning,
+  .hint-row {
+    transition: none !important;
+    animation: none !important;
+  }
+}

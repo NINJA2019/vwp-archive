@@ -1,10 +1,10 @@
 const I18N = {
   ja: { howtoMember:'メンバーで絞り込む', howtoTag:'タグで探す', howtoDaily:'今日の観測でランダムに発見', members:'メンバー', tags:'タグ', sort:'並び順:', newest:'新しい順', oldest:'古い順', addVideo:'動画を追加', fetch:'取得', titleLabel:'タイトル', memberLabel:'メンバー', tagsLabel:'タグ', tagHint:'（#をつけてEnterで追加）', pubdate:'公開日', note:'メモ', cancel:'キャンセル', addBtn:'追加する', adminLogin:'管理者ログイン', loginDesc:'パスワードを入力すると動画の追加・削除ができます。', password:'パスワード', login:'ログイン', notFound:'動画が見つかりません', fetching:'取得中…', fetchOk:'✓ タイトル・公開日・サムネイルを取得しました', delConfirm:'この動画を削除しますか？', adding:'追加中…', searchPh:'タイトルで検索…', spotify:'Spotify', allTag:'すべて', dailyObs:'✦ 今日の観測',
     mbr:{ all:'すべて', kafu:'花譜', rime:'理芽', harusar:'春猿火', isekai:'ヰ世界情緒', koko:'幸祜', vwp:'V.W.P' },
-    tagMap:{} },
+    tagMap:{}, shelfAdd:'棚に追加', shelfRemove:'棚から削除', shelfFull:'棚がいっぱいです（10曲まで）', shelfEmpty:'曲カードの📌ボタンで棚に追加できます', shelfListenYt:'YouTubeで聴く', shelfAdded:'追加しました', shelfRemoved:'削除しました' },
   en: { howtoMember:'Filter by member', howtoTag:'Search by tag', howtoDaily:'Discover randomly with Today\'s Observation', members:'Members', tags:'Tags', sort:'Sort:', newest:'Newest', oldest:'Oldest', addVideo:'Add Video', fetch:'Fetch', titleLabel:'Title', memberLabel:'Member', tagsLabel:'Tags', tagHint:'(type #tag + Enter)', pubdate:'Publish Date', note:'Notes', cancel:'Cancel', addBtn:'Add', adminLogin:'Admin Login', loginDesc:'Enter password to add/delete videos.', password:'Password', login:'Login', notFound:'No videos found', fetching:'Fetching…', fetchOk:'✓ Loaded title, date & thumbnail', delConfirm:'Delete this video?', adding:'Adding…', searchPh:'Search by title…', spotify:'Spotify', allTag:'All', dailyObs:'✦ Today\'s Observation',
     mbr:{ all:'All', kafu:'KAF', rime:'RIM', harusar:'HARUSARUHI', isekai:'ISEKAIJOUCHO', koko:'KOKO', vwp:'V.W.P' },
-    tagMap:{ 'シングル':'Single', 'アニメ':'Anime', 'ゲーム':'Game', '映画':'Film', 'クインテット':'Quintet', 'デュエット':'Duet', 'トリオ':'Trio', '拡声曲':'Amplified', '系譜曲':'Lineage', 'Covered':'Covered', 'Remix':'Remix', 'sinka':'sinka', '社外コラボ':'Collab', 'ライブ':'Live', 'カバー':'Cover', 'コラボ':'Collab' } },
+    tagMap:{ 'シングル':'Single', 'アニメ':'Anime', 'ゲーム':'Game', '映画':'Film', 'クインテット':'Quintet', 'デュエット':'Duet', 'トリオ':'Trio', '拡声曲':'Amplified', '系譜曲':'Lineage', 'Covered':'Covered', 'Remix':'Remix', 'sinka':'sinka', '社外コラボ':'Collab', 'ライブ':'Live', 'カバー':'Cover', 'コラボ':'Collab' }, shelfAdd:'Add to Shelf', shelfRemove:'Remove from Shelf', shelfFull:'Shelf is full (max 10)', shelfEmpty:'Pin songs with the 📌 button on cards', shelfListenYt:'Listen on YouTube', shelfAdded:'Added', shelfRemoved:'Removed' },
   zh: { howtoMember:'按成员筛选', howtoTag:'按标签搜索', howtoDaily:'用今日观测随机发现', members:'成员', tags:'标签', sort:'排序:', newest:'最新', oldest:'最旧', addVideo:'添加视频', fetch:'获取', titleLabel:'标题', memberLabel:'成员', tagsLabel:'标签', tagHint:'（输入#标签后按Enter）', pubdate:'发布日期', note:'备注', cancel:'取消', addBtn:'添加', adminLogin:'管理员登录', loginDesc:'输入密码以添加或删除视频。', password:'密码', login:'登录', notFound:'未找到视频', fetching:'获取中…', fetchOk:'✓ 已获取标题、日期和缩略图', delConfirm:'确认删除此视频？', adding:'添加中…', searchPh:'按标题搜索…', spotify:'Spotify', allTag:'全部', dailyObs:'✦ 今日的观测',
     mbr:{ all:'全部', kafu:'花谱', rime:'理芽', harusar:'春猿火', isekai:'异世界情绪', koko:'幸祜', vwp:'V.W.P' },
     tagMap:{ 'シングル':'单曲', 'アニメ':'动漫', 'ゲーム':'游戏', '映画':'电影', 'クインテット':'五重唱', 'デュエット':'二重唱', 'トリオ':'三重唱', '拡声曲':'扩声曲', '系譜曲':'系谱曲', 'Covered':'翻唱', 'Remix':'混音', 'sinka':'深化', '社外コラボ':'联动', 'ライブ':'现场', 'カバー':'翻唱', 'コラボ':'合作' } },
@@ -551,7 +551,7 @@ function renderGrid(list){
       <div class="cbody">
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div>
         <div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div>
-        <div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div>
+        <div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div>
       </div>
     </div>`).join('')+`</div>`;
 }
@@ -561,7 +561,7 @@ function renderList(list){
     <a class="litem" style="animation-delay:${i*.022}s" href="${safeUrl(v.url)}" target="_blank" rel="noopener">
       <div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div>
       <div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>
-      ${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
+      ${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
     </a>`).join('')+`</div>`;
 }
 function renderTimeline(list){
@@ -575,7 +575,7 @@ function renderTimeline(list){
       <div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div>
       <div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div>
       <div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>
-      ${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
+      ${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
     </div>`;
   });
   return html+'</div>';
@@ -603,7 +603,7 @@ function loadMoreItems(){
       const div=document.createElement('div');
       div.className='vcard';div.style.animationDelay=((start+i)*.022)+'s';
       div.onclick=()=>trackSongClick(v.id,safeUrl(v.url));
-      div.innerHTML=`<div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div><div class="cbody"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div><div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div></div>`;
+      div.innerHTML=`<div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div><div class="cbody"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div><div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div></div>`;
       wrap.appendChild(div);
     });
   } else if(curView==='list'){
@@ -613,7 +613,7 @@ function loadMoreItems(){
       a.className='litem';a.style.animationDelay=((start+i)*.022)+'s';
       a.href=safeUrl(v.url);a.target='_blank';a.rel='noopener';
       a.addEventListener('click',()=>_gtag('event','song_click',{song_title:v.title||'',member_name:v.member||'',video_date:v.date||'',album_id:v.album_id?String(v.album_id):''}));
-      a.innerHTML=`<div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div><div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
+      a.innerHTML=`<div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div><div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
       wrap.appendChild(a);
     });
   } else {
@@ -634,7 +634,7 @@ function loadMoreItems(){
       const row=document.createElement('div');
       row.className='tl-row';row.style.animationDelay=((start+i)*.022)+'s';
       row.onclick=()=>trackSongClick(v.id,safeUrl(v.url));
-      row.innerHTML=`<div class="tl-dot"></div><div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div><div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
+      row.innerHTML=`<div class="tl-dot"></div><div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div><div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
       tl.appendChild(row);
     });
   }
@@ -1599,4 +1599,272 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     mobCurveIn(mobCards[0], true);
   })();
 
+})();
+
+// ===========================
+// === MY SHELF ===
+// ===========================
+(function(){
+const SHELF_KEY = 'vwp_shelf';
+const SHELF_MAX = 10;
+let shelfCurrentIdx = null;
+let shelfSongs = [];
+
+// --- localStorage read/write ---
+function getShelf(){ try{ return JSON.parse(localStorage.getItem(SHELF_KEY)||'[]'); }catch{ return []; } }
+function setShelf(ids){ localStorage.setItem(SHELF_KEY, JSON.stringify(ids.slice(0, SHELF_MAX))); updateShelfNavCnt(); }
+function isOnShelf(id){ return getShelf().includes(id); }
+
+function addToShelf(id){
+  const shelf = getShelf();
+  if(shelf.length >= SHELF_MAX || shelf.includes(id)) return false;
+  shelf.push(id);
+  setShelf(shelf);
+  const v = videos.find(x=>x.id===id);
+  if(v) _gtag('event','shelf_add_song',{song_title:v.title||'',member_name:v.member||''});
+  return true;
+}
+function removeFromShelf(id){
+  const shelf = getShelf().filter(x=>x!==id);
+  setShelf(shelf);
+  const v = videos.find(x=>x.id===id);
+  if(v) _gtag('event','shelf_remove_song',{song_title:v.title||''});
+}
+
+function updateShelfNavCnt(){
+  const el = document.getElementById('shelfNavCnt');
+  if(el){ const c=getShelf().length; el.textContent=c>0?c:''; }
+}
+
+// --- Member color map ---
+const MEMBER_COLORS = {
+  kafu:'#ffb7c5', rime:'#7eb8f7', harusar:'#ff7070',
+  isekai:'#d8d8d8', koko:'#c084fc', vwp:'#c4b5fd'
+};
+function getMemberColor(memberStr){
+  if(!memberStr) return '#b0b8ff';
+  for(const [id, color] of Object.entries(MEMBER_COLORS)){
+    if(memberStr.includes(id)) return color;
+  }
+  return '#b0b8ff';
+}
+
+// --- Build shelf UI ---
+function buildShelfUI(){
+  const shelfIds = getShelf();
+  shelfSongs = shelfIds.map(id => videos.find(v => v.id === id)).filter(Boolean);
+
+  document.getElementById('shelf-count').textContent = shelfSongs.length;
+
+  const emptyEl = document.getElementById('shelf-empty');
+  const blocks = document.querySelectorAll('#my-shelf-overlay .shelf-block');
+  if(shelfSongs.length === 0){
+    emptyEl.style.display = '';
+    blocks.forEach(b => b.style.display = 'none');
+    document.getElementById('hint').style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  blocks.forEach(b => b.style.display = '');
+  document.getElementById('hint').style.display = '';
+
+  const heights = [[90,96,93,88,94],[92,88,95,90,87]];
+  const tilts   = [[0,1.2,-0.8,1.5,-0.5],[-0.5,1,-1,0.8,1.2]];
+
+  [0,1].forEach(ri => {
+    const row = document.getElementById('row'+ri);
+    if(!row) return;
+    const slice = shelfSongs.slice(ri * 5, (ri + 1) * 5);
+    row.innerHTML = slice.map((s, i) => {
+      const idx = ri * 5 + i;
+      const vid = ytId(s.url);
+      const thumb = vid ? 'url(https://img.youtube.com/vi/'+vid+'/mqdefault.jpg)' : 'none';
+      const h = heights[ri]?.[i] || 90;
+      const tt = tilts[ri]?.[i] || 0;
+      return '<div class="sj" id="sj'+idx+'"'+
+        ' style="background-image:'+thumb+';background-size:cover;background-position:center;height:'+h+'px;transform:rotate('+tt+'deg);"'+
+        ' onclick="shelfOpenPanel('+idx+')"></div>';
+    }).join('');
+  });
+
+  // Hide 2nd row if <=5 songs
+  if(shelfSongs.length <= 5){
+    blocks[1] && (blocks[1].style.display = 'none');
+  }
+}
+
+// --- Detail panel ---
+window.shelfOpenPanel = function(i){
+  if(shelfCurrentIdx === i){ shelfClosePanel(); return; }
+  if(shelfCurrentIdx !== null){
+    const prev = document.getElementById('sj'+shelfCurrentIdx);
+    if(prev) prev.classList.remove('active');
+    shelfResetVinyl();
+    document.getElementById('dp-info').classList.remove('show');
+  }
+  shelfCurrentIdx = i;
+  const sjEl = document.getElementById('sj'+i);
+  if(sjEl) sjEl.classList.add('active');
+  document.getElementById('hint').style.opacity = '0';
+
+  const s = shelfSongs[i];
+  if(!s) return;
+
+  const panel = document.getElementById('detail-panel');
+  const panelW = panel.offsetWidth - 40;
+  const jacketSize = Math.min(96, Math.floor(panelW * 0.28));
+  const vinylSize  = jacketSize;
+  const slideX     = Math.floor(jacketSize * 0.58);
+
+  const vid = ytId(s.url);
+  const jacket = document.getElementById('dp-jacket');
+  jacket.style.width  = jacketSize + 'px';
+  jacket.style.height = jacketSize + 'px';
+  if(vid){
+    jacket.style.backgroundImage = 'url(https://img.youtube.com/vi/'+vid+'/mqdefault.jpg)';
+    jacket.style.backgroundSize = 'cover';
+    jacket.style.backgroundPosition = 'center';
+  }
+
+  const vinylSvg = document.getElementById('vinyl-svg');
+  vinylSvg.setAttribute('width',  vinylSize);
+  vinylSvg.setAttribute('height', vinylSize);
+
+  const stage = document.getElementById('dp-stage');
+  stage.style.width  = (jacketSize + slideX) + 'px';
+  stage.style.height = jacketSize + 'px';
+
+  const vinylEl = document.getElementById('dp-vinyl');
+  vinylEl.style.setProperty('--slide-x', slideX + 'px');
+
+  const members = parseMembers(s).map(m => mbr(m)).join(', ');
+  const memberColor = getMemberColor(s.member);
+  document.getElementById('dp-member').textContent = members;
+  document.getElementById('dp-member').style.color = memberColor;
+  document.getElementById('dp-title').textContent = s.title || '';
+
+  // YouTube button
+  const ytBtn = document.getElementById('dp-yt');
+  ytBtn.href = safeUrl(s.url);
+  ytBtn.onclick = function(e){
+    e.preventDefault();
+    shelfPlaySong(s);
+  };
+
+  // Tags
+  const tags = parseTags(s);
+  document.getElementById('dp-meta').innerHTML = tags.map(function(tg){
+    return '<div class="dp-tag">'+esc(tg)+'</div>';
+  }).join('');
+
+  // Expand panel
+  panel.classList.add('open');
+  document.querySelector('.panel-host')?.classList.add('expanded');
+
+  setTimeout(function(){
+    vinylEl.classList.add('out');
+    setTimeout(function(){
+      vinylSvg.classList.add('spin');
+      document.getElementById('dp-info').classList.add('show');
+    }, 300);
+  }, 120);
+};
+
+function shelfClosePanel(){
+  if(shelfCurrentIdx !== null){
+    const el = document.getElementById('sj'+shelfCurrentIdx);
+    if(el) el.classList.remove('active');
+    shelfCurrentIdx = null;
+  }
+  document.getElementById('dp-info').classList.remove('show');
+  shelfResetVinyl();
+  document.getElementById('detail-panel').classList.remove('open');
+  const host = document.querySelector('.panel-host');
+  if(host) host.classList.remove('expanded');
+  setTimeout(function(){
+    const hint = document.getElementById('hint');
+    if(hint) hint.style.opacity = '1';
+  }, 320);
+}
+
+function shelfResetVinyl(){
+  const v = document.getElementById('dp-vinyl');
+  if(v) v.classList.remove('out');
+  const svg = document.getElementById('vinyl-svg');
+  if(svg) svg.classList.remove('spin');
+}
+
+// --- YouTube play ---
+function shelfPlaySong(song){
+  _gtag('event','shelf_play',{
+    song_title: song.title,
+    member_name: song.member
+  });
+  trackExternalLink(song.url, 'shelf_play', song.title||'');
+  window.open(safeUrl(song.url), '_blank', 'noopener,noreferrer');
+}
+
+// --- Overlay open/close ---
+window.openShelf = function(){
+  buildShelfUI();
+  const overlay = document.getElementById('my-shelf-overlay');
+  if(!overlay) return;
+  overlay.style.display = '';
+  document.body.style.overflow = 'hidden';
+  _gtag('event','shelf_open',{song_count:getShelf().length});
+};
+
+function closeShelfOverlay(){
+  shelfClosePanel();
+  const overlay = document.getElementById('my-shelf-overlay');
+  if(overlay) overlay.style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// --- Shelf pin button (injected into card cmeta) ---
+window.toggleShelfPin = function(id, e){
+  e.stopPropagation(); e.preventDefault();
+  if(isOnShelf(id)){
+    removeFromShelf(id);
+  } else {
+    if(!addToShelf(id)) return;
+  }
+  document.querySelectorAll('.shelf-pin[data-sid="'+id+'"]').forEach(function(btn){
+    const on = isOnShelf(id);
+    btn.textContent = on ? '📌' : '＋';
+    btn.title = on ? t('shelfRemove') : (getShelf().length>=SHELF_MAX ? t('shelfFull') : t('shelfAdd'));
+    btn.classList.toggle('shelf-pin-on', on);
+  });
+  // Update overlay if open
+  const overlay = document.getElementById('my-shelf-overlay');
+  if(overlay && overlay.style.display !== 'none') buildShelfUI();
+};
+
+// Generate pin button HTML (called from renderGrid/loadMoreItems)
+window.shelfPinHtml = function(id){
+  const on = isOnShelf(id);
+  const full = getShelf().length >= SHELF_MAX && !on;
+  const tip = on ? t('shelfRemove') : (full ? t('shelfFull') : t('shelfAdd'));
+  return '<button class="shelf-pin'+(on?' shelf-pin-on':'')+'" data-sid="'+id+'" title="'+esc(tip)+'" onclick="toggleShelfPin('+id+',event)"'+(full?' disabled':'')+'>'+(on?'📌':'＋')+'</button>';
+};
+
+// --- Event bindings ---
+// Close button
+document.querySelector('.shelf-overlay-close')?.addEventListener('click', closeShelfOverlay);
+// Backdrop click
+document.querySelector('.shelf-overlay-backdrop')?.addEventListener('click', closeShelfOverlay);
+// ESC key
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape'){
+    const overlay = document.getElementById('my-shelf-overlay');
+    if(overlay && overlay.style.display !== 'none'){
+      closeShelfOverlay();
+    }
+  }
+});
+// Panel close button
+document.querySelector('.dp-btn-close')?.addEventListener('click', shelfClosePanel);
+
+// Init nav count on load
+updateShelfNavCnt();
 })();
