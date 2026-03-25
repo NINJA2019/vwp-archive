@@ -348,12 +348,14 @@
 .shelf-block {
   margin-bottom: 8px;
 }
+.shelf-block + .shelf-block {
+  margin-top: 16px;
+}
 .shelf-row {
   display: flex;
   align-items: flex-end;
   gap: 12px;
   padding: 0 6px;
-  min-height: 200px;
 }
 
 /* Walnut wood board */
@@ -375,8 +377,9 @@
 
 /* Shelf jacket */
 .sj {
-  width: 72px;
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
+  aspect-ratio: 16 / 9;
   border-radius: 3px;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;

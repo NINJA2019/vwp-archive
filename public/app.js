@@ -1744,40 +1744,52 @@ function buildShelfUI(){
   const labelEl = document.getElementById('shelf-label');
   if(labelEl) labelEl.textContent = 'MY SHELF — ' + shelfSongs.length + ' ' + t('shelfSongs');
 
+  const container = document.getElementById('shelf-rows-container');
+  if(!container) return;
+  container.innerHTML = '';
+
   const emptyEl = document.getElementById('shelf-empty');
-  const blocks = document.querySelectorAll('#my-shelf-overlay .shelf-block');
+  const hintEl = document.getElementById('shelf-hint');
+
   if(shelfSongs.length === 0){
-    emptyEl.style.display = '';
-    blocks.forEach(b => b.style.display = 'none');
-    document.getElementById('shelf-hint').style.display = 'none';
+    if(emptyEl) emptyEl.style.display = '';
+    if(hintEl) hintEl.style.display = 'none';
+    shelfClosePanel();
     return;
   }
-  emptyEl.style.display = 'none';
-  blocks.forEach(b => b.style.display = '');
-  document.getElementById('shelf-hint').style.display = '';
+  if(emptyEl) emptyEl.style.display = 'none';
+  if(hintEl) hintEl.style.display = '';
 
-  const heights = [[188,196,192,185,194],[190,186,195,189,184]];
-  const tilts   = [[0,1.2,-0.8,1.5,-0.5],[-0.5,1,-1,0.8,1.2]];
+  var ROW_SIZE = 5;
+  var rowCount = Math.ceil(shelfSongs.length / ROW_SIZE);
+  var tilts = [0, 1.2, -0.8, 1.5, -0.5, -0.5, 1, -1, 0.8, 1.2];
 
-  [0,1].forEach(ri => {
-    const row = document.getElementById('shelf-row'+ri);
-    if(!row) return;
-    const slice = shelfSongs.slice(ri * 5, (ri + 1) * 5);
-    row.innerHTML = slice.map((s, i) => {
-      const idx = ri * 5 + i;
-      const vid = ytId(s.url);
-      const thumb = vid ? 'url(https://img.youtube.com/vi/'+vid+'/mqdefault.jpg)' : 'none';
-      const h = heights[ri]?.[i] || 90;
-      const tt = tilts[ri]?.[i] || 0;
+  for(var ri = 0; ri < rowCount; ri++){
+    var start = ri * ROW_SIZE;
+    var rowSongs = shelfSongs.slice(start, start + ROW_SIZE);
+
+    var block = document.createElement('div');
+    block.className = 'shelf-block';
+
+    var row = document.createElement('div');
+    row.className = 'shelf-row';
+    row.innerHTML = rowSongs.map(function(s, i){
+      var idx = start + i;
+      var tilt = tilts[idx % tilts.length] || 0;
+      var vid = ytId(s.url);
+      var thumb = vid ? 'url(https://img.youtube.com/vi/'+vid+'/mqdefault.jpg)' : 'none';
       return '<div class="sj" id="sj'+idx+'"'+
-        ' style="background-image:'+thumb+';background-size:cover;background-position:center;height:'+h+'px;transform:rotate('+tt+'deg);"'+
+        ' style="background-image:'+thumb+';background-size:cover;background-position:center;transform:rotate('+tilt+'deg);"'+
         ' onclick="shelfOpenPanel('+idx+')"></div>';
     }).join('');
-  });
 
-  // Hide 2nd row if <=5 songs
-  if(shelfSongs.length <= 5){
-    blocks[1] && (blocks[1].style.display = 'none');
+    var board = document.createElement('div');
+    board.className = 'wood-board-wrap';
+    board.innerHTML = '<div class="wood-board"></div><div class="wood-shadow"></div>';
+
+    block.appendChild(row);
+    block.appendChild(board);
+    container.appendChild(block);
   }
 }
 
