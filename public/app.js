@@ -1451,10 +1451,11 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       return el;
     });
 
+    let mwPathDrawn = false;
     function mwRender(smooth){
       const rect = mwScroll.getBoundingClientRect();
       const cy = rect.height / 2, cx = rect.width * 0.55;
-      mwDrawPath(rect.width, rect.height, cx);
+      if(!mwPathDrawn){ mwDrawPath(rect.width, rect.height, cx); mwPathDrawn = true; }
       const m = MW_MEMBERS[mwIdx];
       mwGlow.style.background = m.color;
 
@@ -1570,13 +1571,12 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
 
     // Init
     mwRender(false);
-    window.addEventListener('resize', () => { if(window.innerWidth <= 700) mwRender(false); });
+    window.addEventListener('resize', () => { if(window.innerWidth <= 700){ mwPathDrawn = false; mwRender(false); } });
 
     // === MOBILE CARD VIEW ===
     let mcSelectedMember = 'all', mcIsDaily = false;
     let mcFiltered = [], mcIdx = 0, mcActiveTag = 'all';
     let mcTouchStartY = 0, mcTouchCurY = 0, mcDragging = false;
-    let mcTouchStartX = 0, mcIsLeftSwipe = false;
 
     const mcCardView = document.getElementById('mobCardView');
     const mcTrack    = document.getElementById('mcTrack');
@@ -1680,12 +1680,9 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       const memberLabel = parseMembers(song).map(mid => mbr(mid)).join(', ') || song.member || '';
       const tags = parseTags(song);
 
-      // LP disc
+      // LP disc (lazy — drawn on first tap)
       const lpWrap = document.createElement('div');
       lpWrap.className = 'mc-lp-wrap';
-      const canvas = document.createElement('canvas');
-      if(window.drawVinylDisc) window.drawVinylDisc(canvas, color, 140);
-      lpWrap.appendChild(canvas);
 
       card.innerHTML = '<div class="mc-card-inner">' +
         '<div class="mc-card-thumb"><img src="'+esc(thumbUrl)+'" alt="'+esc(song.title||'')+'" loading="lazy" onerror="this.parentElement.style.background=\'#111627\'"></div>' +
@@ -1707,10 +1704,15 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
 
       card.appendChild(lpWrap);
 
-      // Tap → LP peek
+      // Tap → LP peek (lazy canvas draw)
       card.addEventListener('click', e => {
         if(Math.abs(mcTouchCurY - mcTouchStartY) > 15) return;
         if(e.target.closest('.mc-card-pin') || e.target.closest('.mc-card-cta')) return;
+        if(!lpWrap.querySelector('canvas') && window.drawVinylDisc){
+          const canvas = document.createElement('canvas');
+          window.drawVinylDisc(canvas, color, 140);
+          lpWrap.appendChild(canvas);
+        }
         card.classList.toggle('mc-lp-peek');
         _gtag('event','mob_card_tap',{song_title:song.title||'',member_name:song.member||''});
       });
@@ -1741,28 +1743,20 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     function mcAttachSwipe(card){
       card.addEventListener('touchstart', function(e){
         mcTouchStartY = e.touches[0].clientY; mcTouchCurY = mcTouchStartY;
-        mcTouchStartX = e.touches[0].clientX; mcDragging = true; mcIsLeftSwipe = false;
+        mcDragging = true;
         this.style.transition = 'none';
+        this.style.willChange = 'transform,opacity';
       }, {passive:true});
       card.addEventListener('touchmove', function(e){
         if(!mcDragging) return;
         mcTouchCurY = e.touches[0].clientY;
-        const dx = e.touches[0].clientX - mcTouchStartX;
         const dy = mcTouchCurY - mcTouchStartY;
-        // Detect left swipe for back navigation
-        if(Math.abs(dx) > Math.abs(dy) && dx < -80){ mcIsLeftSwipe = true; return; }
         this.style.transform = 'translateY('+dy+'px) scale('+Math.max(.95,1-Math.abs(dy)/800)+') rotate('+dy*-0.02+'deg)';
         this.style.opacity = Math.max(.3,1-Math.abs(dy)/400);
       }, {passive:true});
       card.addEventListener('touchend', function(){
         if(!mcDragging) return; mcDragging = false;
-        if(mcIsLeftSwipe){
-          _gtag('event','mob_back_to_welcome',{member_name:mcSelectedMember});
-          mcCardView.style.display = 'none';
-          mobWelcome.style.display = 'flex';
-          mwRender(true);
-          return;
-        }
+        this.style.willChange = '';
         const dy = mcTouchCurY - mcTouchStartY;
         this.style.transition = '';
         if(Math.abs(dy) > 70){
@@ -1779,8 +1773,9 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       // Mouse fallback
       card.addEventListener('mousedown', function(e){
         mcTouchStartY = e.clientY; mcTouchCurY = mcTouchStartY;
-        mcTouchStartX = e.clientX; mcDragging = true;
+        mcDragging = true;
         this.style.transition = 'none';
+        this.style.willChange = 'transform,opacity';
         const self = this;
         const mv = ev => {
           mcTouchCurY = ev.clientY;
@@ -1790,6 +1785,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
         };
         const up = () => {
           mcDragging = false; self.style.transition = '';
+          self.style.willChange = '';
           const dy = mcTouchCurY - mcTouchStartY;
           if(Math.abs(dy) > 70){
             self.classList.add(dy < 0 ? 'mc-out-up' : 'mc-out-down');
@@ -1818,8 +1814,15 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
 
     if(mcSearch) mcSearch.addEventListener('input', () => mcFilter());
 
-    // Shelf button on card view → open mobile shelf
+    // Card view header buttons
     if(mcShelfBtn) mcShelfBtn.addEventListener('click', () => msInit());
+    const mcBackBtn = document.getElementById('mcBackBtn');
+    if(mcBackBtn) mcBackBtn.addEventListener('click', () => {
+      _gtag('event','mob_back_to_welcome',{member_name:mcSelectedMember});
+      mcCardView.style.display = 'none';
+      mobWelcome.style.display = 'flex';
+      mwRender(true);
+    });
 
     // === MOBILE SHELF ===
     let msSongs = [], msAct = 0, msST;
@@ -1834,7 +1837,6 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     const msDT     = document.getElementById('msDT');
     const msDD     = document.getElementById('msDD');
     const msDG     = document.getElementById('msDG');
-    const msEdge   = document.getElementById('msEdge');
     const msCW     = document.getElementById('msCW');
 
     function msInit(){
@@ -1902,24 +1904,13 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       if(cl !== msAct) msSetAct(cl);
     }, 80); });
 
-    // Edge swipe: left 30px zone → back to card view
-    let msEX = 0, msEY = 0, msIE = false;
-    document.addEventListener('touchstart', e => {
-      if(mobShelf.style.display === 'none') return;
-      const x = e.touches[0].clientX; msEX = x; msEY = e.touches[0].clientY;
-      msIE = x < 30; if(msIE) msEdge.classList.add('ms-on');
-    }, {passive:true});
-    document.addEventListener('touchmove', e => {
-      if(!msIE || mobShelf.style.display === 'none') return;
-      const dx = e.touches[0].clientX - msEX, dy = Math.abs(e.touches[0].clientY - msEY);
-      if(dx > 60 && dx > dy*2){
-        msEdge.classList.remove('ms-on'); msIE = false;
-        mobShelf.style.display = 'none';
-        mcCardView.style.display = 'flex';
-        mcRenderCards(); mcUpdateMeta();
-      }
-    }, {passive:true});
-    document.addEventListener('touchend', () => { msIE = false; msEdge.classList.remove('ms-on'); });
+    // Shelf back button → card view
+    const msBackBtn = document.getElementById('msBackBtn');
+    if(msBackBtn) msBackBtn.addEventListener('click', () => {
+      mobShelf.style.display = 'none';
+      mcCardView.style.display = 'flex';
+      mcRenderCards(); mcUpdateMeta();
+    });
 
     // YouTube button
     document.getElementById('msBY')?.addEventListener('click', () => {
