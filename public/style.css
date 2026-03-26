@@ -311,7 +311,7 @@
   background: var(--bg);
   border-radius: 16px;
   overflow: hidden;
-  padding: 20px 16px 12px;
+  padding: 28px 20px 14px;
 }
 
 /* Concrete texture */
@@ -377,8 +377,8 @@
 
 /* Shelf jacket */
 .sj {
-  flex: 1;
-  min-width: 0;
+  flex: 0 0 120px;
+  width: 120px;
   aspect-ratio: 16 / 9;
   border-radius: 3px;
   cursor: pointer;
@@ -473,7 +473,7 @@
   transform: translateX(0);
 }
 .dp-member {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -481,7 +481,7 @@
 }
 .dp-title {
   font-family: 'Shippori Mincho', serif;
-  font-size: 14px;
+  font-size: 18px;
   color: var(--text);
   line-height: 1.4;
   white-space: nowrap;

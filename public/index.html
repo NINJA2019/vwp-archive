@@ -178,6 +178,7 @@
     <div class="search-wrap"><span class="si">🔍</span><input type="text" id="searchInput"></div>
     <nav class="header-nav"><a href="javascript:void(0)" onclick="openPage('about')">ABOUT</a><a href="javascript:void(0)" onclick="openPage('contact')">CONTACT</a><a href="javascript:void(0)" onclick="openPage('update')">UPDATE</a><a href="javascript:void(0)" id="shelfNavBtn" onclick="openShelf()" class="shelf-nav-btn">MY SHELF <span id="shelfNavCnt" class="shelf-nav-cnt"></span></a></nav>
     <button class="theme-btn" id="themeBtn" title="ダーク/ライト切替">🌙</button>
+    <button id="loginBtn" title="管理者ログイン" style="background:none;border:1px solid var(--border);color:var(--dim);cursor:pointer;padding:0;width:32px;height:32px;border-radius:6px;font-size:.85rem;display:flex;align-items:center;justify-content:center;opacity:0.4;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.4'">🔑</button>
     <div class="lang-sw">
       <button class="lbtn on" data-lang="ja">JP</button>
       <button class="lbtn" data-lang="en">EN</button>
@@ -223,7 +224,6 @@
 <button class="fab" id="fab" style="display:none;">＋</button>
 <button id="importBtn" title="プレイリスト一括インポート" style="display:none;position:fixed;bottom:5.2rem;right:1.8rem;width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;font-size:1.1rem;align-items:center;justify-content:center;background:#7c6ff7;color:#fff;z-index:200;box-shadow:0 4px 18px rgba(0,0,0,.45);">📥</button>
 <button id="albumAddBtn" title="アルバムを追加" style="display:none;position:fixed;bottom:9.0rem;right:1.8rem;width:46px;height:46px;border-radius:50%;border:none;cursor:pointer;font-size:1.1rem;align-items:center;justify-content:center;background:#3d6f7c;color:#fff;z-index:200;box-shadow:0 4px 18px rgba(0,0,0,.45);">📀</button>
-<button id="loginBtn" style="position:fixed;bottom:1.8rem;right:1.8rem;width:46px;height:46px;border-radius:50%;border:1px solid var(--border);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;background:var(--surface2);color:var(--dim);z-index:200;">🔑</button>
 
 <!-- IMPORT MODAL -->
 <div class="mover" id="importMover">
