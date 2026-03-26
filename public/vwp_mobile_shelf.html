@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>MY SHELF — Mobile Prototype</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Shippori+Mincho:wght@400;600&family=Barlow+Condensed:wght@300;400;600;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#07090e;--surface:#0c0f18;--text:#e8ecf8;
+  --text-sub:rgba(232,236,248,.45);--text-dim:rgba(232,236,248,.18);
+  --border:rgba(255,255,255,.06);--active-color:#b0b8ff;
+}
+html,body{
+  height:100%;width:100%;background:var(--bg);color:var(--text);
+  font-family:'Noto Sans JP','Barlow Condensed',sans-serif;
+  overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;
+}
+.app{display:flex;flex-direction:column;height:100%;max-width:430px;margin:0 auto;position:relative;overflow:hidden}
+
+/* glow */
+.glow{position:absolute;width:280px;height:280px;border-radius:50%;filter:blur(100px);pointer-events:none;z-index:0;top:40%;left:50%;transform:translate(-50%,-50%);opacity:.14;transition:background .8s ease}
+
+/* edge swipe indicator */
+.edge{position:absolute;left:0;top:0;bottom:0;width:5px;background:linear-gradient(to right,rgba(176,184,255,.3),transparent);z-index:50;opacity:0;transition:opacity .2s;pointer-events:none}
+.edge.on{opacity:1}
+
+/* header */
+.hdr{position:relative;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:clamp(14px,4vh,24px) 20px 12px;flex-shrink:0}
+.hdr-logo{font-family:'Cinzel',serif;font-size:11px;letter-spacing:2.5px;color:var(--text);text-transform:uppercase;line-height:1}
+.hdr-logo span{font-size:7px;letter-spacing:1.5px;display:block;margin-top:2px;color:var(--text-sub)}
+.cnt{font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:300;letter-spacing:1px;color:var(--text-sub)}
+.cnt b{color:var(--text);font-weight:600}
+
+/* carousel */
+.car-wrap{flex:1;position:relative;z-index:5;display:flex;align-items:center;overflow:hidden}
+.car{display:flex;align-items:center;gap:16px;padding:0 calc(50% - 72px);overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.car::-webkit-scrollbar{display:none}
+
+/* jacket card */
+.jk{flex-shrink:0;width:144px;display:flex;flex-direction:column;align-items:center;scroll-snap-align:center;cursor:pointer;transition:transform .35s cubic-bezier(.22,1,.36,1),opacity .35s ease;opacity:.35}
+.jk.active{opacity:1;transform:scale(1.12)}
+.jk-img{width:144px;height:144px;border-radius:16px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.5);position:relative}
+.jk-img img{width:100%;height:100%;object-fit:cover;display:block}
+.jk-bar{position:absolute;bottom:0;left:0;right:0;height:3px}
+.jk-info{text-align:center;margin-top:10px}
+.jk-mem{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:400;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px}
+.jk-tit{font-family:'Shippori Mincho',serif;font-size:14px;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:160px}
+
+/* detail */
+.det{position:relative;z-index:10;flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:0 20px;max-height:0;overflow:hidden;transition:max-height .4s cubic-bezier(.22,1,.36,1),padding .4s ease}
+.det.open{max-height:240px;padding:20px}
+.det-in{display:flex;gap:16px;align-items:flex-start}
+.det-th{width:72px;height:72px;border-radius:12px;overflow:hidden;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+.det-th img{width:100%;height:100%;object-fit:cover;display:block}
+.det-tx{flex:1;min-width:0}
+.det-mem{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:400;letter-spacing:2px;text-transform:uppercase;margin-bottom:3px}
+.det-tit{font-family:'Shippori Mincho',serif;font-size:17px;font-weight:600;line-height:1.4;margin-bottom:5px}
+.det-date{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:300;color:var(--text-dim);letter-spacing:1px;margin-bottom:8px}
+.det-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.det-tag{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:300;letter-spacing:.8px;padding:3px 10px;border-radius:16px;background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text-sub)}
+.det-act{display:flex;gap:10px;align-items:center}
+.byt{display:flex;align-items:center;gap:6px;padding:10px 20px;border-radius:24px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:400;letter-spacing:1.5px;color:var(--text);cursor:pointer;transition:all .2s}
+.byt:active{background:rgba(255,255,255,.15);transform:scale(.96)}
+.byt svg{width:14px;height:14px;fill:var(--text)}
+.brm{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,78,78,.15);background:rgba(255,78,78,.06);cursor:pointer;transition:all .2s}
+.brm:active{background:rgba(255,78,78,.15);transform:scale(.9)}
+.brm svg{width:14px;height:14px;stroke:#ff6b6b;stroke-width:1.8;fill:none}
+
+/* bottom */
+.btm{position:relative;z-index:10;flex-shrink:0;text-align:center;padding:6px 20px clamp(14px,3vh,24px)}
+.btm-t{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:300;letter-spacing:1.5px;color:var(--text-dim)}
+
+/* empty */
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.empty svg{width:48px;height:48px;stroke:rgba(255,255,255,.12);stroke-width:1.2;fill:none}
+.empty p{font-family:'Shippori Mincho',serif;font-size:14px;color:var(--text-sub);text-align:center;line-height:1.8}
+
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition-duration:.01ms!important}}
+@media(min-width:431px){.app{border:1px solid rgba(255,255,255,.05);border-radius:40px;height:92vh;margin-top:4vh;box-shadow:0 0 100px rgba(0,0,0,.6)}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="glow" id="glow"></div>
+  <div class="edge" id="edge"></div>
+
+  <div class="hdr">
+    <div class="hdr-logo">My Shelf<span>V.W.P ARCHIVE</span></div>
+    <div class="cnt" id="cnt"><b>0</b> / 10</div>
+  </div>
+
+  <div class="car-wrap" id="cw">
+    <div class="car" id="car"></div>
+  </div>
+
+  <div class="det" id="det">
+    <div class="det-in">
+      <div class="det-th"><img id="di" src="" alt=""></div>
+      <div class="det-tx">
+        <div class="det-mem" id="dm"></div>
+        <div class="det-tit" id="dt"></div>
+        <div class="det-date" id="dd"></div>
+        <div class="det-tags" id="dg"></div>
+        <div class="det-act">
+          <div class="byt" id="by" role="button"><svg viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19"/></svg>YOUTUBE</div>
+          <div class="brm" id="br" role="button" aria-label="削除"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="btm"><div class="btm-t">← 左端スワイプでカードビューに戻る</div></div>
+</div>
+
+<script>
+const MC={kafu:'#ffb7c5',rime:'#7eb8f7',harusar:'#ff7070',isekai:'#d8d8d8',koko:'#c084fc',vwp:'#c4b5fd',all:'#b0b8ff'};
+const ML={kafu:'KAF',rime:'RIM',harusar:'HARU',isekai:'JOUCHO',koko:'KOKO',vwp:'V.W.P'};
+const SHELF=[
+  {id:'1',title:'魔女',member:'vwp',vid:'VRPxao3e_jY',tags:['シングル'],date:'2021-04-27'},
+  {id:'2',title:'共鳴',member:'kafu',vid:'z2DWuGEiimw',tags:['シングル','系譜曲'],date:'2022-03-16'},
+  {id:'3',title:'運命',member:'vwp',vid:'Ue0UpQBmA5s',tags:['アルバム'],date:'2023-08-23'},
+  {id:'4',title:'identity',member:'rime',vid:'AXGP4Pjx20g',tags:['シングル'],date:'2021-09-01'},
+  {id:'5',title:'雷鳴',member:'koko',vid:'_G-fxJL_hcI',tags:['シングル'],date:'2022-04-20'},
+];
+
+let songs=[...SHELF],act=0;
+const car=document.getElementById('car'),glow=document.getElementById('glow'),
+      cnt=document.getElementById('cnt'),det=document.getElementById('det'),
+      di=document.getElementById('di'),dm=document.getElementById('dm'),
+      dt=document.getElementById('dt'),dd=document.getElementById('dd'),
+      dg=document.getElementById('dg'),edge=document.getElementById('edge'),
+      cw=document.getElementById('cw');
+
+function render(){
+  car.innerHTML='';det.classList.remove('open');
+  if(!songs.length){
+    cw.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><p>棚はまだ空です<br>曲カードの📌ボタンで追加</p></div>';
+    cnt.innerHTML='<b>0</b> / 10';return;
+  }
+  cnt.innerHTML=`<b>${songs.length}</b> / 10`;
+  songs.forEach((s,i)=>{
+    const c=MC[s.member]||MC.vwp;
+    const el=document.createElement('div');
+    el.className='jk'+(i===act?' active':'');
+    el.innerHTML=`<div class="jk-img"><img src="https://img.youtube.com/vi/${s.vid}/mqdefault.jpg" alt="${s.title}"><div class="jk-bar" style="background:linear-gradient(90deg,${c},transparent)"></div></div><div class="jk-info"><div class="jk-mem" style="color:${c}">${ML[s.member]||'V.W.P'}</div><div class="jk-tit">${s.title}</div></div>`;
+    el.addEventListener('click',()=>setAct(i));
+    car.appendChild(el);
+  });
+  updateGlow();
+}
+
+function setAct(i){
+  act=i;
+  car.querySelectorAll('.jk').forEach((el,j)=>el.classList.toggle('active',j===i));
+  const t=car.querySelectorAll('.jk')[i];
+  if(t)t.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+  showDet(songs[i]);updateGlow();
+}
+
+function updateGlow(){if(songs.length)glow.style.background=MC[songs[act].member]||MC.vwp}
+
+function showDet(s){
+  const c=MC[s.member]||MC.vwp;
+  di.src=`https://img.youtube.com/vi/${s.vid}/mqdefault.jpg`;
+  dm.textContent=ML[s.member]||'V.W.P';dm.style.color=c;
+  dt.textContent=s.title;dd.textContent=s.date;
+  dg.innerHTML=s.tags.map(t=>`<span class="det-tag">${t}</span>`).join('');
+  det.classList.add('open');
+}
+
+// scroll snap → update active
+let sT;
+car.addEventListener('scroll',()=>{clearTimeout(sT);sT=setTimeout(()=>{
+  const jks=car.querySelectorAll('.jk'),cc=car.scrollLeft+car.offsetWidth/2;
+  let cl=0,md=Infinity;
+  jks.forEach((el,i)=>{const d=Math.abs(el.offsetLeft+el.offsetWidth/2-cc);if(d<md){md=d;cl=i}});
+  if(cl!==act)setAct(cl);
+},80)});
+
+// edge swipe: touch starts within left 30px → drag right → go back
+let ex=0,ey=0,ie=false;
+document.addEventListener('touchstart',e=>{
+  const x=e.touches[0].clientX;ex=x;ey=e.touches[0].clientY;
+  ie=x<30;if(ie)edge.classList.add('on');
+},{passive:true});
+document.addEventListener('touchmove',e=>{
+  if(!ie)return;
+  const dx=e.touches[0].clientX-ex,dy=Math.abs(e.touches[0].clientY-ey);
+  if(dx>60&&dx>dy*2){
+    edge.classList.remove('on');ie=false;
+    alert('← カードビューに戻る\n\n（プロトタイプ）');
+  }
+},{passive:true});
+document.addEventListener('touchend',()=>{ie=false;edge.classList.remove('on')});
+
+// buttons
+document.getElementById('by').addEventListener('click',()=>{if(songs.length)alert(`▶ YouTubeへ遷移:\n${songs[act].title}\n\n（プロトタイプ）`)});
+document.getElementById('br').addEventListener('click',()=>{
+  if(!songs.length)return;songs.splice(act,1);
+  if(act>=songs.length)act=Math.max(0,songs.length-1);
+  render();if(songs.length)setAct(act);
+});
+
+render();if(songs.length)setAct(0);
+</script>
+</body>
+</html>
