@@ -449,6 +449,7 @@ const MEMBERS = [
   {id:'koko',label:'幸祜',emoji:'⚡',color:'#c084fc'},
 ];
 const MC = Object.fromEntries(MEMBERS.map(m=>[m.id,m.color]));
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
 
 // mock songs with real V.W.P video IDs for thumbnails
 const ALL_SONGS = [
@@ -595,15 +596,15 @@ function createCard(song,pos){
   card.innerHTML=`
     <div class="card-inner">
       <div class="card-thumb">
-        <img src="${thumbUrl}" alt="${song.title}" loading="lazy"
+        <img src="${thumbUrl}" alt="${esc(song.title)}" loading="lazy"
              onerror="this.parentElement.style.background='var(--surface2)'">
       </div>
       <div class="card-info">
         <div class="card-color-bar" style="background:linear-gradient(90deg,${color},transparent)"></div>
-        <div class="card-member" style="color:${color}">${song.memberLabel}</div>
-        <div class="card-title">${song.title}</div>
-        <div class="card-date">${song.date}</div>
-        <div class="card-tags">${song.tags.map(t=>`<span class="card-tag">${t}</span>`).join('')}</div>
+        <div class="card-member" style="color:${color}">${esc(song.memberLabel)}</div>
+        <div class="card-title">${esc(song.title)}</div>
+        <div class="card-date">${esc(song.date)}</div>
+        <div class="card-tags">${song.tags.map(t=>`<span class="card-tag">${esc(t)}</span>`).join('')}</div>
       </div>
       <div class="card-pin" role="button" aria-label="棚に追加">
         <svg viewBox="0 0 24 24">
