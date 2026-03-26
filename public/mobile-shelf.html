@@ -64,7 +64,7 @@ html,body{
 .byt{display:flex;align-items:center;gap:6px;padding:10px 20px;border-radius:24px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:400;letter-spacing:1.5px;color:var(--text);cursor:pointer;transition:all .2s}
 .byt:active{background:rgba(255,255,255,.15);transform:scale(.96)}
 .byt svg{width:14px;height:14px;fill:var(--text)}
-.brm{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,78,78,.15);background:rgba(255,78,78,.06);cursor:pointer;transition:all .2s}
+.brm{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,78,78,.15);background:rgba(255,78,78,.06);cursor:pointer;transition:all .2s}
 .brm:active{background:rgba(255,78,78,.15);transform:scale(.9)}
 .brm svg{width:14px;height:14px;stroke:#ff6b6b;stroke-width:1.8;fill:none}
 
@@ -133,7 +133,11 @@ const car=document.getElementById('car'),glow=document.getElementById('glow'),
       dg=document.getElementById('dg'),edge=document.getElementById('edge'),
       cw=document.getElementById('cw');
 
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+let sT;
 function render(){
+  clearTimeout(sT);
   car.innerHTML='';det.classList.remove('open');
   if(!songs.length){
     cw.innerHTML='<div class="empty"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><p>棚はまだ空です<br>曲カードの📌ボタンで追加</p></div>';
@@ -144,7 +148,7 @@ function render(){
     const c=MC[s.member]||MC.vwp;
     const el=document.createElement('div');
     el.className='jk'+(i===act?' active':'');
-    el.innerHTML=`<div class="jk-img"><img src="https://img.youtube.com/vi/${s.vid}/mqdefault.jpg" alt="${s.title}"><div class="jk-bar" style="background:linear-gradient(90deg,${c},transparent)"></div></div><div class="jk-info"><div class="jk-mem" style="color:${c}">${ML[s.member]||'V.W.P'}</div><div class="jk-tit">${s.title}</div></div>`;
+    el.innerHTML=`<div class="jk-img"><img src="https://img.youtube.com/vi/${esc(s.vid)}/mqdefault.jpg" alt="${esc(s.title)}"><div class="jk-bar" style="background:linear-gradient(90deg,${c},transparent)"></div></div><div class="jk-info"><div class="jk-mem" style="color:${c}">${esc(ML[s.member]||'V.W.P')}</div><div class="jk-tit">${esc(s.title)}</div></div>`;
     el.addEventListener('click',()=>setAct(i));
     car.appendChild(el);
   });
@@ -152,6 +156,7 @@ function render(){
 }
 
 function setAct(i){
+  if(i<0||i>=songs.length)return;
   act=i;
   car.querySelectorAll('.jk').forEach((el,j)=>el.classList.toggle('active',j===i));
   const t=car.querySelectorAll('.jk')[i];
@@ -159,19 +164,20 @@ function setAct(i){
   showDet(songs[i]);updateGlow();
 }
 
-function updateGlow(){if(songs.length)glow.style.background=MC[songs[act].member]||MC.vwp}
+function updateGlow(){if(songs.length&&songs[act])glow.style.background=MC[songs[act].member]||MC.vwp}
 
 function showDet(s){
+  if(!s)return;
   const c=MC[s.member]||MC.vwp;
   di.src=`https://img.youtube.com/vi/${s.vid}/mqdefault.jpg`;
   dm.textContent=ML[s.member]||'V.W.P';dm.style.color=c;
   dt.textContent=s.title;dd.textContent=s.date;
-  dg.innerHTML=s.tags.map(t=>`<span class="det-tag">${t}</span>`).join('');
+  dg.innerHTML='';
+  s.tags.forEach(t=>{const sp=document.createElement('span');sp.className='det-tag';sp.textContent=t;dg.appendChild(sp);});
   det.classList.add('open');
 }
 
 // scroll snap → update active
-let sT;
 car.addEventListener('scroll',()=>{clearTimeout(sT);sT=setTimeout(()=>{
   const jks=car.querySelectorAll('.jk'),cc=car.scrollLeft+car.offsetWidth/2;
   let cl=0,md=Infinity;
