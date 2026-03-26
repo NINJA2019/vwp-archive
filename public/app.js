@@ -1576,7 +1576,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     // === MOBILE CARD VIEW ===
     let mcSelectedMember = 'all', mcIsDaily = false;
     let mcFiltered = [], mcIdx = 0, mcActiveTag = 'all';
-    let mcTouchStartY = 0, mcTouchCurY = 0, mcDragging = false;
+    let mcTouchStartY = 0, mcTouchCurY = 0, mcDragging = false, mcRafId = 0;
 
     const mcCardView = document.getElementById('mobCardView');
     const mcTrack    = document.getElementById('mcTrack');
@@ -1740,6 +1740,27 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       return card;
     }
 
+    function mcApplyDrag(el, dy){
+      el.style.transform = 'translateY('+dy+'px) scale('+Math.max(.95,1-Math.abs(dy)/800)+') rotate('+dy*-0.02+'deg)';
+      el.style.opacity = Math.max(.3,1-Math.abs(dy)/400);
+    }
+    function mcSwipeEnd(el){
+      mcDragging = false;
+      if(mcRafId){ cancelAnimationFrame(mcRafId); mcRafId = 0; }
+      el.style.willChange = '';
+      const dy = mcTouchCurY - mcTouchStartY;
+      el.style.transition = '';
+      if(Math.abs(dy) > 70){
+        const dir = dy < 0 ? 'up' : 'down';
+        el.classList.add(dy < 0 ? 'mc-out-up' : 'mc-out-down');
+        _gtag('event','mob_card_swipe',{direction:dir,song_title:mcFiltered[mcIdx%mcFiltered.length]?.title||''});
+        setTimeout(() => {
+          if(dy < 0){ mcIdx = (mcIdx + 1) % mcFiltered.length; }
+          else { mcIdx = (mcIdx - 1 + mcFiltered.length) % mcFiltered.length; }
+          mcRenderCards(); mcUpdateMeta();
+        }, 300);
+      } else { el.style.transform = ''; el.style.opacity = ''; }
+    }
     function mcAttachSwipe(card){
       card.addEventListener('touchstart', function(e){
         mcTouchStartY = e.touches[0].clientY; mcTouchCurY = mcTouchStartY;
@@ -1750,26 +1771,14 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       card.addEventListener('touchmove', function(e){
         if(!mcDragging) return;
         mcTouchCurY = e.touches[0].clientY;
-        const dy = mcTouchCurY - mcTouchStartY;
-        this.style.transform = 'translateY('+dy+'px) scale('+Math.max(.95,1-Math.abs(dy)/800)+') rotate('+dy*-0.02+'deg)';
-        this.style.opacity = Math.max(.3,1-Math.abs(dy)/400);
+        if(mcRafId) return;
+        const el = this;
+        mcRafId = requestAnimationFrame(() => {
+          mcRafId = 0;
+          mcApplyDrag(el, mcTouchCurY - mcTouchStartY);
+        });
       }, {passive:true});
-      card.addEventListener('touchend', function(){
-        if(!mcDragging) return; mcDragging = false;
-        this.style.willChange = '';
-        const dy = mcTouchCurY - mcTouchStartY;
-        this.style.transition = '';
-        if(Math.abs(dy) > 70){
-          const dir = dy < 0 ? 'up' : 'down';
-          this.classList.add(dy < 0 ? 'mc-out-up' : 'mc-out-down');
-          _gtag('event','mob_card_swipe',{direction:dir,song_title:mcFiltered[mcIdx%mcFiltered.length]?.title||''});
-          setTimeout(() => {
-            if(dy < 0){ mcIdx = (mcIdx + 1) % mcFiltered.length; }
-            else { mcIdx = (mcIdx - 1 + mcFiltered.length) % mcFiltered.length; }
-            mcRenderCards(); mcUpdateMeta();
-          }, 350);
-        } else { this.style.transform = ''; this.style.opacity = ''; }
-      });
+      card.addEventListener('touchend', function(){ if(mcDragging) mcSwipeEnd(this); });
       // Mouse fallback
       card.addEventListener('mousedown', function(e){
         mcTouchStartY = e.clientY; mcTouchCurY = mcTouchStartY;
@@ -1779,22 +1788,14 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
         const self = this;
         const mv = ev => {
           mcTouchCurY = ev.clientY;
-          const dy = mcTouchCurY - mcTouchStartY;
-          self.style.transform = 'translateY('+dy+'px) scale('+Math.max(.95,1-Math.abs(dy)/800)+') rotate('+dy*-0.02+'deg)';
-          self.style.opacity = Math.max(.3,1-Math.abs(dy)/400);
+          if(mcRafId) return;
+          mcRafId = requestAnimationFrame(() => {
+            mcRafId = 0;
+            mcApplyDrag(self, mcTouchCurY - mcTouchStartY);
+          });
         };
         const up = () => {
-          mcDragging = false; self.style.transition = '';
-          self.style.willChange = '';
-          const dy = mcTouchCurY - mcTouchStartY;
-          if(Math.abs(dy) > 70){
-            self.classList.add(dy < 0 ? 'mc-out-up' : 'mc-out-down');
-            setTimeout(() => {
-              if(dy < 0){ mcIdx = (mcIdx + 1) % mcFiltered.length; }
-              else { mcIdx = (mcIdx - 1 + mcFiltered.length) % mcFiltered.length; }
-              mcRenderCards(); mcUpdateMeta();
-            }, 350);
-          } else { self.style.transform = ''; self.style.opacity = ''; }
+          if(mcDragging) mcSwipeEnd(self);
           document.removeEventListener('mousemove',mv);
           document.removeEventListener('mouseup',up);
         };
