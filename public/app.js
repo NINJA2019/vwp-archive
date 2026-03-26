@@ -142,11 +142,13 @@ async function updateVideoApi(id,payload){
 function ytId(url){const m=url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);return m?m[1]:null;}
 function thumb(v){const id=ytId(v.url);return id?`https://img.youtube.com/vi/${id}/mqdefault.jpg`:'';}
 function fmtDate(d){if(!d)return '';const dt=new Date(d+'T00:00:00');return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`;}
-function parseTags(v){const raw=v.tags||v.tag||'';return raw.split(/[ ,]+/).map(s=>s.replace(/^#/,'')).filter(Boolean);}
-function parseMembers(v){return (v.member||'').split(/[ ,]+/).filter(Boolean);}
+const _ptCache=new WeakMap();
+function parseTags(v){let c=_ptCache.get(v);if(c)return c;const raw=v.tags||v.tag||'';c=raw.split(/[ ,]+/).map(s=>s.replace(/^#/,'')).filter(Boolean);_ptCache.set(v,c);return c;}
+const _pmCache=new WeakMap();
+function parseMembers(v){let c=_pmCache.get(v);if(c)return c;c=(v.member||'').split(/[ ,]+/).filter(Boolean);_pmCache.set(v,c);return c;}
 function tTag(tag){ return (I18N[lang].tagMap||{})[tag] || tag; }
-// XSS対策: HTML文字列エスケープ
-function esc(s){ const d=document.createElement('div'); d.textContent=String(s==null?'':s); return d.innerHTML; }
+// XSS対策: HTML文字列エスケープ（DOM不使用の高速版）
+function esc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 // XSS対策: href/onclickに使うURLをhttps?://のみ許可
 function safeUrl(url){ if(!url) return '#'; return /^https?:\/\//i.test(url) ? url : '#'; }
 function tagPills(v){return parseTags(v).map(tag=>`<span class="pill">#${esc(tTag(tag))}</span>`).join('');}
@@ -671,7 +673,7 @@ function render(){
           : (al.purchase_url ? '<span class="al-status-badge on-sale">ON SALE</span>' : '');
         const updLabel=al.status_updated_at ? `<span class="al-updated-at">更新: ${al.status_updated_at}</span>` : '';
         ah.innerHTML=`
-          <div class="al-thumb-wrap">${th?`<img src="${th}" alt="" class="al-thumb">`:''}</div>
+          <div class="al-thumb-wrap">${th?`<img src="${th}" alt="" class="al-thumb" loading="lazy">`:''}</div>
           <div class="al-info">
             <div class="al-name">${esc(al.name)}</div>
             <div class="al-member">${esc(mbr(al.member))}</div>
