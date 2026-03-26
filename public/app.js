@@ -100,7 +100,7 @@ const ALBUMS_CACHE_TTL = 2 * 60 * 1000;  // 2分
 async function loadAlbums(force = false){
   const now = Date.now();
   if(!force && albums.length > 0 && now - _albumsCacheTime < ALBUMS_CACHE_TTL) return;
-  try{ const res=await fetch('/api/albums-get'); const d=await res.json(); if(Array.isArray(d)){ albums=d; _albumsCacheTime=Date.now(); } }catch(e){console.error(e);showFetchError('アルバムデータの取得に失敗しました');}
+  try{ const res=await fetch('/api/albums-get'); if(!res.ok) throw new Error('HTTP '+res.status); const d=await res.json(); if(Array.isArray(d)){ albums=d; _albumsCacheTime=Date.now(); } }catch(e){console.error(e);showFetchError('アルバムデータの取得に失敗しました');}
 }
 async function addAlbumApi(payload){
   const res=await fetch('/api/albums-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:getStoredPw(),...payload})});
@@ -124,7 +124,7 @@ function albumThumb(album){
 async function loadVideos(force = false){
   const now = Date.now();
   if(!force && videos.length > 0 && now - _videosCacheTime < VIDEOS_CACHE_TTL) return;
-  try{ const res=await fetch('/api/videos-get'); const d=await res.json(); if(Array.isArray(d)){ videos=d; _videosCacheTime=Date.now(); } }catch(e){console.error(e);showFetchError('動画データの取得に失敗しました');}
+  try{ const res=await fetch('/api/videos-get'); if(!res.ok) throw new Error('HTTP '+res.status); const d=await res.json(); if(Array.isArray(d)){ videos=d; _videosCacheTime=Date.now(); } }catch(e){console.error(e);showFetchError('動画データの取得に失敗しました');}
 }
 async function addVideoApi(payload){
   const res=await fetch('/api/videos-add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:getStoredPw(),...payload})});
@@ -167,10 +167,7 @@ function seededRand(seed){
 }
 
 function getTodayJST(){
-  const now = new Date();
-  // JST = UTC+9
-  const jst = new Date(now.getTime() + 9*60*60*1000);
-  return jst.toISOString().slice(0,10); // "YYYY-MM-DD"
+  return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' });
 }
 
 function getDailyPicks(){
@@ -668,7 +665,6 @@ function render(){
       const al=albums.find(a=>a.id===curAlbum);
       if(al){
         const th=albumThumb(al);
-        ah.style.display='flex';
         ah.style.display='flex';
         const soldBadge=al.is_sold_out
           ? '<span class="al-status-badge sold-out">SOLD OUT</span>'
