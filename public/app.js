@@ -1378,221 +1378,562 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     if(e.key === 'Enter' && chosen && intro.style.display !== 'none') enterArchive();
   });
 
-  // ===== MOBILE IMMERSIVE UI =====
+  // ===== MOBILE S-CURVE UI =====
   (function initMobUI(){
-    if(window.innerWidth > 700) return; // モバイル専用
+    if(window.innerWidth > 700) return;
 
-    // PC用を非表示、モバイル用を表示
     intro.style.display = 'none';
-    const mobIntro = document.getElementById('mobIntro');
-    if(!mobIntro) return;
-    mobIntro.style.display = 'flex';
-
-    // スタートページ表示中は裏ページのスクロールを固定
+    const mobWelcome = document.getElementById('mobWelcome');
+    if(!mobWelcome) return;
+    mobWelcome.style.display = 'flex';
     document.body.style.overflow = 'hidden';
     document.body.style.touchAction = 'none';
-    // touchmoveのデフォルト動作を防ぐ（スタートページ以外へのスクロール防止）
-    const preventScroll = e => {
-      if(!e.target.closest('#mobIntro')) e.preventDefault();
-    };
+    const preventScroll = e => { if(!e.target.closest('#mobWelcome') && !e.target.closest('#mobCardView') && !e.target.closest('#mobShelf')) e.preventDefault(); };
     document.addEventListener('touchmove', preventScroll, { passive: false });
-    document.body.style.overflow = 'hidden';
 
-    const stage    = document.getElementById('mobStage');
-    const dotsEl   = document.getElementById('mobDots');
-    const ambient  = document.getElementById('mobAmbient');
-    const platter  = document.getElementById('mobPlatter');
-    const ttFaceEl = document.getElementById('mobTTFace');
-    const ttImgEl  = document.getElementById('mobTTImg');
-    const armEl    = document.getElementById('mobArm');
-    const tnameEl  = document.getElementById('mobTTName');
-    const tjaEl    = document.getElementById('mobTTJa');
-    const enterBtnMob = document.getElementById('mobEnterBtn');
-    const lpArea   = document.getElementById('mobLPArea');
+    // --- WELCOME: S-curve wheel ---
+    const MW_MEMBERS = [
+      {id:'vwp',    label:'V.W.P',    img:'/icons/V_W_P.png',        color:'#c4b5fd', glow:'rgba(196,181,253,.35)'},
+      {id:'kafu',   label:'KAF',      img:'/icons/KAF.png',          color:'#ffb7c5', glow:'rgba(255,183,197,.35)'},
+      {id:'rime',   label:'RIM',      img:'/icons/RIM.png',          color:'#7eb8f7', glow:'rgba(126,184,247,.35)'},
+      {id:'harusar',label:'HARU',     img:'/icons/Harusaruhi.png',   color:'#ff7070', glow:'rgba(255,112,112,.35)'},
+      {id:'isekai', label:'JOUCHO',   img:'/icons/isekaijocho.png',  color:'#d8d8d8', glow:'rgba(220,220,220,.25)'},
+      {id:'koko',   label:'KOKO',     img:'/icons/koko.png',         color:'#c084fc', glow:'rgba(192,132,252,.35)'},
+      {id:'all',    label:'ALL',      img:null,                      color:'#b0b8ff', glow:'rgba(176,184,255,.35)'},
+    ];
+    const MWN = MW_MEMBERS.length;
+    const MW_CENTER=110, MW_SMALL=56, MW_TINY=38, MW_VSPACE=120, MW_AMP=70;
+    let mwIdx=0, mwOffset=0, mwMomentum=0, mwDragging=false, mwTouchY=0, mwAF=null;
 
-    let mobCur = 0, mobChosen = null, mobBusy = false, mobAnimating = false, mobStartY = 0;
+    const mwScroll   = document.getElementById('mwScroll');
+    const mwGlow     = document.getElementById('mwGlow');
+    const mwCurve    = document.getElementById('mwCurve');
+    const mwEnter    = document.getElementById('mwEnter');
+    const mwDaily    = document.getElementById('mwDaily');
+    const mwTrans    = document.getElementById('mwTrans');
+    const mwTransTxt = document.getElementById('mwTransText');
 
-    function makeMobFace(mb){
-      if(mb.daily){
-        return `<div class="mob-lp-face" style="background:${mb.bg};"><div class="mob-grooves" style="--spd:${mb.spd};"></div><div class="mob-lp-q" style="font-size:79px;">?</div></div>`;
+    // Create items
+    const mwItems = MW_MEMBERS.map((m, i) => {
+      const el = document.createElement('div');
+      el.className = 'mw-item';
+      const circle = document.createElement('div');
+      circle.className = 'mw-circle';
+      circle.id = 'mwCircle-'+i;
+      if(m.img){
+        const img = document.createElement('img');
+        img.src = m.img; img.alt = m.label;
+        img.onerror = function(){ this.style.display='none'; };
+        circle.appendChild(img);
       } else {
-        return `<div class="mob-lp-face" style="background:#0a0910;"><div class="mob-grooves" style="--spd:${mb.spd};"></div><div class="mob-lp-img"><img src="${mb.img||''}" alt="" onerror="this.style.display='none'"></div></div>`;
+        circle.style.background = 'linear-gradient(135deg,#2a2870,#1a1040)';
+        circle.style.fontSize = '32px';
+        circle.textContent = '◆';
+      }
+      const ring = document.createElement('div');
+      ring.className = 'mw-ring'; ring.id = 'mwRing-'+i;
+      circle.appendChild(ring);
+      const label = document.createElement('div');
+      label.className = 'mw-label'; label.id = 'mwLabel-'+i;
+      label.textContent = m.label;
+      el.appendChild(circle); el.appendChild(label);
+      el.addEventListener('click', () => {
+        const diff = i - mwIdx;
+        let shortest = diff;
+        if(Math.abs(diff - MWN) < Math.abs(shortest)) shortest = diff - MWN;
+        if(Math.abs(diff + MWN) < Math.abs(shortest)) shortest = diff + MWN;
+        mwOffset = 0; mwIdx = i; mwMomentum = 0;
+        mwRender(true);
+      });
+      mwScroll.appendChild(el);
+      return el;
+    });
+
+    function mwRender(smooth){
+      const rect = mwScroll.getBoundingClientRect();
+      const cy = rect.height / 2, cx = rect.width * 0.55;
+      mwDrawPath(rect.width, rect.height, cx);
+      const m = MW_MEMBERS[mwIdx];
+      mwGlow.style.background = m.color;
+
+      mwItems.forEach((el, i) => {
+        let dist = i - mwIdx + mwOffset;
+        while(dist > MWN/2) dist -= MWN;
+        while(dist < -MWN/2) dist += MWN;
+        const y = cy + dist * MW_VSPACE;
+        const xOff = Math.sin(dist * 0.8) * MW_AMP;
+        const x = cx + xOff;
+        const ad = Math.abs(dist);
+        let size, opacity;
+        if(ad < 0.3){ size=MW_CENTER; opacity=1; }
+        else if(ad < 1.3){ const t=(ad-0.3)/1; size=MW_CENTER-(MW_CENTER-MW_SMALL)*t; opacity=1-0.3*t; }
+        else if(ad < 2.3){ const t=(ad-1.3)/1; size=MW_SMALL-(MW_SMALL-MW_TINY)*t; opacity=0.7-0.35*t; }
+        else { size=MW_TINY; opacity=Math.max(0,0.35-(ad-2.3)*0.3); }
+        if(ad > 3.2) opacity = 0;
+
+        el.style.transition = smooth ? 'all .45s cubic-bezier(.22,1,.36,1)' : 'none';
+        el.style.left = x+'px'; el.style.top = y+'px';
+        el.style.transform = 'translate(-50%,-50%)';
+        el.style.opacity = opacity;
+        el.style.zIndex = Math.round(10 - ad);
+
+        const circleEl = document.getElementById('mwCircle-'+i);
+        const ringEl = document.getElementById('mwRing-'+i);
+        const labelEl = document.getElementById('mwLabel-'+i);
+        if(circleEl){ circleEl.style.width=size+'px'; circleEl.style.height=size+'px'; }
+        const isActive = ad < 0.3;
+        if(ringEl){
+          ringEl.style.borderColor = isActive ? m.color : 'transparent';
+          ringEl.style.boxShadow = isActive ? '0 0 20px '+m.glow : 'none';
+        }
+        if(labelEl){
+          labelEl.style.opacity = isActive ? '1' : '0';
+          labelEl.style.fontSize = isActive ? 'clamp(24px,7vw,36px)' : '0px';
+          labelEl.style.color = isActive ? m.color : 'transparent';
+          labelEl.style.letterSpacing = isActive ? '3px' : '0px';
+        }
+      });
+    }
+
+    function mwDrawPath(w, h, cx){
+      const cy = h/2, pts = [];
+      for(let d=-3.5; d<=3.5; d+=0.1){
+        pts.push({x: cx + Math.sin(d*0.8)*MW_AMP, y: cy + d*MW_VSPACE});
+      }
+      let pathD = 'M '+pts[0].x+' '+pts[0].y;
+      for(let i=1;i<pts.length;i++) pathD += ' L '+pts[i].x+' '+pts[i].y;
+      mwCurve.innerHTML = '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" style="position:absolute;top:0;left:0"><defs><linearGradient id="mwPG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="white" stop-opacity="0"/><stop offset="30%" stop-color="white" stop-opacity=".04"/><stop offset="50%" stop-color="white" stop-opacity=".06"/><stop offset="70%" stop-color="white" stop-opacity=".04"/><stop offset="100%" stop-color="white" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+'" fill="none" stroke="url(#mwPG)" stroke-width="1.5"/></svg>';
+    }
+
+    // Touch/mouse for S-curve
+    mwScroll.addEventListener('touchstart', e => {
+      mwTouchY = e.touches[0].clientY; mwDragging = true; mwMomentum = 0;
+      if(mwAF) cancelAnimationFrame(mwAF);
+    }, {passive:true});
+    mwScroll.addEventListener('touchmove', e => {
+      if(!mwDragging) return;
+      const y = e.touches[0].clientY, dy = y - mwTouchY;
+      mwTouchY = y;
+      mwOffset += dy / MW_VSPACE;
+      mwMomentum = dy / MW_VSPACE;
+      while(mwOffset >= 0.5){ mwOffset -= 1; mwIdx = (mwIdx - 1 + MWN) % MWN; }
+      while(mwOffset <= -0.5){ mwOffset += 1; mwIdx = (mwIdx + 1) % MWN; }
+      mwRender(false);
+    }, {passive:true});
+    mwScroll.addEventListener('touchend', () => { mwDragging = false; mwDecel(); });
+
+    mwScroll.addEventListener('mousedown', e => {
+      mwTouchY = e.clientY; mwDragging = true; mwMomentum = 0;
+      if(mwAF) cancelAnimationFrame(mwAF);
+      const mv = ev => {
+        const dy = ev.clientY - mwTouchY; mwTouchY = ev.clientY;
+        mwOffset += dy / MW_VSPACE; mwMomentum = dy / MW_VSPACE;
+        while(mwOffset >= 0.5){ mwOffset -= 1; mwIdx = (mwIdx - 1 + MWN) % MWN; }
+        while(mwOffset <= -0.5){ mwOffset += 1; mwIdx = (mwIdx + 1) % MWN; }
+        mwRender(false);
+      };
+      const up = () => { mwDragging = false; mwDecel(); document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); };
+      document.addEventListener('mousemove',mv);
+      document.addEventListener('mouseup',up);
+    });
+
+    function mwDecel(){
+      if(Math.abs(mwMomentum) < 0.005 && Math.abs(mwOffset) < 0.01){ mwOffset = 0; mwRender(true); return; }
+      mwOffset += mwMomentum; mwMomentum *= 0.88;
+      while(mwOffset >= 0.5){ mwOffset -= 1; mwIdx = (mwIdx - 1 + MWN) % MWN; }
+      while(mwOffset <= -0.5){ mwOffset += 1; mwIdx = (mwIdx + 1) % MWN; }
+      if(Math.abs(mwMomentum) < 0.01) mwOffset *= 0.7;
+      mwRender(false);
+      mwAF = requestAnimationFrame(mwDecel);
+    }
+
+    // Buttons
+    mwEnter.addEventListener('click', () => mwTransition(MW_MEMBERS[mwIdx]));
+    mwDaily.addEventListener('click', () => mwTransition({id:'all', label:"TODAY'S OBSERVATION", color:'#b0b8ff'}));
+
+    function mwTransition(m){
+      mwTransTxt.textContent = m.label;
+      mwTransTxt.style.color = m.color;
+      mwTrans.classList.add('active');
+      _gtag('event','mob_welcome_select',{member_name:m.id});
+      setTimeout(() => {
+        mwTrans.classList.remove('active');
+        mobWelcome.style.display = 'none';
+        // Launch card view
+        mcSelectedMember = m.id;
+        mcIsDaily = (m.id === 'all' && m.label === "TODAY'S OBSERVATION");
+        mcInit();
+      }, 800);
+    }
+
+    // Init
+    mwRender(false);
+    window.addEventListener('resize', () => { if(window.innerWidth <= 700) mwRender(false); });
+
+    // === MOBILE CARD VIEW ===
+    let mcSelectedMember = 'all', mcIsDaily = false;
+    let mcFiltered = [], mcIdx = 0, mcActiveTag = 'all';
+    let mcTouchStartY = 0, mcTouchCurY = 0, mcDragging = false;
+    let mcTouchStartX = 0, mcIsLeftSwipe = false;
+
+    const mcCardView = document.getElementById('mobCardView');
+    const mcTrack    = document.getElementById('mcTrack');
+    const mcGlow     = document.getElementById('mcGlow');
+    const mcChips    = document.getElementById('mcChips');
+    const mcSortCnt  = document.getElementById('mcSortCount');
+    const mcProgress = document.getElementById('mcProgress');
+    const mcSearch   = document.getElementById('mcSearchInput');
+    const mcShelfBtn = document.getElementById('mcShelfBtn');
+
+    // Tag list extracted from videos at runtime
+    function mcGetTags(){
+      const tags = new Set();
+      videos.forEach(v => parseTags(v).forEach(t => tags.add(t)));
+      return ['all', ...Array.from(tags)];
+    }
+
+    function mcInit(){
+      mcCardView.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+      mcIdx = 0; mcActiveTag = 'all';
+      if(mcSearch) mcSearch.value = '';
+      mcFilter();
+    }
+
+    function mcFilter(){
+      const q = (mcSearch ? mcSearch.value.trim().toLowerCase() : '');
+      let pool = [...videos];
+      // Member filter
+      if(mcIsDaily){
+        pool = getDailyPicks ? getDailyPicks() : pool.slice(0,5);
+      } else if(mcSelectedMember !== 'all'){
+        pool = pool.filter(v => (v.member||'').includes(mcSelectedMember));
+      }
+      // Tag filter
+      if(mcActiveTag !== 'all'){
+        pool = pool.filter(v => parseTags(v).includes(mcActiveTag));
+      }
+      // Search
+      if(q){
+        pool = pool.filter(v => (v.title||'').toLowerCase().includes(q) || (v.member||'').toLowerCase().includes(q));
+      }
+      // Sort newest first
+      pool.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+      mcFiltered = pool;
+      mcIdx = 0;
+      mcRenderChips();
+      mcRenderCards();
+      mcUpdateMeta();
+    }
+
+    function mcRenderChips(){
+      mcChips.innerHTML = '';
+      const tags = mcGetTags();
+      tags.forEach(tag => {
+        const el = document.createElement('div');
+        el.className = 'mc-chip' + (tag === mcActiveTag ? ' mc-active' : '');
+        const label = tag === 'all' ? 'すべて' : tag;
+        el.innerHTML = '<span class="mc-emoji">' + (tag === 'all' ? '✦' : '#') + '</span>' + esc(label);
+        if(tag === mcActiveTag){
+          const color = window.getMemberColor ? window.getMemberColor(mcSelectedMember) : '#b0b8ff';
+          el.style.borderColor = color + '44';
+          el.style.boxShadow = '0 0 12px ' + color + '22';
+        }
+        el.addEventListener('click', () => {
+          mcActiveTag = tag; mcIdx = 0;
+          _gtag('event','mob_tag_filter',{tag_name:tag,member_name:mcSelectedMember});
+          mcFilter();
+        });
+        mcChips.appendChild(el);
+      });
+    }
+
+    function mcRenderCards(){
+      mcTrack.innerHTML = '';
+      if(mcFiltered.length === 0){
+        mcTrack.innerHTML = '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px"><svg width="40" height="40" viewBox="0 0 24 24" stroke="rgba(255,255,255,.15)" stroke-width="1.2" fill="none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style="font-family:\'Shippori Mincho\',serif;font-size:14px;color:rgba(232,236,248,.45)">該当する曲がありません</span></div>';
+        return;
+      }
+      const count = Math.min(3, mcFiltered.length);
+      for(let i = count-1; i >= 0; i--){
+        const idx = (mcIdx + i) % mcFiltered.length;
+        mcTrack.appendChild(mcCreateCard(mcFiltered[idx], i));
+      }
+      const cur = mcFiltered[mcIdx % mcFiltered.length];
+      const color = window.getMemberColor ? window.getMemberColor(cur.member) : '#b0b8ff';
+      mcGlow.style.background = color;
+      mcCardView.style.setProperty('--mc-active', color);
+      const front = mcTrack.querySelector('[data-pos="0"]');
+      if(front) mcAttachSwipe(front);
+    }
+
+    function mcCreateCard(song, pos){
+      const color = window.getMemberColor ? window.getMemberColor(song.member) : '#b0b8ff';
+      const card = document.createElement('div');
+      card.className = 'mc-card';
+      card.dataset.pos = pos <= 2 ? pos : 'hide';
+      card.dataset.sid = song.id;
+      const vid = ytId(song.url);
+      const thumbUrl = vid ? 'https://img.youtube.com/vi/'+vid+'/mqdefault.jpg' : '';
+      const memberLabel = parseMembers(song).map(mid => mbr(mid)).join(', ') || song.member || '';
+      const tags = parseTags(song);
+
+      // LP disc
+      const lpWrap = document.createElement('div');
+      lpWrap.className = 'mc-lp-wrap';
+      const canvas = document.createElement('canvas');
+      if(window.drawVinylDisc) window.drawVinylDisc(canvas, color, 140);
+      lpWrap.appendChild(canvas);
+
+      card.innerHTML = '<div class="mc-card-inner">' +
+        '<div class="mc-card-thumb"><img src="'+esc(thumbUrl)+'" alt="'+esc(song.title||'')+'" loading="lazy" onerror="this.parentElement.style.background=\'#111627\'"></div>' +
+        '<div class="mc-card-info">' +
+          '<div class="mc-card-color-bar" style="background:linear-gradient(90deg,'+color+',transparent)"></div>' +
+          '<div class="mc-card-member" style="color:'+color+'">'+esc(memberLabel)+'</div>' +
+          '<div class="mc-card-title">'+esc(song.title||'')+'</div>' +
+          '<div class="mc-card-date">'+esc(fmtDate(song.date))+'</div>' +
+          '<div class="mc-card-tags">'+tags.map(t => '<span class="mc-card-tag">'+esc(t)+'</span>').join('')+'</div>' +
+        '</div>' +
+        '<div class="mc-card-pin'+(window.isOnShelf && window.isOnShelf(song.id) ? ' mc-pinned' : '')+'" role="button" aria-label="棚に追加">' +
+          '<svg viewBox="0 0 24 24"><path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 8 12 8 12s8-6.75 8-12c0-4.42-3.58-8-8-8z"/><circle cx="12" cy="10" r="2.5" fill="none"/></svg>' +
+        '</div>' +
+        '<div class="mc-card-cta" role="button">' +
+          '<svg viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19"/></svg>' +
+          '<span>YOUTUBE</span>' +
+        '</div>' +
+      '</div>';
+
+      card.appendChild(lpWrap);
+
+      // Tap → LP peek
+      card.addEventListener('click', e => {
+        if(Math.abs(mcTouchCurY - mcTouchStartY) > 15) return;
+        if(e.target.closest('.mc-card-pin') || e.target.closest('.mc-card-cta')) return;
+        card.classList.toggle('mc-lp-peek');
+        _gtag('event','mob_card_tap',{song_title:song.title||'',member_name:song.member||''});
+      });
+
+      // Pin
+      const pinBtn = card.querySelector('.mc-card-pin');
+      pinBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        if(window.isOnShelf && window.isOnShelf(song.id)){
+          if(window.removeFromShelf) window.removeFromShelf(song.id);
+          pinBtn.classList.remove('mc-pinned');
+        } else {
+          if(window.addToShelf) window.addToShelf(song.id);
+          pinBtn.classList.add('mc-pinned');
+        }
+      });
+
+      // CTA → YouTube
+      const cta = card.querySelector('.mc-card-cta');
+      cta.addEventListener('click', e => {
+        e.stopPropagation();
+        if(song.url) window.open(safeUrl(song.url), '_blank');
+      });
+
+      return card;
+    }
+
+    function mcAttachSwipe(card){
+      card.addEventListener('touchstart', function(e){
+        mcTouchStartY = e.touches[0].clientY; mcTouchCurY = mcTouchStartY;
+        mcTouchStartX = e.touches[0].clientX; mcDragging = true; mcIsLeftSwipe = false;
+        this.style.transition = 'none';
+      }, {passive:true});
+      card.addEventListener('touchmove', function(e){
+        if(!mcDragging) return;
+        mcTouchCurY = e.touches[0].clientY;
+        const dx = e.touches[0].clientX - mcTouchStartX;
+        const dy = mcTouchCurY - mcTouchStartY;
+        // Detect left swipe for back navigation
+        if(Math.abs(dx) > Math.abs(dy) && dx < -80){ mcIsLeftSwipe = true; return; }
+        this.style.transform = 'translateY('+dy+'px) scale('+Math.max(.95,1-Math.abs(dy)/800)+') rotate('+dy*-0.02+'deg)';
+        this.style.opacity = Math.max(.3,1-Math.abs(dy)/400);
+      }, {passive:true});
+      card.addEventListener('touchend', function(){
+        if(!mcDragging) return; mcDragging = false;
+        if(mcIsLeftSwipe){
+          _gtag('event','mob_back_to_welcome',{member_name:mcSelectedMember});
+          mcCardView.style.display = 'none';
+          mobWelcome.style.display = 'flex';
+          mwRender(true);
+          return;
+        }
+        const dy = mcTouchCurY - mcTouchStartY;
+        this.style.transition = '';
+        if(Math.abs(dy) > 70){
+          const dir = dy < 0 ? 'up' : 'down';
+          this.classList.add(dy < 0 ? 'mc-out-up' : 'mc-out-down');
+          _gtag('event','mob_card_swipe',{direction:dir,song_title:mcFiltered[mcIdx%mcFiltered.length]?.title||''});
+          setTimeout(() => {
+            if(dy < 0){ mcIdx = (mcIdx + 1) % mcFiltered.length; }
+            else { mcIdx = (mcIdx - 1 + mcFiltered.length) % mcFiltered.length; }
+            mcRenderCards(); mcUpdateMeta();
+          }, 350);
+        } else { this.style.transform = ''; this.style.opacity = ''; }
+      });
+      // Mouse fallback
+      card.addEventListener('mousedown', function(e){
+        mcTouchStartY = e.clientY; mcTouchCurY = mcTouchStartY;
+        mcTouchStartX = e.clientX; mcDragging = true;
+        this.style.transition = 'none';
+        const self = this;
+        const mv = ev => {
+          mcTouchCurY = ev.clientY;
+          const dy = mcTouchCurY - mcTouchStartY;
+          self.style.transform = 'translateY('+dy+'px) scale('+Math.max(.95,1-Math.abs(dy)/800)+') rotate('+dy*-0.02+'deg)';
+          self.style.opacity = Math.max(.3,1-Math.abs(dy)/400);
+        };
+        const up = () => {
+          mcDragging = false; self.style.transition = '';
+          const dy = mcTouchCurY - mcTouchStartY;
+          if(Math.abs(dy) > 70){
+            self.classList.add(dy < 0 ? 'mc-out-up' : 'mc-out-down');
+            setTimeout(() => {
+              if(dy < 0){ mcIdx = (mcIdx + 1) % mcFiltered.length; }
+              else { mcIdx = (mcIdx - 1 + mcFiltered.length) % mcFiltered.length; }
+              mcRenderCards(); mcUpdateMeta();
+            }, 350);
+          } else { self.style.transform = ''; self.style.opacity = ''; }
+          document.removeEventListener('mousemove',mv);
+          document.removeEventListener('mouseup',up);
+        };
+        document.addEventListener('mousemove',mv);
+        document.addEventListener('mouseup',up);
+      });
+    }
+
+    function mcUpdateMeta(){
+      mcSortCnt.innerHTML = '<b>'+mcFiltered.length+'</b> 曲';
+      if(mcFiltered.length > 0){
+        mcProgress.innerHTML = '<b>'+(mcIdx%mcFiltered.length+1)+'</b> / '+mcFiltered.length;
+      } else {
+        mcProgress.innerHTML = '—';
       }
     }
 
-    const mobCards = MEMBERS.map((mb, i) => {
-      const card = document.createElement('div');
-      card.className = 'mob-lp-card';
-      card.style.cssText = `top:50%;left:50%;opacity:0;display:none;`;
-      const disc = document.createElement('div');
-      disc.className = 'mob-lp-disc';
-      disc.innerHTML = makeMobFace(mb);
-      const nm = document.createElement('div');
-      nm.className = 'mob-lp-name';
-      nm.style.color = mb.mc;
-      nm.textContent = mb.en;
-      const ja = document.createElement('div');
-      ja.className = 'mob-lp-ja';
-      ja.style.color = mb.mc;
-      ja.textContent = mb.ja;
-      card.appendChild(disc); card.appendChild(nm); card.appendChild(ja);
-      card.addEventListener('click', () => { if(!mobAnimating && !mobBusy) mobToss(mb, card); });
-      stage.appendChild(card);
-      const dot = document.createElement('div');
-      dot.className = 'mob-vdot' + (i===0?' on':'');
-      dotsEl.appendChild(dot);
-      return card;
+    if(mcSearch) mcSearch.addEventListener('input', () => mcFilter());
+
+    // Shelf button on card view → open mobile shelf
+    if(mcShelfBtn) mcShelfBtn.addEventListener('click', () => msInit());
+
+    // === MOBILE SHELF ===
+    let msSongs = [], msAct = 0, msST;
+
+    const mobShelf = document.getElementById('mobShelf');
+    const msCar    = document.getElementById('msCar');
+    const msGlow   = document.getElementById('msGlow');
+    const msCnt    = document.getElementById('msCnt');
+    const msDet    = document.getElementById('msDet');
+    const msDI     = document.getElementById('msDI');
+    const msDM     = document.getElementById('msDM');
+    const msDT     = document.getElementById('msDT');
+    const msDD     = document.getElementById('msDD');
+    const msDG     = document.getElementById('msDG');
+    const msEdge   = document.getElementById('msEdge');
+    const msCW     = document.getElementById('msCW');
+
+    function msInit(){
+      const shelfIds = window.getShelf ? window.getShelf() : [];
+      msSongs = shelfIds.map(id => videos.find(v => v.id === id)).filter(Boolean);
+      msAct = 0;
+      mobShelf.style.display = 'flex';
+      mcCardView.style.display = 'none';
+      msRender();
+      if(msSongs.length) msSetAct(0);
+    }
+
+    function msRender(){
+      clearTimeout(msST);
+      msCar.innerHTML = ''; msDet.classList.remove('ms-open');
+      if(!msSongs.length){
+        msCW.innerHTML = '<div class="ms-empty"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg><p>棚はまだ空です<br>曲カードの📌ボタンで追加</p></div>';
+        msCnt.innerHTML = '<b>0</b> / 10'; return;
+      }
+      msCnt.innerHTML = '<b>'+msSongs.length+'</b> / 10';
+      msSongs.forEach((s, i) => {
+        const c = window.getMemberColor ? window.getMemberColor(s.member) : '#c4b5fd';
+        const vid = ytId(s.url);
+        const thumbUrl = vid ? 'https://img.youtube.com/vi/'+vid+'/mqdefault.jpg' : '';
+        const memberLabel = parseMembers(s).map(mid => mbr(mid)).join(', ') || s.member || '';
+        const el = document.createElement('div');
+        el.className = 'ms-jk' + (i === msAct ? ' ms-active' : '');
+        el.innerHTML = '<div class="ms-jk-img"><img src="'+esc(thumbUrl)+'" alt="'+esc(s.title||'')+'"><div class="ms-jk-bar" style="background:linear-gradient(90deg,'+c+',transparent)"></div></div><div class="ms-jk-info"><div class="ms-jk-mem" style="color:'+c+'">'+esc(memberLabel)+'</div><div class="ms-jk-tit">'+esc(s.title||'')+'</div></div>';
+        el.addEventListener('click', () => msSetAct(i));
+        msCar.appendChild(el);
+      });
+      msUpdateGlow();
+    }
+
+    function msSetAct(i){
+      if(i < 0 || i >= msSongs.length) return;
+      msAct = i;
+      msCar.querySelectorAll('.ms-jk').forEach((el, j) => el.classList.toggle('ms-active', j === i));
+      const t = msCar.querySelectorAll('.ms-jk')[i];
+      if(t) t.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});
+      msShowDet(msSongs[i]); msUpdateGlow();
+    }
+
+    function msUpdateGlow(){ if(msSongs.length && msSongs[msAct]) msGlow.style.background = window.getMemberColor ? window.getMemberColor(msSongs[msAct].member) : '#c4b5fd'; }
+
+    function msShowDet(s){
+      if(!s) return;
+      const c = window.getMemberColor ? window.getMemberColor(s.member) : '#c4b5fd';
+      const vid = ytId(s.url);
+      msDI.src = vid ? 'https://img.youtube.com/vi/'+vid+'/mqdefault.jpg' : '';
+      const memberLabel = parseMembers(s).map(mid => mbr(mid)).join(', ') || s.member || '';
+      msDM.textContent = memberLabel; msDM.style.color = c;
+      msDT.textContent = s.title || '';
+      msDD.textContent = fmtDate(s.date);
+      msDG.innerHTML = '';
+      parseTags(s).forEach(tag => { const sp = document.createElement('span'); sp.className = 'ms-det-tag'; sp.textContent = tag; msDG.appendChild(sp); });
+      msDet.classList.add('ms-open');
+    }
+
+    // Scroll snap → update active
+    msCar.addEventListener('scroll', () => { clearTimeout(msST); msST = setTimeout(() => {
+      const jks = msCar.querySelectorAll('.ms-jk'), cc = msCar.scrollLeft + msCar.offsetWidth/2;
+      let cl = 0, md = Infinity;
+      jks.forEach((el, i) => { const d = Math.abs(el.offsetLeft + el.offsetWidth/2 - cc); if(d < md){ md = d; cl = i; } });
+      if(cl !== msAct) msSetAct(cl);
+    }, 80); });
+
+    // Edge swipe: left 30px zone → back to card view
+    let msEX = 0, msEY = 0, msIE = false;
+    document.addEventListener('touchstart', e => {
+      if(mobShelf.style.display === 'none') return;
+      const x = e.touches[0].clientX; msEX = x; msEY = e.touches[0].clientY;
+      msIE = x < 30; if(msIE) msEdge.classList.add('ms-on');
+    }, {passive:true});
+    document.addEventListener('touchmove', e => {
+      if(!msIE || mobShelf.style.display === 'none') return;
+      const dx = e.touches[0].clientX - msEX, dy = Math.abs(e.touches[0].clientY - msEY);
+      if(dx > 60 && dx > dy*2){
+        msEdge.classList.remove('ms-on'); msIE = false;
+        mobShelf.style.display = 'none';
+        mcCardView.style.display = 'flex';
+        mcRenderCards(); mcUpdateMeta();
+      }
+    }, {passive:true});
+    document.addEventListener('touchend', () => { msIE = false; msEdge.classList.remove('ms-on'); });
+
+    // YouTube button
+    document.getElementById('msBY')?.addEventListener('click', () => {
+      if(msSongs.length && msSongs[msAct]?.url) window.open(safeUrl(msSongs[msAct].url), '_blank');
     });
 
-    function setAmbient(mb){
-      if(ambient) ambient.style.background = mb.mglow;
-    }
-
-    function mobCurveIn(card, fromBelow, cb){
-      card.style.display = 'flex';
-      card.style.transition = 'none';
-      const sy = fromBelow ? '+520px' : '-520px';
-      const sx = fromBelow ? '+80px' : '-80px';
-      const sr = fromBelow ? '-540deg' : '540deg';
-      card.style.transform = `translate(calc(-50% + ${sx}), calc(-50% + ${sy})) rotate(${sr}) scale(0.15)`;
-      card.style.opacity = '0';
-      requestAnimationFrame(()=>requestAnimationFrame(()=>{
-        card.style.transition = 'transform .7s cubic-bezier(.15,0,.25,1), opacity .35s ease';
-        card.style.transform = 'translate(-50%, calc(-50% - 20px)) rotate(0deg) scale(1)';
-        card.style.opacity = '1';
-        setTimeout(()=>{ card.style.transition=''; if(cb) cb(); }, 720);
-      }));
-    }
-
-    function mobCurveOut(card, toAbove, cb){
-      const ey = toAbove ? '-520px' : '+520px';
-      const ex = toAbove ? '-80px' : '+80px';
-      const er = toAbove ? '360deg' : '-360deg';
-      card.style.transition = 'transform .46s cubic-bezier(.75,0,.85,1), opacity .3s ease';
-      card.style.transform = `translate(calc(-50% + ${ex}), calc(-50% + ${ey})) rotate(${er}) scale(0.18)`;
-      card.style.opacity = '0';
-      setTimeout(()=>{ card.style.display='none'; card.style.transition=''; if(cb) cb(); }, 480);
-    }
-
-    function mobGoTo(next){
-      // 末尾→先頭、先頭→末尾でループ
-      if(next >= MEMBERS.length) next = 0;
-      if(next < 0) next = MEMBERS.length - 1;
-      if(mobAnimating || next===mobCur) return;
-      mobAnimating = true;
-      const goingNext = next > mobCur;
-      const old = mobCards[mobCur];
-      mobCur = next;
-      document.querySelectorAll('.mob-vdot').forEach((d,i)=>d.classList.toggle('on',i===mobCur));
-      setAmbient(MEMBERS[mobCur]);
-      mobCurveOut(old, goingNext, ()=>mobCurveIn(mobCards[mobCur], goingNext, ()=>{ mobAnimating=false; }));
-    }
-
-    function mobToss(mb, card){
-      if(mobBusy) return;
-      mobBusy = true;
-      const ttDisc = document.getElementById('mobTTDisc');
-      const cardDisc = card.querySelector('.mob-lp-disc');
-      const dr = cardDisc.getBoundingClientRect();
-      const mr = mobIntro.getBoundingClientRect();
-      const td = ttDisc.getBoundingClientRect();
-      const sz = 241, tsz = 54;
-      const fly = document.createElement('div');
-      fly.className = 'mob-flying';
-      fly.style.cssText = `width:${sz}px;height:${sz}px;left:${dr.left-mr.left}px;top:${dr.top-mr.top}px;`;
-      fly.innerHTML = makeMobFace(mb);
-      mobIntro.appendChild(fly);
-      card.style.transition = 'opacity .25s';
-      card.style.opacity = '0.15';
-      const tcx = td.left - mr.left + td.width/2;
-      const tcy = td.top  - mr.top  + td.height/2;
-      fly.style.transition = 'none';
-      requestAnimationFrame(()=>requestAnimationFrame(()=>{
-        fly.style.transition = 'left .6s cubic-bezier(.4,0,.2,1), top .6s cubic-bezier(.4,0,.2,1), width .6s, height .6s, transform .6s cubic-bezier(.4,0,.2,1), opacity .5s';
-        fly.style.left  = `${tcx - tsz/2}px`;
-        fly.style.top   = `${tcy - tsz/2}px`;
-        fly.style.width = `${tsz}px`;
-        fly.style.height= `${tsz}px`;
-        fly.style.transform = 'rotate(720deg)';
-        fly.style.opacity = '0.8';
-        setTimeout(()=>{ fly.remove(); mobSettle(mb); }, 620);
-      }));
-    }
-
-    function mobSettle(mb){
-      mobChosen = mb;
-      ttFaceEl.style.opacity = '0';
-      platter.style.animationPlayState = 'paused';
-      armEl.style.transform = 'rotate(-36deg)';
-      tnameEl.style.color = 'rgba(200,210,255,0.2)';
-      tjaEl.style.color = 'rgba(160,180,220,0.35)';
-      if(mb.img){ ttImgEl.src = mb.img; ttImgEl.style.display='block'; } else { ttImgEl.style.display='none'; }
-      setTimeout(()=>{
-        ttFaceEl.style.opacity = '1';
-        setTimeout(()=>{
-          armEl.style.transform = 'rotate(-6deg)';
-          setTimeout(()=>{
-            platter.style.animationPlayState = 'running';
-            tnameEl.textContent = mb.en;
-            tnameEl.style.color = mb.mc;
-            tjaEl.textContent = mb.ja;
-            tjaEl.style.color = mb.mc.replace(')', ',.65)').replace('rgb','rgba');
-            enterBtnMob.style.color = '#e8ecf8';
-            enterBtnMob.style.borderColor = 'rgba(176,184,255,.5)';
-            enterBtnMob.style.background = 'rgba(176,184,255,.07)';
-            enterBtnMob.style.cursor = 'pointer';
-            mobBusy = false;
-          }, 800);
-        }, 300);
-      }, 150);
-    }
-
-    function mobEnterArchive(){
-      if(!mobChosen) return;
-      const black = document.createElement('div');
-      black.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#000;opacity:0;transition:opacity .55s ease;pointer-events:none;';
-      document.body.appendChild(black);
-      requestAnimationFrame(()=>requestAnimationFrame(()=>{ black.style.opacity='1'; }));
-      setTimeout(()=>{
-        mobIntro.style.display = 'none';
-        // スクロール固定を解除
-        document.body.style.overflow = '';
-        document.body.style.touchAction = '';
-        document.removeEventListener('touchmove', preventScroll);
-        document.body.style.overflow = '';
-        const m = mobChosen.m;
-        _gtag('event','archive_enter',{member_name:m,view_mode:m==='all'?'daily_obs':'member'});
-        if(m === 'all'){
-          selectedMembers=[]; curMember='all'; curSort='daily';
-        } else {
-          selectedMembers=[m]; curMember=m;
-        }
-        curTag='all'; if(m!=='all') curSort='new';
-        curAlbum=null; searchQ='';
-        const sq=document.getElementById('searchInput'); if(sq) sq.value='';
-        buildSidebar(); updateCounts(); render();
-        setTimeout(()=>{ black.style.opacity='0'; setTimeout(()=>black.remove(),600); }, 80);
-      }, 600);
-    }
-
-    enterBtnMob.addEventListener('click', ()=>{ if(mobChosen) mobEnterArchive(); });
-
-    // スワイプ
-    lpArea.addEventListener('touchstart', e=>{ mobStartY=e.touches[0].clientY; },{passive:true});
-    lpArea.addEventListener('touchend', e=>{
-      const dy=e.changedTouches[0].clientY-mobStartY;
-      if(Math.abs(dy)>40) mobGoTo(dy<0?mobCur+1:mobCur-1);
-    },{passive:true});
-    lpArea.addEventListener('mousedown', e=>{ mobStartY=e.clientY; });
-    lpArea.addEventListener('mouseup', e=>{
-      const dy=e.clientY-mobStartY;
-      if(Math.abs(dy)>40) mobGoTo(dy<0?mobCur+1:mobCur-1);
+    // Remove button
+    document.getElementById('msBR')?.addEventListener('click', () => {
+      if(!msSongs.length) return;
+      const s = msSongs[msAct];
+      if(window.removeFromShelf) window.removeFromShelf(s.id);
+      msSongs.splice(msAct, 1);
+      if(msAct >= msSongs.length) msAct = Math.max(0, msSongs.length - 1);
+      msRender(); if(msSongs.length) msSetAct(msAct);
     });
 
-    // 初回LP表示
-    mobCards[0].style.display='flex';
-    setAmbient(MEMBERS[0]);
-    mobCurveIn(mobCards[0], true);
   })();
 
 })();
@@ -2014,4 +2355,12 @@ document.querySelector('.dp-btn-close')?.addEventListener('click', shelfClosePan
 
 // Init nav count on load
 updateShelfNavCnt();
+
+// Expose for mobile card view
+window.getMemberColor = getMemberColor;
+window.drawVinylDisc = drawVinylDisc;
+window.addToShelf = addToShelf;
+window.removeFromShelf = removeFromShelf;
+window.isOnShelf = isOnShelf;
+window.getShelf = getShelf;
 })();
