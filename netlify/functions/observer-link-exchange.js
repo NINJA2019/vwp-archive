@@ -128,14 +128,15 @@ exports.handler = async (event) => {
           body: JSON.stringify({ status: 'matched', matched_with: myBottle.id }),
         }
       );
+      if (!patchRes.ok) throw new Error(`Match PATCH failed: ${patchRes.status}`);
       const patchData = await patchRes.json();
 
-      // If 0 rows updated, someone else claimed this bottle — try fallback
+      // If 0 rows updated, someone else claimed this bottle — fall through to fallback
       if (!Array.isArray(patchData) || patchData.length === 0) {
-        // Bottle was already claimed by another request; fall through to fallback
+        // Bottle was already claimed by another request
       } else {
         // Successfully claimed — update our bottle too
-        await fetch(
+        await sbFetch(
           `${url}/rest/v1/song_bottles?id=eq.${myBottle.id}`,
           {
             method: 'PATCH',
