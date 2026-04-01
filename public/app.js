@@ -148,7 +148,7 @@ const _pmCache=new WeakMap();
 function parseMembers(v){let c=_pmCache.get(v);if(c)return c;c=(v.member||'').split(/[ ,]+/).filter(Boolean);_pmCache.set(v,c);return c;}
 function tTag(tag){ return (I18N[lang].tagMap||{})[tag] || tag; }
 // XSS対策: HTML文字列エスケープ（DOM不使用の高速版）
-function esc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 // XSS対策: href/onclickに使うURLをhttps?://のみ許可
 function safeUrl(url){ if(!url) return '#'; return /^https?:\/\//i.test(url) ? url : '#'; }
 function tagPills(v){return parseTags(v).map(tag=>`<span class="pill">#${esc(tTag(tag))}</span>`).join('');}
@@ -2430,7 +2430,7 @@ function olInit(){
   const olResult = params.get('ol_result');
   if(olResult) {
     // Remove param from URL
-    const cleanUrl = location.pathname + location.search.replace(/[?&]ol_result=[^&]+/, '').replace(/^\?$/, '');
+    const cleanUrl = location.pathname + location.search.replace(/[?&]ol_result=[^&]+/, '').replace(/^\?$/, '').replace(/^&/, '?');
     history.replaceState(null, '', cleanUrl || location.pathname);
     olOpenFromResult(olResult);
   }
@@ -2441,10 +2441,7 @@ function olOpenFromResult(exchangeId){
   olOpen();
   olShowScreen('olResultScreen');
   const body = document.getElementById('olResultBody');
-  if(body) body.innerHTML = '<div class="ol-result-intro"><div class="ol-result-intro-title">Loading...</div></div>';
-  // Fetch exchange data
-  fetch('/.netlify/functions/observer-link-exchange', {method:'OPTIONS'}).catch(()=>{});
-  // We can't re-fetch the exchange, so show a message directing to try it
+  // We can't re-fetch the exchange data, so show a message directing to try it
   if(body) body.innerHTML = `
     <div class="ol-result-intro">
       <div class="ol-result-intro-title">Observer-Link</div>
@@ -2459,7 +2456,10 @@ function olOpen(){
   const screen = document.getElementById('observer-link-screen');
   if(!screen) return;
   screen.style.display = '';
+  screen.classList.add('ol-open');
   document.body.style.overflow = 'hidden';
+  olLastExchangeId = null;
+  olLastReceived = null;
   olShowScreen('olComposeScreen');
   // Check shelf tab availability
   const shelfIds = getShelf();
@@ -2480,7 +2480,7 @@ window.openObserverLink = olOpen;
 
 function olClose(){
   const screen = document.getElementById('observer-link-screen');
-  if(screen) screen.style.display = 'none';
+  if(screen){ screen.style.display = 'none'; screen.classList.remove('ol-open'); }
   document.body.style.overflow = '';
 }
 
@@ -2658,8 +2658,11 @@ function olCreatePickerItem(song){
 }
 
 // === SEND ===
+let olSending = false;
 function olSendRecord(){
-  if(!olSelectedSong) return;
+  if(!olSelectedSong || olSending) return;
+  olSending = true;
+  document.getElementById('olSendBtn').disabled = true;
   const msg = document.getElementById('olMsgInput')?.value.trim() || '';
 
   _gtag('event','ol_send_record',{
@@ -2692,6 +2695,8 @@ function olSendRecord(){
         : data.error === 'INVALID_VIDEO_ID' ? 'Invalid song'
         : 'Something went wrong';
       olShowToast(errMsg);
+      olSending = false;
+      olUpdateSendBtn();
       olShowScreen('olComposeScreen');
       document.getElementById('olAmbientGlow')?.classList.remove('bright');
       return;
@@ -2717,12 +2722,16 @@ function olSendRecord(){
 
     // Wait for animation, then show result
     setTimeout(() => {
+      olSending = false;
+      olUpdateSendBtn();
       olShowResult(data);
       document.getElementById('olAmbientGlow')?.classList.remove('bright');
     }, Math.max(0, 2800 - 1000)); // animation is 3s, API takes ~1s
   })
   .catch(() => {
     olShowToast('Network error — please try again');
+    olSending = false;
+    olUpdateSendBtn();
     olShowScreen('olComposeScreen');
     document.getElementById('olAmbientGlow')?.classList.remove('bright');
   });
@@ -2760,11 +2769,6 @@ function olShowResult(data){
     const recThumb = recVid ? 'https://img.youtube.com/vi/'+recVid+'/mqdefault.jpg' : '';
     const recMemberDisplay = olGetMemberDisplay(received.member);
     const recColor = getMemberColor(received.member);
-    const timeAgo = olFormatTimeAgo(received.time_ago_seconds);
-
-    const introSub = isFallback
-      ? 'No bottles in the sea yet — here\'s a recommendation'
-      : 'From an observer ' + (timeAgo || 'moments') + ' ago';
 
     receivedHtml = '<div class="ol-exchange-card">'
       + '<div class="ol-card-label received">RECEIVED RECORD</div>'
@@ -2780,16 +2784,22 @@ function olShowResult(data){
 
     // Set document title
     document.title = '#ObserverLink で ' + recMemberDisplay + ' - ' + (received.title||'') + ' を受け取りました！';
-
-    document.getElementById('olResultBody').innerHTML =
-      '<div class="ol-result-intro"><div class="ol-result-intro-title">Link established</div><div class="ol-result-intro-sub">'+esc(introSub)+'</div></div>'
-      + '<div class="ol-exchange-card"><div class="ol-card-label yours">YOUR RECORD</div><div class="ol-card-content"><img class="ol-card-thumb" src="'+esc(sentThumb)+'" alt=""><div class="ol-card-info"><div class="ol-card-member" style="color:'+sentColor+'">'+esc(sentMemberDisplay)+'</div><div class="ol-card-title">'+esc(sent.title)+'</div><div class="ol-card-meta">'+esc(sent.date||'')+'</div></div></div>'
-      + (sent.mood_tags && sent.mood_tags.length ? '<div class="ol-card-tags">'+sent.mood_tags.map(m=>'<span class="ol-card-tag">'+esc(m)+'</span>').join('')+'</div>' : '')
-      + (sent.message ? '<div class="ol-card-msg">'+esc(sent.message)+'</div>' : '')
-      + '</div>'
-      + receivedHtml
-      + '<div class="ol-result-actions"><button class="ol-btn-again" onclick="olResetCompose()">SEND ANOTHER</button><button class="ol-btn-share" onclick="olShareResult()">SHARE</button></div>';
   }
+
+  const introSub = !received ? 'Something went wrong — try again'
+    : isFallback ? 'No bottles in the sea yet — here\'s a recommendation'
+    : 'From an observer ' + (olFormatTimeAgo(received.time_ago_seconds) || 'moments') + ' ago';
+
+  document.getElementById('olResultBody').innerHTML =
+    '<div class="ol-result-intro"><div class="ol-result-intro-title">Link established</div><div class="ol-result-intro-sub">'+esc(introSub)+'</div></div>'
+    + '<div class="ol-exchange-card"><div class="ol-card-label yours">YOUR RECORD</div><div class="ol-card-content"><img class="ol-card-thumb" src="'+esc(sentThumb)+'" alt=""><div class="ol-card-info"><div class="ol-card-member" style="color:'+sentColor+'">'+esc(sentMemberDisplay)+'</div><div class="ol-card-title">'+esc(sent.title)+'</div><div class="ol-card-meta">'+esc(sent.date||'')+'</div></div></div>'
+    + (sent.mood_tags && sent.mood_tags.length ? '<div class="ol-card-tags">'+sent.mood_tags.map(m=>'<span class="ol-card-tag">'+esc(m)+'</span>').join('')+'</div>' : '')
+    + (sent.message ? '<div class="ol-card-msg">'+esc(sent.message)+'</div>' : '')
+    + '</div>'
+    + receivedHtml
+    + '<div class="ol-result-actions"><button class="ol-btn-again" onclick="olResetCompose()">SEND ANOTHER</button>'
+    + (received ? '<button class="ol-btn-share" onclick="olShareResult()">SHARE</button>' : '')
+    + '</div>';
 
   olShowScreen('olResultScreen');
 }
