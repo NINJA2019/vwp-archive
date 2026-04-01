@@ -232,7 +232,7 @@
       <span data-i18n="sort">並び順:</span>
       <button class="sbtn on" id="sNew" data-i18n="newest">新しい順</button>
       <button class="sbtn" id="sOld" data-i18n="oldest">古い順</button>
-      <button class="sbtn" id="sDaily">✦ 今日の観測</button>
+      <button class="sbtn ol-sort-btn" id="sDaily" onclick="if(typeof openObserverLink==='function'){openObserverLink();return;}">✦ Observer-Link</button>
       <span class="rcnt" id="rcnt"></span>
     </div>
     <div id="albumHeader" style="display:none;align-items:center;gap:1rem;padding:.8rem 1rem;margin-bottom:.8rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;"></div>
@@ -571,7 +571,7 @@
         <div class="ol-song-select" id="olSongSelect">
           <div class="ol-song-placeholder" id="olSongPlaceholder">
             <div class="ol-song-placeholder-icon">♫</div>
-            <div>Choose a V.W.P song to send</div>
+            <div>Choose song to send</div>
           </div>
           <div class="ol-song-selected" id="olSongSelected" style="display:none">
             <img class="ol-song-thumb" id="olSelThumb" src="" alt="">

@@ -884,6 +884,17 @@ body.light .shelf-empty { color: var(--dim); }
 /* PC header Observer-Link nav button */
 .observer-link-nav-btn{
   font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.68rem;
-  letter-spacing:.1em;text-decoration:none;transition:color .2s
+  letter-spacing:.1em;text-decoration:none;
+  animation:olPulseGlow 2.4s ease-in-out infinite
 }
-.observer-link-nav-btn:hover{color:#d4c8ff!important}
+.observer-link-nav-btn:hover{color:#d4c8ff!important;animation:none}
+@keyframes olPulseGlow{
+  0%,100%{color:#c4b5fd;text-shadow:0 0 4px rgba(196,181,253,.15)}
+  50%{color:#a8b4ff;text-shadow:0 0 10px rgba(168,180,255,.4),0 0 20px rgba(168,180,255,.15)}
+}
+/* Sort bar Observer-Link button */
+.ol-sort-btn{
+  color:#c4b5fd!important;
+  animation:olPulseGlow 2.4s ease-in-out infinite
+}
+.ol-sort-btn:hover{animation:none;color:#d4c8ff!important}
