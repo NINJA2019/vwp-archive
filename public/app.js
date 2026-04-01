@@ -2886,8 +2886,14 @@ function olShowResult(data){
     : isFallback ? 'No bottles in the sea yet — here\'s a recommendation'
     : 'From an observer ' + (olFormatTimeAgo(received.time_ago_seconds) || 'moments') + ' ago';
 
+  var checkHtml = (received && !isFallback)
+    ? '<div class="ol-check-wrap"><div class="ol-check-ring"><div class="ol-check-circle"><svg class="ol-check-svg" viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div></div></div>'
+    : '';
+  var introTitle = (received && !isFallback) ? 'Link established' : 'Observer-Link';
+
   document.getElementById('olResultBody').innerHTML =
-    '<div class="ol-result-intro"><div class="ol-result-intro-title">Link established</div><div class="ol-result-intro-sub">'+esc(introSub)+'</div></div>'
+    checkHtml
+    + '<div class="ol-result-intro"><div class="ol-result-intro-title">'+esc(introTitle)+'</div><div class="ol-result-intro-sub">'+esc(introSub)+'</div></div>'
     + '<div class="ol-exchange-card"><div class="ol-card-label yours">YOUR RECORD</div><div class="ol-card-content"><img class="ol-card-thumb" src="'+esc(sentThumb)+'" alt=""><div class="ol-card-info"><div class="ol-card-member" style="color:'+sentColor+'">'+esc(sentMemberDisplay)+'</div><div class="ol-card-title">'+esc(sent.title)+'</div><div class="ol-card-meta">'+esc(sent.date||'')+'</div></div></div>'
     + (sent.mood_tags && sent.mood_tags.length ? '<div class="ol-card-tags">'+sent.mood_tags.map(m=>'<span class="ol-card-tag">'+esc(m)+'</span>').join('')+'</div>' : '')
     + (sent.message ? '<div class="ol-card-msg">'+esc(sent.message)+'</div>' : '')
