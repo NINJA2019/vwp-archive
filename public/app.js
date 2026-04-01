@@ -148,7 +148,7 @@ const _pmCache=new WeakMap();
 function parseMembers(v){let c=_pmCache.get(v);if(c)return c;c=(v.member||'').split(/[ ,]+/).filter(Boolean);_pmCache.set(v,c);return c;}
 function tTag(tag){ return (I18N[lang].tagMap||{})[tag] || tag; }
 // XSS対策: HTML文字列エスケープ（DOM不使用の高速版）
-function esc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 // XSS対策: href/onclickに使うURLをhttps?://のみ許可
 function safeUrl(url){ if(!url) return '#'; return /^https?:\/\//i.test(url) ? url : '#'; }
 function tagPills(v){return parseTags(v).map(tag=>`<span class="pill">#${esc(tTag(tag))}</span>`).join('');}
@@ -1552,7 +1552,17 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
 
     // Buttons
     mwEnter.addEventListener('click', () => mwTransition(MW_MEMBERS[mwIdx]));
-    mwDaily.addEventListener('click', () => mwTransition({id:'all', label:"TODAY'S OBSERVATION", color:'#b0b8ff'}));
+    mwDaily.addEventListener('click', () => {
+      _gtag('event','mob_observer_link_open',{member_name: MW_MEMBERS[mwIdx]?.id || 'all'});
+      mwTransTxt.textContent = 'OBSERVER-LINK';
+      mwTransTxt.style.color = '#c4b5fd';
+      mwTrans.classList.add('active');
+      setTimeout(() => {
+        mwTrans.classList.remove('active');
+        mobWelcome.style.display = 'none';
+        if(typeof openObserverLink === 'function') openObserverLink();
+      }, 800);
+    });
 
     function mwTransition(m){
       mwTransTxt.textContent = m.label;
@@ -1564,7 +1574,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
         mobWelcome.style.display = 'none';
         // Launch card view
         mcSelectedMember = m.id;
-        mcIsDaily = (m.id === 'all' && m.label === "TODAY'S OBSERVATION");
+        mcIsDaily = false;
         mcInit();
       }, 800);
     }
@@ -2271,6 +2281,7 @@ function shelfPlaySong(song){
 // --- Overlay open/close ---
 window.openShelf = function(){
   buildShelfUI();
+  buildReceivedShelfUI();
   updateShelfI18n();
   const overlay = document.getElementById('my-shelf-overlay');
   if(!overlay) return;
@@ -2350,6 +2361,75 @@ document.querySelector('.dp-btn-close')?.addEventListener('click', shelfClosePan
 // Init nav count on load
 updateShelfNavCnt();
 
+// === RECEIVED RECORDS (Observer-Link) ===
+function getReceivedRecords(){
+  try{ return JSON.parse(localStorage.getItem('vwp_received') || '[]'); }catch{ return []; }
+}
+
+function buildReceivedShelfUI(){
+  const container = document.getElementById('shelf-rcv-rows-container');
+  const header = document.getElementById('shelf-rcv-header');
+  const emptyEl = document.getElementById('shelf-rcv-empty');
+  if(!container) return;
+  container.innerHTML = '';
+
+  const receivedIds = getReceivedRecords();
+  const rcvSongs = receivedIds.map(id => videos.find(v => v.id === id)).filter(Boolean);
+
+  if(rcvSongs.length === 0){
+    if(header) header.style.display = 'none';
+    if(emptyEl) emptyEl.style.display = '';
+    return;
+  }
+
+  if(header) header.style.display = '';
+  if(emptyEl) emptyEl.style.display = 'none';
+  _gtag('event','shelf_rcv_open',{received_count: rcvSongs.length});
+
+  var ROW_SIZE = 5;
+  var rowCount = Math.ceil(rcvSongs.length / ROW_SIZE);
+  var tilts = [0.5, -1, 0.8, -0.6, 1.2, -0.4, 0.9, -1.1, 0.3, -0.7];
+
+  for(var ri = 0; ri < rowCount; ri++){
+    var start = ri * ROW_SIZE;
+    var rowSongs = rcvSongs.slice(start, start + ROW_SIZE);
+
+    var block = document.createElement('div');
+    block.className = 'shelf-block';
+
+    var row = document.createElement('div');
+    row.className = 'shelf-row';
+    row.innerHTML = rowSongs.map(function(s, i){
+      var idx = start + i;
+      var tilt = tilts[idx % tilts.length] || 0;
+      var vid = ytId(s.url);
+      var thumb = vid ? 'url(https://img.youtube.com/vi/'+vid+'/mqdefault.jpg)' : 'none';
+      return '<div class="sj shelf-rcv-jk" data-rcv-idx="'+idx+'"'+
+        ' style="background-image:'+thumb+';background-size:cover;background-position:center;transform:rotate('+tilt+'deg);"'+
+        ' onclick="shelfRcvTap('+idx+')"></div>';
+    }).join('');
+
+    var board = document.createElement('div');
+    board.className = 'wood-board-wrap';
+    board.innerHTML = '<div class="wood-board wood-board-dark"></div><div class="wood-shadow"></div>';
+
+    block.appendChild(row);
+    block.appendChild(board);
+    container.appendChild(block);
+  }
+
+  // Store for tap handler
+  window._rcvSongs = rcvSongs;
+}
+
+window.shelfRcvTap = function(idx){
+  var s = window._rcvSongs && window._rcvSongs[idx];
+  if(!s) return;
+  _gtag('event','shelf_rcv_tap',{video_id: String(s.id), member_name: s.member});
+  _gtag('event','shelf_rcv_play',{video_id: String(s.id), member_name: s.member});
+  window.open(safeUrl(s.url), '_blank', 'noopener,noreferrer');
+};
+
 // Expose for mobile card view
 window.getMemberColor = getMemberColor;
 window.drawVinylDisc = drawVinylDisc;
@@ -2357,4 +2437,516 @@ window.addToShelf = addToShelf;
 window.removeFromShelf = removeFromShelf;
 window.isOnShelf = isOnShelf;
 window.getShelf = getShelf;
+
+// =============================================
+// OBSERVER-LINK
+// =============================================
+const OL_MOODS = ['Morning', 'Night', 'Rain', 'Walk', 'Work', 'Chill'];
+const OL_DAILY_LIMIT = 10;
+const OL_RECEIVED_KEY = 'vwp_received';
+const OL_MEMBER_DISPLAY = {kafu:'KAF',rime:'RIM',harusar:'HARU',isekai:'JOUCHO',koko:'KOKO',vwp:'V.W.P'};
+const OL_TAG_MAP = {Single:'#シングル',Duet:'#デュエット',Trio:'#トリオ',Cover:'#Covered'};
+const OL_TAG_LABELS = ['Single','Duet','Trio','Cover'];
+
+let olSelectedSong = null;
+let olSelectedMoods = [];
+let olDailyUsed = 0;
+let olPickerTab = 'shelf';
+let olPickerMember = null; // for ALL tab drill-down
+let olPickerSelectedTags = []; // for ALL tab tag filter
+let olLastExchangeId = null;
+let olLastReceived = null;
+
+function olInit(){
+  // Mood tags
+  const mc = document.getElementById('olMoodTags');
+  if(!mc) return;
+  OL_MOODS.forEach(m => {
+    const el = document.createElement('button');
+    el.className = 'ol-mood-tag';
+    el.textContent = m;
+    el.onclick = () => olToggleMood(el, m);
+    mc.appendChild(el);
+  });
+
+  // Message counter
+  const msgInput = document.getElementById('olMsgInput');
+  if(msgInput) msgInput.addEventListener('input', e => {
+    document.getElementById('olMsgCount').textContent = e.target.value.length + '/20';
+  });
+
+  // Song select → open picker
+  const sel = document.getElementById('olSongSelect');
+  if(sel) sel.addEventListener('click', () => olOpenPicker());
+
+  // Send button
+  const sendBtn = document.getElementById('olSendBtn');
+  if(sendBtn) sendBtn.addEventListener('click', olSendRecord);
+
+  // Close buttons
+  document.getElementById('olCloseBtn')?.addEventListener('click', olClose);
+  document.getElementById('olResultCloseBtn')?.addEventListener('click', olClose);
+
+  // Picker overlay close
+  const overlay = document.getElementById('olPickerOverlay');
+  if(overlay) overlay.addEventListener('click', e => { if(e.target === overlay) olClosePicker(); });
+
+  // Picker tabs
+  document.querySelectorAll('.ol-picker-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      if(tab.disabled) return;
+      olPickerTab = tab.dataset.tab;
+      olPickerMember = null;
+      olPickerSelectedTags = [];
+      document.querySelectorAll('.ol-picker-tab').forEach(t => t.classList.remove('ol-picker-tab-active'));
+      tab.classList.add('ol-picker-tab-active');
+      _gtag('event','ol_picker_tab',{tab: olPickerTab});
+      olBuildPickerContent();
+    });
+  });
+
+  // Check for result deep-link
+  const params = new URLSearchParams(location.search);
+  const olResult = params.get('ol_result');
+  if(olResult) {
+    // Remove param from URL
+    const cleanUrl = location.pathname + location.search.replace(/[?&]ol_result=[^&]+/, '').replace(/^\?$/, '').replace(/^&/, '?');
+    history.replaceState(null, '', cleanUrl || location.pathname);
+    olOpenFromResult(olResult);
+  }
+}
+
+function olOpenFromResult(exchangeId){
+  // Open Observer-Link and show result from a shared link
+  olOpen();
+  olShowScreen('olResultScreen');
+  const body = document.getElementById('olResultBody');
+  // We can't re-fetch the exchange data, so show a message directing to try it
+  if(body) body.innerHTML = `
+    <div class="ol-result-intro">
+      <div class="ol-result-intro-title">Observer-Link</div>
+      <div class="ol-result-intro-sub">This exchange result was shared with you. Try sending your own record!</div>
+    </div>
+    <div class="ol-result-actions">
+      <button class="ol-btn-again" onclick="olResetCompose()">SEND A RECORD</button>
+    </div>`;
+}
+
+function olOpen(){
+  const screen = document.getElementById('observer-link-screen');
+  if(!screen) return;
+  screen.style.display = '';
+  screen.classList.add('ol-open');
+  document.body.style.overflow = 'hidden';
+  olLastExchangeId = null;
+  olLastReceived = null;
+  olShowScreen('olComposeScreen');
+  // Check shelf tab availability
+  const shelfIds = getShelf();
+  const shelfTab = document.querySelector('.ol-picker-tab[data-tab="shelf"]');
+  const allTab = document.querySelector('.ol-picker-tab[data-tab="all"]');
+  if(shelfIds.length === 0 && shelfTab){
+    shelfTab.disabled = true;
+    shelfTab.classList.remove('ol-picker-tab-active');
+    if(allTab){ allTab.classList.add('ol-picker-tab-active'); olPickerTab = 'all'; }
+  } else if(shelfTab){
+    shelfTab.disabled = false;
+    olPickerTab = 'shelf';
+    shelfTab.classList.add('ol-picker-tab-active');
+    if(allTab) allTab.classList.remove('ol-picker-tab-active');
+  }
+}
+window.openObserverLink = olOpen;
+
+function olClose(){
+  const screen = document.getElementById('observer-link-screen');
+  if(screen){ screen.style.display = 'none'; screen.classList.remove('ol-open'); }
+  document.body.style.overflow = '';
+}
+
+function olShowScreen(id){
+  document.querySelectorAll('#observer-link-screen .ol-screen').forEach(s => {
+    if(s.id === id){ s.classList.remove('ol-hidden'); s.style.display = ''; }
+    else { s.classList.add('ol-hidden'); }
+  });
+}
+
+function olToggleMood(el, mood){
+  if(olSelectedMoods.includes(mood)){
+    olSelectedMoods = olSelectedMoods.filter(m => m !== mood);
+    el.classList.remove('selected');
+  } else {
+    if(olSelectedMoods.length >= 2){ olShowToast('Up to 2 mood tags'); return; }
+    olSelectedMoods.push(mood);
+    el.classList.add('selected');
+  }
+}
+
+function olUpdateSendBtn(){
+  const btn = document.getElementById('olSendBtn');
+  if(btn) btn.disabled = !olSelectedSong || olDailyUsed >= OL_DAILY_LIMIT;
+}
+
+function olSelectSong(song){
+  olSelectedSong = song;
+  document.getElementById('olSongPlaceholder').style.display = 'none';
+  const selEl = document.getElementById('olSongSelected');
+  selEl.style.display = 'flex';
+  const vid = ytId(song.url);
+  document.getElementById('olSelThumb').src = vid ? 'https://img.youtube.com/vi/'+vid+'/mqdefault.jpg' : '';
+  const memberIds = parseMembers(song);
+  const memberDisplay = memberIds.map(m => OL_MEMBER_DISPLAY[m] || m).join(', ');
+  const memberColor = getMemberColor(song.member);
+  document.getElementById('olSelMember').textContent = memberDisplay;
+  document.getElementById('olSelMember').style.color = memberColor;
+  document.getElementById('olSelTitle').textContent = song.title || '';
+  document.getElementById('olSelDate').textContent = song.date || '';
+  document.getElementById('olSongSelect').classList.add('has-song');
+  olClosePicker();
+  olUpdateSendBtn();
+}
+
+// === PICKER ===
+function olOpenPicker(){
+  olPickerMember = null;
+  olPickerSelectedTags = [];
+  olBuildPickerContent();
+  document.getElementById('olPickerOverlay').classList.add('open');
+}
+
+function olClosePicker(){
+  document.getElementById('olPickerOverlay').classList.remove('open');
+}
+
+function olBuildPickerContent(){
+  const list = document.getElementById('olPickerList');
+  if(!list) return;
+  list.innerHTML = '';
+
+  if(olPickerTab === 'shelf'){
+    olBuildShelfPicker(list);
+  } else {
+    olBuildAllPicker(list);
+  }
+}
+
+function olBuildShelfPicker(container){
+  const shelfIds = getShelf();
+  const songs = shelfIds.map(id => videos.find(v => v.id === id)).filter(Boolean);
+  if(songs.length === 0){
+    container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:rgba(232,236,248,.35);font-size:13px;">No songs on your shelf yet</div>';
+    return;
+  }
+  songs.forEach(s => container.appendChild(olCreatePickerItem(s)));
+}
+
+function olBuildAllPicker(container){
+  // Drill-down: member → tags → songs
+  if(!olPickerMember){
+    // Step 1: Member selection
+    const members = [
+      {id:'vwp',label:'V.W.P',color:'#c4b5fd'},
+      {id:'kafu',label:'KAF',color:'#ffb7c5'},
+      {id:'rime',label:'RIM',color:'#7eb8f7'},
+      {id:'harusar',label:'HARU',color:'#ff7070'},
+      {id:'isekai',label:'JOUCHO',color:'#d8d8d8'},
+      {id:'koko',label:'KOKO',color:'#c084fc'},
+    ];
+    const grid = document.createElement('div');
+    grid.className = 'ol-picker-members';
+    members.forEach(m => {
+      const chip = document.createElement('button');
+      chip.className = 'ol-picker-member-chip';
+      chip.textContent = m.label;
+      chip.style.color = m.color;
+      chip.style.borderColor = m.color.replace(')', ',.25)').replace('rgb','rgba').replace('#','');
+      chip.style.borderColor = 'rgba(255,255,255,.08)';
+      chip.addEventListener('click', () => {
+        olPickerMember = m.id;
+        olPickerSelectedTags = [];
+        olBuildPickerContent();
+      });
+      grid.appendChild(chip);
+    });
+    container.appendChild(grid);
+    return;
+  }
+
+  // Step 2: Tag filter + song list
+  const backBtn = document.createElement('button');
+  backBtn.className = 'ol-picker-back-btn';
+  backBtn.innerHTML = '← All members';
+  backBtn.addEventListener('click', () => {
+    olPickerMember = null;
+    olPickerSelectedTags = [];
+    olBuildPickerContent();
+  });
+  container.appendChild(backBtn);
+
+  // Tag chips
+  const tagWrap = document.createElement('div');
+  tagWrap.className = 'ol-picker-tag-chips';
+  OL_TAG_LABELS.forEach(label => {
+    const chip = document.createElement('button');
+    chip.className = 'ol-picker-tag-chip' + (olPickerSelectedTags.includes(label) ? ' selected' : '');
+    chip.textContent = label;
+    chip.addEventListener('click', () => {
+      if(olPickerSelectedTags.includes(label)){
+        olPickerSelectedTags = olPickerSelectedTags.filter(t => t !== label);
+      } else {
+        olPickerSelectedTags.push(label);
+      }
+      olBuildPickerContent();
+    });
+    tagWrap.appendChild(chip);
+  });
+  container.appendChild(tagWrap);
+
+  // Filter songs
+  let filtered = videos.filter(v => v.member && v.member.includes(olPickerMember));
+  if(olPickerSelectedTags.length > 0){
+    filtered = filtered.filter(v => {
+      const tags = v.tags || v.tag || '';
+      return olPickerSelectedTags.some(t => tags.includes(OL_TAG_MAP[t]));
+    });
+  }
+  // Sort by date desc
+  filtered.sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+  if(filtered.length === 0){
+    const empty = document.createElement('div');
+    empty.style.cssText = 'text-align:center;padding:30px 20px;color:rgba(232,236,248,.35);font-size:13px;';
+    empty.textContent = 'No songs found';
+    container.appendChild(empty);
+    return;
+  }
+
+  filtered.forEach(s => container.appendChild(olCreatePickerItem(s)));
+}
+
+function olCreatePickerItem(song){
+  const el = document.createElement('div');
+  el.className = 'ol-picker-item';
+  const vid = ytId(song.url);
+  const thumb = vid ? 'https://img.youtube.com/vi/'+vid+'/mqdefault.jpg' : '';
+  const memberIds = parseMembers(song);
+  const memberDisplay = memberIds.map(m => OL_MEMBER_DISPLAY[m] || m).join(', ');
+  const color = getMemberColor(song.member);
+  el.innerHTML = '<img class="ol-picker-item-thumb" src="'+esc(thumb)+'" alt="" loading="lazy"><div class="ol-picker-item-info"><div class="ol-picker-item-member" style="color:'+color+'">'+esc(memberDisplay)+'</div><div class="ol-picker-item-title">'+esc(song.title)+'</div></div>';
+  el.addEventListener('click', () => olSelectSong(song));
+  return el;
+}
+
+// === SEND ===
+let olSending = false;
+function olSendRecord(){
+  if(!olSelectedSong || olSending) return;
+  olSending = true;
+  document.getElementById('olSendBtn').disabled = true;
+  const msg = document.getElementById('olMsgInput')?.value.trim() || '';
+
+  _gtag('event','ol_send_record',{
+    video_id: String(olSelectedSong.id),
+    member_name: olSelectedSong.member,
+    mood_tags: olSelectedMoods.join(','),
+    has_message: msg ? 'true' : 'false',
+  });
+
+  olShowScreen('olSendingScreen');
+  // Reset disc animation
+  const disc = document.getElementById('olSendingDisc');
+  if(disc){ disc.classList.remove('fly'); void disc.offsetWidth; disc.classList.add('fly'); }
+  document.getElementById('olAmbientGlow')?.classList.add('bright');
+
+  // API call
+  fetch('/.netlify/functions/observer-link-exchange', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      video_id: olSelectedSong.id,
+      mood_tags: olSelectedMoods,
+      message: msg || undefined,
+    }),
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(!data.success){
+      const errMsg = data.error === 'RATE_LIMIT_EXCEEDED' ? 'Daily limit reached (10/day)'
+        : data.error === 'INVALID_VIDEO_ID' ? 'Invalid song'
+        : 'Something went wrong';
+      olShowToast(errMsg);
+      olSending = false;
+      olUpdateSendBtn();
+      olShowScreen('olComposeScreen');
+      document.getElementById('olAmbientGlow')?.classList.remove('bright');
+      return;
+    }
+    olDailyUsed = data.daily_used || (olDailyUsed + 1);
+    document.getElementById('olUsedCount').textContent = olDailyUsed;
+    document.getElementById('olDailyBadge').textContent = olDailyUsed + ' / ' + OL_DAILY_LIMIT;
+    olUpdateSendBtn();
+    olLastExchangeId = data.exchange_id;
+    olLastReceived = data.received;
+
+    // Save received to localStorage
+    if(data.received && !data.is_fallback){
+      olSaveReceivedRecord(data.received.video_id);
+    }
+
+    // GA4
+    if(data.is_fallback){
+      _gtag('event','ol_match_fallback',{sent_video_id:String(olSelectedSong.id),received_video_id:data.received?String(data.received.video_id):''});
+    } else {
+      _gtag('event','ol_match_success',{sent_video_id:String(olSelectedSong.id),received_video_id:data.received?String(data.received.video_id):'',time_ago_seconds:data.received?.time_ago_seconds||0});
+    }
+
+    // Wait for animation, then show result
+    setTimeout(() => {
+      olSending = false;
+      olUpdateSendBtn();
+      olShowResult(data);
+      document.getElementById('olAmbientGlow')?.classList.remove('bright');
+    }, Math.max(0, 2800 - 1000)); // animation is 3s, API takes ~1s
+  })
+  .catch(() => {
+    olShowToast('Network error — please try again');
+    olSending = false;
+    olUpdateSendBtn();
+    olShowScreen('olComposeScreen');
+    document.getElementById('olAmbientGlow')?.classList.remove('bright');
+  });
+}
+
+function olFormatTimeAgo(seconds){
+  if(seconds == null) return null;
+  if(seconds < 60) return seconds + ' seconds';
+  if(seconds < 3600) return Math.floor(seconds / 60) + ' minutes';
+  if(seconds < 86400) return Math.floor(seconds / 3600) + ' hours';
+  return Math.floor(seconds / 86400) + ' days';
+}
+
+function olGetMemberDisplay(memberStr){
+  if(!memberStr) return 'Observer';
+  for(const [id, name] of Object.entries(OL_MEMBER_DISPLAY)){
+    if(memberStr.includes(id)) return name;
+  }
+  return memberStr;
+}
+
+function olShowResult(data){
+  const sent = data.sent;
+  const received = data.received;
+  const isFallback = data.is_fallback;
+
+  const sentVid = ytId(sent.url || '');
+  const sentThumb = sentVid ? 'https://img.youtube.com/vi/'+sentVid+'/mqdefault.jpg' : '';
+  const sentMemberDisplay = olGetMemberDisplay(sent.member);
+  const sentColor = getMemberColor(sent.member);
+
+  let receivedHtml = '';
+  if(received){
+    const recVid = ytId(received.url || '');
+    const recThumb = recVid ? 'https://img.youtube.com/vi/'+recVid+'/mqdefault.jpg' : '';
+    const recMemberDisplay = olGetMemberDisplay(received.member);
+    const recColor = getMemberColor(received.member);
+
+    receivedHtml = '<div class="ol-exchange-card">'
+      + '<div class="ol-card-label received">RECEIVED RECORD</div>'
+      + '<div class="ol-card-content">'
+      + '<img class="ol-card-thumb" src="'+esc(recThumb)+'" alt="">'
+      + '<div class="ol-card-info"><div class="ol-card-member" style="color:'+recColor+'">'+esc(recMemberDisplay)+'</div>'
+      + '<div class="ol-card-title">'+esc(received.title)+'</div>'
+      + '<div class="ol-card-meta">'+esc(received.date||'')+'</div></div></div>'
+      + (received.mood_tags && received.mood_tags.length ? '<div class="ol-card-tags">'+received.mood_tags.map(m=>'<span class="ol-card-tag">'+esc(m)+'</span>').join('')+'</div>' : '')
+      + (received.message ? '<div class="ol-card-msg">'+esc(received.message)+'</div>' : '')
+      + (recVid ? '<button class="ol-card-yt-btn" onclick="olClickYoutube(\''+esc(received.url)+'\',\''+esc(String(received.video_id))+'\',\''+esc(received.member)+'\')">&#9654;&ensp;YOUTUBE</button>' : '')
+      + '</div>';
+
+    // Set document title
+    document.title = '#ObserverLink で ' + recMemberDisplay + ' - ' + (received.title||'') + ' を受け取りました！';
+  }
+
+  const introSub = !received ? 'Something went wrong — try again'
+    : isFallback ? 'No bottles in the sea yet — here\'s a recommendation'
+    : 'From an observer ' + (olFormatTimeAgo(received.time_ago_seconds) || 'moments') + ' ago';
+
+  document.getElementById('olResultBody').innerHTML =
+    '<div class="ol-result-intro"><div class="ol-result-intro-title">Link established</div><div class="ol-result-intro-sub">'+esc(introSub)+'</div></div>'
+    + '<div class="ol-exchange-card"><div class="ol-card-label yours">YOUR RECORD</div><div class="ol-card-content"><img class="ol-card-thumb" src="'+esc(sentThumb)+'" alt=""><div class="ol-card-info"><div class="ol-card-member" style="color:'+sentColor+'">'+esc(sentMemberDisplay)+'</div><div class="ol-card-title">'+esc(sent.title)+'</div><div class="ol-card-meta">'+esc(sent.date||'')+'</div></div></div>'
+    + (sent.mood_tags && sent.mood_tags.length ? '<div class="ol-card-tags">'+sent.mood_tags.map(m=>'<span class="ol-card-tag">'+esc(m)+'</span>').join('')+'</div>' : '')
+    + (sent.message ? '<div class="ol-card-msg">'+esc(sent.message)+'</div>' : '')
+    + '</div>'
+    + receivedHtml
+    + '<div class="ol-result-actions"><button class="ol-btn-again" onclick="olResetCompose()">SEND ANOTHER</button>'
+    + (received ? '<button class="ol-btn-share" onclick="olShareResult()">SHARE</button>' : '')
+    + '</div>';
+
+  olShowScreen('olResultScreen');
+}
+
+window.olClickYoutube = function(url, videoId, member){
+  _gtag('event','ol_youtube_click',{video_id: videoId, member_name: member});
+  window.open(safeUrl(url), '_blank', 'noopener,noreferrer');
+};
+
+function olShareResult(){
+  const received = olLastReceived;
+  if(!received) return;
+  const recMemberDisplay = olGetMemberDisplay(received.member);
+  const resultUrl = location.origin + '/result/?id=' + (olLastExchangeId || '');
+  const text = '#ObserverLink で ' + recMemberDisplay + ' - ' + (received.title||'') + ' を受け取りました！';
+
+  let method = 'clipboard';
+  if(navigator.share){
+    method = 'share_api';
+    navigator.share({title:'Observer-Link', text: text, url: resultUrl}).catch(()=>{});
+  } else {
+    method = 'intent_tweet';
+    const intentUrl = 'https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(resultUrl);
+    window.open(intentUrl, '_blank', 'width=550,height=420');
+  }
+  _gtag('event','ol_share',{method: method});
+}
+
+window.olResetCompose = function(){
+  olSelectedSong = null;
+  olSelectedMoods = [];
+  document.getElementById('olSongPlaceholder').style.display = 'flex';
+  document.getElementById('olSongSelected').style.display = 'none';
+  document.getElementById('olSongSelect').classList.remove('has-song');
+  const msgInput = document.getElementById('olMsgInput');
+  if(msgInput) msgInput.value = '';
+  document.getElementById('olMsgCount').textContent = '0/20';
+  document.querySelectorAll('.ol-mood-tag').forEach(t => t.classList.remove('selected'));
+  olUpdateSendBtn();
+  olShowScreen('olComposeScreen');
+  // Reset title
+  document.title = 'V.W.P ARCHIVE';
+};
+
+function olSaveReceivedRecord(videoId){
+  try {
+    let received = JSON.parse(localStorage.getItem(OL_RECEIVED_KEY) || '[]');
+    received = received.filter(id => id !== videoId);
+    received.unshift(videoId);
+    if(received.length > 10) received = received.slice(0, 10);
+    localStorage.setItem(OL_RECEIVED_KEY, JSON.stringify(received));
+  } catch(e){}
+}
+
+function olShowToast(msg){
+  const t = document.getElementById('olToast');
+  if(!t) return;
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// Init after DOM ready
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', olInit);
+} else {
+  olInit();
+}
+
 })();
