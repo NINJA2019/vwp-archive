@@ -2900,7 +2900,7 @@ window.olClickYoutube = function(url, videoId, member){
   window.open(safeUrl(url), '_blank', 'noopener,noreferrer');
 };
 
-window.olShareResult = function(){
+window.olShareResult = async function(){
   const received = olLastReceived;
   if(!received) return;
   const recMemberDisplay = olGetMemberDisplay(received.member);
@@ -2910,7 +2910,11 @@ window.olShareResult = function(){
   let method = 'clipboard';
   if(navigator.share){
     method = 'share_api';
-    navigator.share({title:'Observer-Link', text: text, url: resultUrl}).catch(()=>{});
+    try {
+      await navigator.share({title:'Observer-Link', text: text, url: resultUrl});
+    } catch(e) {
+      if(e.name === 'AbortError') return;
+    }
   } else {
     method = 'intent_tweet';
     const intentUrl = 'https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(resultUrl);
