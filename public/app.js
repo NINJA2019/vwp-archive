@@ -2538,8 +2538,20 @@ function olOpen(){
   screen.style.display = '';
   screen.classList.add('ol-open');
   document.body.style.overflow = 'hidden';
+  // Reset all compose state
+  olSelectedSong = null;
+  olSelectedMoods = [];
+  olSending = false;
   olLastExchangeId = null;
   olLastReceived = null;
+  document.getElementById('olSongPlaceholder').style.display = 'flex';
+  document.getElementById('olSongSelected').style.display = 'none';
+  document.getElementById('olSongSelect').classList.remove('has-song');
+  const msgInput = document.getElementById('olMsgInput');
+  if(msgInput) msgInput.value = '';
+  document.getElementById('olMsgCount').textContent = '0/20';
+  document.querySelectorAll('.ol-mood-tag').forEach(t => t.classList.remove('selected'));
+  olUpdateSendBtn();
   olShowScreen('olComposeScreen');
   // Check shelf tab availability
   const shelfIds = getShelf();
@@ -2659,7 +2671,6 @@ function olBuildAllPicker(container){
       chip.className = 'ol-picker-member-chip';
       chip.textContent = m.label;
       chip.style.color = m.color;
-      chip.style.borderColor = m.color.replace(')', ',.25)').replace('rgb','rgba').replace('#','');
       chip.style.borderColor = 'rgba(255,255,255,.08)';
       chip.addEventListener('click', () => {
         olPickerMember = m.id;
@@ -2781,7 +2792,7 @@ function olSendRecord(){
       document.getElementById('olAmbientGlow')?.classList.remove('bright');
       return;
     }
-    olDailyUsed = data.daily_used || (olDailyUsed + 1);
+    olDailyUsed = data.daily_used != null ? data.daily_used : (olDailyUsed + 1);
     document.getElementById('olUsedCount').textContent = olDailyUsed;
     document.getElementById('olDailyBadge').textContent = olDailyUsed + ' / ' + OL_DAILY_LIMIT;
     olUpdateSendBtn();
@@ -2889,7 +2900,7 @@ window.olClickYoutube = function(url, videoId, member){
   window.open(safeUrl(url), '_blank', 'noopener,noreferrer');
 };
 
-function olShareResult(){
+window.olShareResult = function(){
   const received = olLastReceived;
   if(!received) return;
   const recMemberDisplay = olGetMemberDisplay(received.member);
@@ -2906,11 +2917,12 @@ function olShareResult(){
     window.open(intentUrl, '_blank', 'width=550,height=420');
   }
   _gtag('event','ol_share',{method: method});
-}
+};
 
 window.olResetCompose = function(){
   olSelectedSong = null;
   olSelectedMoods = [];
+  olSending = false;
   document.getElementById('olSongPlaceholder').style.display = 'flex';
   document.getElementById('olSongSelected').style.display = 'none';
   document.getElementById('olSongSelect').classList.remove('has-song');

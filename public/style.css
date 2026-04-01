@@ -876,6 +876,7 @@ body.light .shelf-empty { color: var(--dim); }
   letter-spacing:2.5px;color:#5dc9a8;text-transform:uppercase;
   padding:20px 0 8px;margin-top:16px;border-top:1px solid rgba(255,255,255,.06)
 }
+.shelf-rcv-area{padding:0 8px}
 #my-shelf-overlay .received-empty{text-align:center;padding:24px 16px;color:rgba(232,236,248,.22);font-size:12px;line-height:1.8}
 .wood-board-dark{
   background:linear-gradient(180deg,#2a2a30 0%,#1a1a22 40%,#121218 100%)!important
