@@ -1552,7 +1552,17 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
 
     // Buttons
     mwEnter.addEventListener('click', () => mwTransition(MW_MEMBERS[mwIdx]));
-    mwDaily.addEventListener('click', () => mwTransition({id:'all', label:"TODAY'S OBSERVATION", color:'#b0b8ff'}));
+    mwDaily.addEventListener('click', () => {
+      _gtag('event','mob_observer_link_open',{member_name: MW_MEMBERS[mwIdx]?.id || 'all'});
+      mwTransTxt.textContent = 'OBSERVER-LINK';
+      mwTransTxt.style.color = '#c4b5fd';
+      mwTrans.classList.add('active');
+      setTimeout(() => {
+        mwTrans.classList.remove('active');
+        mobWelcome.style.display = 'none';
+        if(typeof openObserverLink === 'function') openObserverLink();
+      }, 800);
+    });
 
     function mwTransition(m){
       mwTransTxt.textContent = m.label;
@@ -1564,7 +1574,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
         mobWelcome.style.display = 'none';
         // Launch card view
         mcSelectedMember = m.id;
-        mcIsDaily = (m.id === 'all' && m.label === "TODAY'S OBSERVATION");
+        mcIsDaily = false;
         mcInit();
       }, 800);
     }
@@ -2271,6 +2281,7 @@ function shelfPlaySong(song){
 // --- Overlay open/close ---
 window.openShelf = function(){
   buildShelfUI();
+  buildReceivedShelfUI();
   updateShelfI18n();
   const overlay = document.getElementById('my-shelf-overlay');
   if(!overlay) return;
@@ -2349,6 +2360,75 @@ document.querySelector('.dp-btn-close')?.addEventListener('click', shelfClosePan
 
 // Init nav count on load
 updateShelfNavCnt();
+
+// === RECEIVED RECORDS (Observer-Link) ===
+function getReceivedRecords(){
+  try{ return JSON.parse(localStorage.getItem('vwp_received') || '[]'); }catch{ return []; }
+}
+
+function buildReceivedShelfUI(){
+  const container = document.getElementById('shelf-rcv-rows-container');
+  const header = document.getElementById('shelf-rcv-header');
+  const emptyEl = document.getElementById('shelf-rcv-empty');
+  if(!container) return;
+  container.innerHTML = '';
+
+  const receivedIds = getReceivedRecords();
+  const rcvSongs = receivedIds.map(id => videos.find(v => v.id === id)).filter(Boolean);
+
+  if(rcvSongs.length === 0){
+    if(header) header.style.display = 'none';
+    if(emptyEl) emptyEl.style.display = '';
+    return;
+  }
+
+  if(header) header.style.display = '';
+  if(emptyEl) emptyEl.style.display = 'none';
+  _gtag('event','shelf_rcv_open',{received_count: rcvSongs.length});
+
+  var ROW_SIZE = 5;
+  var rowCount = Math.ceil(rcvSongs.length / ROW_SIZE);
+  var tilts = [0.5, -1, 0.8, -0.6, 1.2, -0.4, 0.9, -1.1, 0.3, -0.7];
+
+  for(var ri = 0; ri < rowCount; ri++){
+    var start = ri * ROW_SIZE;
+    var rowSongs = rcvSongs.slice(start, start + ROW_SIZE);
+
+    var block = document.createElement('div');
+    block.className = 'shelf-block';
+
+    var row = document.createElement('div');
+    row.className = 'shelf-row';
+    row.innerHTML = rowSongs.map(function(s, i){
+      var idx = start + i;
+      var tilt = tilts[idx % tilts.length] || 0;
+      var vid = ytId(s.url);
+      var thumb = vid ? 'url(https://img.youtube.com/vi/'+vid+'/mqdefault.jpg)' : 'none';
+      return '<div class="sj shelf-rcv-jk" data-rcv-idx="'+idx+'"'+
+        ' style="background-image:'+thumb+';background-size:cover;background-position:center;transform:rotate('+tilt+'deg);"'+
+        ' onclick="shelfRcvTap('+idx+')"></div>';
+    }).join('');
+
+    var board = document.createElement('div');
+    board.className = 'wood-board-wrap';
+    board.innerHTML = '<div class="wood-board wood-board-dark"></div><div class="wood-shadow"></div>';
+
+    block.appendChild(row);
+    block.appendChild(board);
+    container.appendChild(block);
+  }
+
+  // Store for tap handler
+  window._rcvSongs = rcvSongs;
+}
+
+window.shelfRcvTap = function(idx){
+  var s = window._rcvSongs && window._rcvSongs[idx];
+  if(!s) return;
+  _gtag('event','shelf_rcv_tap',{video_id: String(s.id), member_name: s.member});
+  _gtag('event','shelf_rcv_play',{video_id: String(s.id), member_name: s.member});
+  window.open(safeUrl(s.url), '_blank', 'noopener,noreferrer');
+};
 
 // Expose for mobile card view
 window.getMemberColor = getMemberColor;
