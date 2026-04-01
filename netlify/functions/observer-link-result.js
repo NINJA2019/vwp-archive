@@ -1,8 +1,13 @@
 exports.handler = async (event) => {
+  const siteUrl = 'https://vwp-archive.netlify.app';
+
+  if (event.httpMethod !== 'GET') {
+    return { statusCode: 405, headers: { 'Content-Type': 'text/plain' }, body: 'Method Not Allowed' };
+  }
+
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
   const sbHeaders = { apikey: key, Authorization: `Bearer ${key}` };
-  const siteUrl = 'https://vwp-archive.netlify.app';
 
   const id = event.queryStringParameters?.id;
 
@@ -75,10 +80,10 @@ exports.handler = async (event) => {
 <meta name="twitter:title" content="${escHtml(ogTitle)}">
 <meta name="twitter:description" content="${escHtml(ogDesc)}">
 <meta name="twitter:image" content="${escHtml(ogImage)}">
-<script>window.location.replace('${siteUrl}/?ol_result=${id}');</script>
+<script>window.location.replace('${siteUrl}/?ol_result=${encodeURIComponent(id)}');</script>
 </head>
 <body>
-<p>Redirecting to <a href="${siteUrl}/?ol_result=${id}">V.W.P ARCHIVE — Observer-Link</a>...</p>
+<p>Redirecting to <a href="${siteUrl}/?ol_result=${escHtml(encodeURIComponent(id))}">V.W.P ARCHIVE — Observer-Link</a>...</p>
 </body>
 </html>`;
 
@@ -123,14 +128,14 @@ a:hover{background:rgba(196,181,253,.1)}
 </body>
 </html>`;
   return {
-    statusCode: 200,
+    statusCode: 404,
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
     body: html,
   };
 }
 
 function escHtml(str) {
-  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 function getMemberDisplay(member) {
