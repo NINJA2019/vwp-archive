@@ -869,3 +869,20 @@ body.light .shelf-empty { color: var(--dim); }
 .ol-toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:#111627;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:10px 20px;font-size:12px;color:rgba(232,236,248,.45);z-index:10100;opacity:0;transition:all .4s cubic-bezier(.4,0,.2,1);white-space:nowrap}
 .ol-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #observer-link-screen ::-webkit-scrollbar{width:0;height:0}
+
+/* === RECEIVED RECORDS shelf === */
+#my-shelf-overlay .shelf-section-header.received{
+  font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;
+  letter-spacing:2.5px;color:#5dc9a8;text-transform:uppercase;
+  padding:20px 0 8px;margin-top:16px;border-top:1px solid rgba(255,255,255,.06)
+}
+#my-shelf-overlay .received-empty{text-align:center;padding:24px 16px;color:rgba(232,236,248,.22);font-size:12px;line-height:1.8}
+.wood-board-dark{
+  background:linear-gradient(180deg,#2a2a30 0%,#1a1a22 40%,#121218 100%)!important
+}
+/* PC header Observer-Link nav button */
+.observer-link-nav-btn{
+  font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:.68rem;
+  letter-spacing:.1em;text-decoration:none;transition:color .2s
+}
+.observer-link-nav-btn:hover{color:#d4c8ff!important}

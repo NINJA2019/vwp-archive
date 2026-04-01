@@ -83,8 +83,8 @@
       <span>PLAY ARCHIVE</span>
       <svg viewBox="0 0 24 24" width="16" height="16"><polygon points="8,5 20,12 8,19" fill="#e8ecf8"/></svg>
     </div>
-    <div class="mw-btn-daily" id="mwDaily" role="button">
-      <span class="mw-star">✦</span> TODAY'S OBSERVATION
+    <div class="mw-btn-daily" id="mwDaily" role="button" style="color:#c4b5fd;">
+      <span class="mw-star">✦</span> OBSERVER-LINK
     </div>
   </div>
   <div class="mw-trans" id="mwTrans">
@@ -197,7 +197,7 @@
       <button class="vbtn" id="vTl">⊢</button>
     </div>
     <div class="search-wrap"><span class="si">🔍</span><input type="text" id="searchInput"></div>
-    <nav class="header-nav"><a href="javascript:void(0)" onclick="openPage('about')">ABOUT</a><a href="javascript:void(0)" onclick="openPage('contact')">CONTACT</a><a href="javascript:void(0)" onclick="openPage('update')">UPDATE</a><a href="javascript:void(0)" id="shelfNavBtn" onclick="openShelf()" class="shelf-nav-btn">MY SHELF <span id="shelfNavCnt" class="shelf-nav-cnt"></span></a></nav>
+    <nav class="header-nav"><a href="javascript:void(0)" onclick="openPage('about')">ABOUT</a><a href="javascript:void(0)" onclick="openPage('contact')">CONTACT</a><a href="javascript:void(0)" onclick="openPage('update')">UPDATE</a><a href="javascript:void(0)" id="shelfNavBtn" onclick="openShelf()" class="shelf-nav-btn">MY SHELF <span id="shelfNavCnt" class="shelf-nav-cnt"></span></a><a href="javascript:void(0)" onclick="openObserverLink()" class="observer-link-nav-btn" style="color:#c4b5fd;">OBSERVER-LINK</a></nav>
     <button class="theme-btn" id="themeBtn" title="ダーク/ライト切替">🌙</button>
     <div class="lang-sw">
       <button class="lbtn on" data-lang="ja">JP</button>
@@ -510,6 +510,15 @@
         </div>
       </div>
       <div class="shelf-empty" id="shelf-empty" style="display:none;"></div>
+      <!-- RECEIVED RECORDS -->
+      <div class="shelf-section-header received" id="shelf-rcv-header" style="display:none;">RECEIVED RECORDS</div>
+      <div class="shelf-area shelf-rcv-area">
+        <div id="shelf-rcv-rows-container"></div>
+      </div>
+      <div class="received-empty" id="shelf-rcv-empty" style="display:none;">
+        <p>No records yet</p>
+        <p>Use Observer-Link to exchange records with other observers</p>
+      </div>
     </div>
   </div>
 </div>
