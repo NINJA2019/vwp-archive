@@ -57,7 +57,11 @@ exports.handler = async (event) => {
       }
     }
 
-    const memberDisplay = getMemberDisplay(receivedVideo?.member || sentVideo?.member || '');
+    // Unmatched bottles should not render a success page
+    if (bottle.status !== 'matched' || !receivedBottle) {
+      return expiredPage(siteUrl);
+    }
+
     const receivedTitle = receivedVideo?.title || sentVideo?.title || 'Observer-Link';
     const ogTitle = `#ObserverLink で「${receivedTitle}」を受け取りました！`;
     const ogDesc = bottle.message || 'Send one record, receive one from another observer';
@@ -75,9 +79,10 @@ exports.handler = async (event) => {
     const recMemberName = getMemberDisplay(receivedVideo?.member || '');
     const recColor = getMemberColor(receivedVideo?.member || '');
 
-    const timeAgoText = bottle.time_ago_seconds != null
-      ? timeAgo(bottle.time_ago_seconds)
-      : (bottle.matched_at ? timeAgoFromDate(bottle.matched_at) : 'some time');
+    // Compute time_ago from the matched bottle's created_at (when the other observer sent it)
+    const timeAgoText = receivedBottle.created_at
+      ? timeAgoFromDate(receivedBottle.created_at)
+      : 'some time';
 
     // Build received card HTML
     let receivedCardHtml = '';
@@ -146,7 +151,7 @@ body{background:#07090e;color:#e8ecf8;font-family:'Noto Sans JP','Barlow Condens
 @keyframes circle-in{from{transform:scale(0)}to{transform:scale(1)}}
 @keyframes check-draw{to{stroke-dashoffset:0}}
 .intro{text-align:center;margin:20px 0}
-.intro-title{font-family:'Shippori Mincho',serif;font-size:18px;font-weight:600;background:linear-gradient(135deg,#e8ecf8,#6c5ce7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.intro-title{font-family:'Shippori Mincho',serif;font-size:18px;font-weight:600;background:linear-gradient(135deg,#e8ecf8,#6c5ce7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:transparent}
 .intro-sub{font-size:12px;color:rgba(232,236,248,.45);margin-top:6px}
 .card{background:#0c0f18;border:1px solid rgba(255,255,255,.10);border-radius:16px;overflow:hidden;margin-bottom:14px}
 .card-label{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;padding:12px 16px 0}
@@ -189,7 +194,7 @@ body{background:#07090e;color:#e8ecf8;font-family:'Noto Sans JP','Barlow Condens
 
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
       body: html,
     };
   } catch (e) {
@@ -216,7 +221,7 @@ body{background:#07090e;color:#e8ecf8;font-family:'Noto Sans JP',sans-serif;disp
 .wrap{max-width:400px}
 .logo{font-family:'Cinzel',serif;font-size:10px;letter-spacing:2.5px;color:rgba(232,236,248,.45);text-transform:uppercase;margin-bottom:24px}
 .logo span{font-size:7px;letter-spacing:1.5px;display:block;margin-top:2px;color:rgba(232,236,248,.22)}
-h1{font-family:'Shippori Mincho',serif;font-size:1.2rem;margin-bottom:1rem;background:linear-gradient(135deg,#e8ecf8,#6c5ce7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+h1{font-family:'Shippori Mincho',serif;font-size:1.2rem;margin-bottom:1rem;background:linear-gradient(135deg,#e8ecf8,#6c5ce7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;color:transparent}
 p{font-size:.9rem;color:rgba(232,236,248,.5);line-height:1.8;margin-bottom:1.5rem}
 a{display:inline-block;padding:.6rem 1.5rem;border:1px solid rgba(196,181,253,.3);border-radius:20px;color:#c4b5fd;text-decoration:none;font-size:.85rem;letter-spacing:.1em;transition:all .3s}
 a:hover{background:rgba(196,181,253,.1)}
