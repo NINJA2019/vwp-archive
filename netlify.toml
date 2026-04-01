@@ -3,9 +3,16 @@
   functions = "netlify/functions"
 
 [[redirects]]
+  from = "/result/"
+  to = "/.netlify/functions/observer-link-result"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/result/*"
   to = "/.netlify/functions/observer-link-result"
   status = 200
+  force = true
   [redirects.query]
     id = ":id"
 
