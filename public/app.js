@@ -2349,6 +2349,11 @@ document.querySelector('.shelf-overlay-backdrop')?.addEventListener('click', clo
 // ESC key
 document.addEventListener('keydown', function(e){
   if(e.key==='Escape'){
+    const shareOv = document.getElementById('olShareOverlay');
+    if(shareOv && shareOv.classList.contains('open')){
+      closeShareDialog();
+      return;
+    }
     const overlay = document.getElementById('my-shelf-overlay');
     if(overlay && overlay.style.display !== 'none'){
       closeShelfOverlay();
@@ -2873,8 +2878,8 @@ function olShowResult(data){
       + (recVid ? '<button class="ol-card-yt-btn" onclick="olClickYoutube(\''+esc(received.url)+'\',\''+esc(String(received.video_id))+'\',\''+esc(received.member)+'\')">&#9654;&ensp;YOUTUBE</button>' : '')
       + '</div>';
 
-    // Set document title
-    document.title = '#ObserverLink で ' + recMemberDisplay + ' - ' + (received.title||'') + ' を受け取りました！';
+    // Set share data and document title
+    olSetShareData(received.title, olLastExchangeId || '');
   }
 
   const introSub = !received ? 'Something went wrong — try again'
@@ -2900,27 +2905,62 @@ window.olClickYoutube = function(url, videoId, member){
   window.open(safeUrl(url), '_blank', 'noopener,noreferrer');
 };
 
-window.olShareResult = async function(){
-  const received = olLastReceived;
-  if(!received) return;
-  const recMemberDisplay = olGetMemberDisplay(received.member);
-  const resultUrl = location.origin + '/result/?id=' + (olLastExchangeId || '');
-  const text = '#ObserverLink で ' + recMemberDisplay + ' - ' + (received.title||'') + ' を受け取りました！';
+/* === OL SHARE (revised) === */
+var olShareData = { text: '', url: '' };
 
-  let method = 'clipboard';
-  if(navigator.share){
-    method = 'share_api';
-    try {
-      await navigator.share({title:'Observer-Link', text: text, url: resultUrl});
-    } catch(e) {
-      if(e.name === 'AbortError') return;
-    }
+function olSetShareData(receivedTitle, exchangeId) {
+  var resultUrl = location.origin + '/result/?id=' + exchangeId;
+  var shareText = '#ObserverLink で「' + (receivedTitle || '曲') + '」を受け取りました！';
+  olShareData = { text: shareText, url: resultUrl };
+  document.title = shareText;
+}
+
+window.olShareResult = function(){
+  if (!olShareData.url) return;
+  var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  if (isMobile && navigator.share) {
+    navigator.share({ title: 'Observer-Link', text: olShareData.text, url: olShareData.url })
+      .then(function() { _gtag('event', 'ol_share', { method: 'share_api' }); })
+      .catch(function(e) { if (e.name !== 'AbortError') openShareDialog(); });
   } else {
-    method = 'intent_tweet';
-    const intentUrl = 'https://twitter.com/intent/tweet?text='+encodeURIComponent(text)+'&url='+encodeURIComponent(resultUrl);
-    window.open(intentUrl, '_blank', 'width=550,height=420');
+    openShareDialog();
   }
-  _gtag('event','ol_share',{method: method});
+};
+
+window.openShareDialog = function() {
+  var ov = document.getElementById('olShareOverlay');
+  if (!ov) return;
+  var xLink = document.getElementById('olShareX');
+  if (xLink) xLink.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(olShareData.text) + '&url=' + encodeURIComponent(olShareData.url);
+  var urlInput = document.getElementById('olShareUrl');
+  if (urlInput) urlInput.value = olShareData.url;
+  ov.classList.add('open');
+  ov.querySelector('.ol-share-backdrop').onclick = closeShareDialog;
+};
+
+window.closeShareDialog = function() {
+  var ov = document.getElementById('olShareOverlay');
+  if (ov) ov.classList.remove('open');
+};
+
+window.olShareToDiscord = function() {
+  navigator.clipboard.writeText(olShareData.text + '\n' + olShareData.url).then(function() {
+    olShowToast('Copied for Discord!');
+    closeShareDialog();
+    _gtag('event', 'ol_share', { method: 'discord' });
+  }).catch(function() { olShowToast('Copy failed'); });
+};
+
+window.olCopyShareUrl = function() {
+  navigator.clipboard.writeText(olShareData.url).then(function() {
+    olShowToast('Link copied!');
+    closeShareDialog();
+    _gtag('event', 'ol_share', { method: 'copy_url' });
+  }).catch(function() { olShowToast('Copy failed'); });
+};
+
+window.olTrackXShare = function() {
+  _gtag('event', 'ol_share', { method: 'x_intent' });
 };
 
 window.olResetCompose = function(){
@@ -2936,8 +2976,9 @@ window.olResetCompose = function(){
   document.querySelectorAll('.ol-mood-tag').forEach(t => t.classList.remove('selected'));
   olUpdateSendBtn();
   olShowScreen('olComposeScreen');
-  // Reset title
+  // Reset title and share data
   document.title = 'V.W.P ARCHIVE';
+  olShareData = { text: '', url: '' };
 };
 
 function olSaveReceivedRecord(videoId){

@@ -898,3 +898,30 @@ body.light .shelf-empty { color: var(--dim); }
   animation:olPulseGlow 2.4s ease-in-out infinite
 }
 .ol-sort-btn:hover{animation:none;color:#d4c8ff!important}
+/* OL Share Dialog */
+.ol-share-overlay{display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center}
+.ol-share-overlay.open{display:flex}
+.ol-share-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px)}
+.ol-share-dialog{position:relative;width:90%;max-width:360px;background:var(--surface,#0c0f18);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.ol-share-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.ol-share-title{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;letter-spacing:1.5px;color:var(--text,#e8ecf8)}
+.ol-share-close{background:none;border:none;color:rgba(232,236,248,.4);font-size:22px;cursor:pointer;padding:4px 8px;line-height:1}
+.ol-share-close:hover{color:var(--text,#e8ecf8)}
+.ol-share-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px}
+.ol-share-item{display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 8px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);color:rgba(232,236,248,.6);font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .2s;text-decoration:none}
+.ol-share-item:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.12);color:var(--text,#e8ecf8)}
+.ol-share-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.ol-share-icon-x{background:rgba(232,236,248,.1);color:var(--text,#e8ecf8)}
+.ol-share-icon-discord{background:rgba(88,101,242,.15);color:#5865F2}
+.ol-share-copy{display:flex;gap:8px;align-items:center}
+.ol-share-url{flex:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px 12px;color:rgba(232,236,248,.5);font-size:12px;font-family:'Barlow Condensed',sans-serif;outline:none}
+.ol-share-copy-btn{padding:10px 18px;border:none;border-radius:10px;background:#6c5ce7;color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:1px;cursor:pointer;transition:background .2s;white-space:nowrap}
+.ol-share-copy-btn:hover{background:#5a4bd6}
+body.light .ol-share-dialog{background:#fff;border-color:rgba(0,0,0,.1)}
+body.light .ol-share-title{color:#0f1428}
+body.light .ol-share-close{color:rgba(15,20,40,.4)}
+body.light .ol-share-close:hover{color:#0f1428}
+body.light .ol-share-item{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.06);color:rgba(15,20,40,.5)}
+body.light .ol-share-item:hover{background:rgba(0,0,0,.06);color:#0f1428}
+body.light .ol-share-icon-x{background:rgba(15,20,40,.08);color:#0f1428}
+body.light .ol-share-url{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.08);color:rgba(15,20,40,.5)}
