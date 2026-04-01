@@ -513,5 +513,125 @@
     </div>
   </div>
 </div>
+
+<!-- ===== OBSERVER-LINK ===== -->
+<div id="observer-link-screen" style="display:none;position:fixed;inset:0;z-index:9996;overflow:hidden;">
+  <div class="ol-app">
+    <div class="ol-ambient-glow" id="olAmbientGlow"></div>
+
+    <!-- COMPOSE -->
+    <div class="ol-screen ol-compose" id="olComposeScreen">
+      <div class="ol-hdr">
+        <div class="ol-hdr-logo">V.W.P ARCHIVE<span>UNOFFICIAL — OBSERVER-LINK</span></div>
+        <div class="ol-hdr-right">
+          <div class="ol-hdr-badge" id="olDailyBadge">0 / 10</div>
+          <button class="ol-close-btn" id="olCloseBtn" aria-label="Close">✕</button>
+        </div>
+      </div>
+      <div class="ol-compose-body">
+        <div class="ol-hero">
+          <svg class="ol-hero-svg" viewBox="0 0 240 110">
+            <rect x="20" y="72" width="64" height="5" rx="1.5" fill="#5a3d2b" opacity=".7"/>
+            <rect x="22" y="75" width="60" height="3" rx="1" fill="#3d2b1f" opacity=".5"/>
+            <rect x="28" y="34" width="3" height="40" rx="1" fill="rgba(196,181,253,.3)"/>
+            <rect x="34" y="30" width="3" height="44" rx="1" fill="rgba(255,183,197,.25)"/>
+            <rect x="40" y="36" width="3" height="38" rx="1" fill="rgba(126,184,247,.25)"/>
+            <rect x="46" y="32" width="3" height="42" rx="1" fill="rgba(255,112,112,.2)"/>
+            <rect x="52" y="38" width="3" height="36" rx="1" fill="rgba(192,132,252,.2)"/>
+            <text x="52" y="92" text-anchor="middle" fill="rgba(232,236,248,.2)" font-family="Barlow Condensed,sans-serif" font-size="8" letter-spacing="1.5">MY SHELF</text>
+            <g class="ol-hero-trail">
+              <circle cx="96" cy="52" r="1.5" fill="#c4b5fd"/>
+              <circle cx="108" cy="44" r="1.5" fill="#c4b5fd"/>
+              <circle cx="120" cy="40" r="1.5" fill="#c4b5fd"/>
+              <circle cx="132" cy="44" r="1.5" fill="#c4b5fd"/>
+              <circle cx="144" cy="52" r="1.5" fill="#c4b5fd"/>
+            </g>
+            <rect x="156" y="72" width="64" height="5" rx="1.5" fill="#5a3d2b" opacity=".4"/>
+            <rect x="158" y="75" width="60" height="3" rx="1" fill="#3d2b1f" opacity=".3"/>
+            <rect x="166" y="40" width="3" height="34" rx="1" fill="rgba(232,236,248,.1)"/>
+            <rect x="172" y="36" width="3" height="38" rx="1" fill="rgba(232,236,248,.08)"/>
+            <rect x="178" y="42" width="3" height="32" rx="1" fill="rgba(232,236,248,.07)"/>
+            <rect x="184" y="38" width="3" height="36" rx="1" fill="rgba(232,236,248,.06)"/>
+            <text x="188" y="92" text-anchor="middle" fill="rgba(232,236,248,.12)" font-family="Barlow Condensed,sans-serif" font-size="8" letter-spacing="1.5">???</text>
+          </svg>
+          <div class="ol-hero-title">Observer-Link</div>
+          <div class="ol-hero-sub">Send one record, receive one from another observer</div>
+        </div>
+
+        <div class="ol-section-label">SELECT A SONG</div>
+        <div class="ol-song-select" id="olSongSelect">
+          <div class="ol-song-placeholder" id="olSongPlaceholder">
+            <div class="ol-song-placeholder-icon">♫</div>
+            <div>Choose a V.W.P song to send</div>
+          </div>
+          <div class="ol-song-selected" id="olSongSelected" style="display:none">
+            <img class="ol-song-thumb" id="olSelThumb" src="" alt="">
+            <div class="ol-song-info">
+              <div class="ol-song-info-member" id="olSelMember"></div>
+              <div class="ol-song-info-title" id="olSelTitle"></div>
+              <div class="ol-song-info-date" id="olSelDate"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ol-section-label">MOOD (OPTIONAL, MAX 2)</div>
+        <div class="ol-mood-tags" id="olMoodTags"></div>
+
+        <div class="ol-section-label">SHORT MESSAGE (OPTIONAL)</div>
+        <div class="ol-msg-wrap">
+          <input class="ol-msg-input" id="olMsgInput" type="text" maxlength="20" placeholder="Add a short note...">
+          <span class="ol-msg-count" id="olMsgCount">0/20</span>
+        </div>
+
+        <button class="ol-send-btn" id="olSendBtn" disabled>SEND RECORD</button>
+        <div class="ol-daily-counter">Today: <em id="olUsedCount">0</em> / 10 exchanges</div>
+      </div>
+    </div>
+
+    <!-- SENDING -->
+    <div class="ol-screen ol-sending-screen ol-hidden" id="olSendingScreen">
+      <div class="ol-sending-content">
+        <div class="ol-sending-disc-wrap">
+          <div class="ol-sending-disc" id="olSendingDisc">
+            <svg viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="56" fill="rgba(20,20,30,.9)" stroke="rgba(196,181,253,.2)" stroke-width="1"/>
+              <circle cx="60" cy="60" r="45" fill="none" stroke="rgba(196,181,253,.05)" stroke-width=".5"/>
+              <circle cx="60" cy="60" r="36" fill="none" stroke="rgba(196,181,253,.04)" stroke-width=".5"/>
+              <circle cx="60" cy="60" r="27" fill="none" stroke="rgba(196,181,253,.04)" stroke-width=".5"/>
+              <circle cx="60" cy="60" r="16" fill="rgba(196,181,253,.12)"/>
+              <circle cx="60" cy="60" r="3.5" fill="rgba(196,181,253,.3)"/>
+            </svg>
+          </div>
+        </div>
+        <div class="ol-sending-text">Delivering your record...</div>
+        <div class="ol-sending-sub">LINKING OBSERVERS</div>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div class="ol-screen ol-result ol-hidden" id="olResultScreen">
+      <div class="ol-hdr">
+        <div class="ol-hdr-logo">V.W.P ARCHIVE<span>UNOFFICIAL — OBSERVER-LINK</span></div>
+        <button class="ol-close-btn" id="olResultCloseBtn" aria-label="Close">✕</button>
+      </div>
+      <div class="ol-result-body" id="olResultBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- OBSERVER-LINK PICKER -->
+<div class="ol-picker-overlay" id="olPickerOverlay">
+  <div class="ol-picker-sheet">
+    <div class="ol-picker-handle"></div>
+    <div class="ol-picker-tabs" id="olPickerTabs">
+      <button class="ol-picker-tab ol-picker-tab-active" data-tab="shelf">MY SHELF</button>
+      <button class="ol-picker-tab" data-tab="all">ALL</button>
+    </div>
+    <div class="ol-picker-content" id="olPickerContent">
+      <div class="ol-picker-list" id="olPickerList"></div>
+    </div>
+  </div>
+</div>
+<div class="ol-toast" id="olToast"></div>
 </body>
 </html>
