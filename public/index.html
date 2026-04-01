@@ -28,8 +28,8 @@
 <link rel="preconnect" href="https://img.youtube.com">
 <link rel="dns-prefetch" href="https://www.googletagmanager.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Shippori+Mincho:wght@400;500&family=Noto+Sans+JP:wght@300;400&family=Barlow+Condensed:wght@400;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/style.css?v=1.6.0">
-<link rel="preload" href="/app.js?v=1.6.0" as="script">
+<link rel="stylesheet" href="/style.css?v=1.6.1">
+<link rel="preload" href="/app.js?v=1.6.1" as="script">
 </head>
 <body>
 
@@ -232,7 +232,7 @@
       <span data-i18n="sort">並び順:</span>
       <button class="sbtn on" id="sNew" data-i18n="newest">新しい順</button>
       <button class="sbtn" id="sOld" data-i18n="oldest">古い順</button>
-      <button class="sbtn" id="sDaily">✦ 今日の観測</button>
+      <button class="sbtn ol-sort-btn" id="sDaily" onclick="if(typeof openObserverLink==='function'){openObserverLink();return;}">✦ Observer-Link</button>
       <span class="rcnt" id="rcnt"></span>
     </div>
     <div id="albumHeader" style="display:none;align-items:center;gap:1rem;padding:.8rem 1rem;margin-bottom:.8rem;background:var(--surface2);border:1px solid var(--border);border-radius:10px;"></div>
@@ -362,7 +362,7 @@
   </div>
 </div>
 
-<script src="/app.js?v=1.6.0" defer></script>
+<script src="/app.js?v=1.6.1" defer></script>
 
 <!-- About / Contact Page Modal -->
 <div id="pageMover" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);overflow-y:auto;">
@@ -571,7 +571,7 @@
         <div class="ol-song-select" id="olSongSelect">
           <div class="ol-song-placeholder" id="olSongPlaceholder">
             <div class="ol-song-placeholder-icon">♫</div>
-            <div>Choose a V.W.P song to send</div>
+            <div>Choose song to send</div>
           </div>
           <div class="ol-song-selected" id="olSongSelected" style="display:none">
             <img class="ol-song-thumb" id="olSelThumb" src="" alt="">
