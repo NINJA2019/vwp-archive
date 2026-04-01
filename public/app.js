@@ -2538,8 +2538,20 @@ function olOpen(){
   screen.style.display = '';
   screen.classList.add('ol-open');
   document.body.style.overflow = 'hidden';
+  // Reset all compose state
+  olSelectedSong = null;
+  olSelectedMoods = [];
+  olSending = false;
   olLastExchangeId = null;
   olLastReceived = null;
+  document.getElementById('olSongPlaceholder').style.display = 'flex';
+  document.getElementById('olSongSelected').style.display = 'none';
+  document.getElementById('olSongSelect').classList.remove('has-song');
+  const msgInput = document.getElementById('olMsgInput');
+  if(msgInput) msgInput.value = '';
+  document.getElementById('olMsgCount').textContent = '0/20';
+  document.querySelectorAll('.ol-mood-tag').forEach(t => t.classList.remove('selected'));
+  olUpdateSendBtn();
   olShowScreen('olComposeScreen');
   // Check shelf tab availability
   const shelfIds = getShelf();
@@ -2659,7 +2671,6 @@ function olBuildAllPicker(container){
       chip.className = 'ol-picker-member-chip';
       chip.textContent = m.label;
       chip.style.color = m.color;
-      chip.style.borderColor = m.color.replace(')', ',.25)').replace('rgb','rgba').replace('#','');
       chip.style.borderColor = 'rgba(255,255,255,.08)';
       chip.addEventListener('click', () => {
         olPickerMember = m.id;
