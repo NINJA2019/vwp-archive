@@ -2895,9 +2895,11 @@ function olSendRecord(){
   document.getElementById('olAmbientGlow')?.classList.add('bright');
 
   // API call
+  const olHeaders = {'Content-Type':'application/json'};
+  if(isAdmin){ const pw = getStoredPw(); if(pw) olHeaders['x-admin-key'] = pw; }
   fetch('/.netlify/functions/observer-link-exchange', {
     method: 'POST',
-    headers: {'Content-Type':'application/json'},
+    headers: olHeaders,
     body: JSON.stringify({
       video_id: olSelectedSong.id,
       mood_tags: olSelectedMoods,
@@ -2919,8 +2921,13 @@ function olSendRecord(){
       return;
     }
     olDailyUsed = data.daily_used != null ? data.daily_used : (olDailyUsed + 1);
-    document.getElementById('olUsedCount').textContent = olDailyUsed;
-    document.getElementById('olDailyBadge').textContent = olDailyUsed + ' / ' + OL_DAILY_LIMIT;
+    if(data.is_admin){
+      document.getElementById('olUsedCount').textContent = '∞';
+      document.getElementById('olDailyBadge').textContent = '∞ admin';
+    } else {
+      document.getElementById('olUsedCount').textContent = olDailyUsed;
+      document.getElementById('olDailyBadge').textContent = olDailyUsed + ' / ' + OL_DAILY_LIMIT;
+    }
     olUpdateSendBtn();
     olLastExchangeId = data.exchange_id;
     olLastReceived = data.received;
