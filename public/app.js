@@ -1251,7 +1251,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
 
   const lpSize = Math.round(110 * scale);
   const R = Math.round(218 * scale), CX = Math.round(280 * scale), CY = Math.round(280 * scale);
-  let busy = false, chosen = null;
+  let busy = false, chosen = null, entering = false;
 
   // LPを配置
   MEMBERS.forEach((mb, i) => {
@@ -1346,7 +1346,8 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
   }
 
   function enterArchive(){
-    if(!chosen) return;
+    if(!chosen || entering) return;
+    entering = true;
 
     // 黒幕を作成してフェードイン → 暗転完了後にアーカイブ表示 → 黒幕フェードアウト
     const black = document.createElement('div');
