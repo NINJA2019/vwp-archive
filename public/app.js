@@ -1,14 +1,14 @@
 const I18N = {
-  ja: { howtoMember:'メンバーで絞り込む', howtoTag:'タグで探す', howtoDaily:'今日の観測でランダムに発見', members:'メンバー', tags:'タグ', sort:'並び順:', newest:'新しい順', oldest:'古い順', addVideo:'動画を追加', fetch:'取得', titleLabel:'タイトル', memberLabel:'メンバー', tagsLabel:'タグ', tagHint:'（#をつけてEnterで追加）', pubdate:'公開日', note:'メモ', cancel:'キャンセル', addBtn:'追加する', adminLogin:'管理者ログイン', loginDesc:'パスワードを入力すると動画の追加・削除ができます。', password:'パスワード', login:'ログイン', notFound:'動画が見つかりません', fetching:'取得中…', fetchOk:'✓ タイトル・公開日・サムネイルを取得しました', delConfirm:'この動画を削除しますか？', adding:'追加中…', searchPh:'タイトルで検索…', spotify:'Spotify', allTag:'すべて', dailyObs:'✦ Observer-Link',
+  ja: { howtoMember:'メンバーで絞り込む', howtoTag:'タグで探す', howtoDaily:'今日の観測でランダムに発見', members:'メンバー', tags:'タグ', sort:'並び順:', newest:'新しい順', oldest:'古い順', dailyPick:'✦今日の観測', addVideo:'動画を追加', fetch:'取得', titleLabel:'タイトル', memberLabel:'メンバー', tagsLabel:'タグ', tagHint:'（#をつけてEnterで追加）', pubdate:'公開日', note:'メモ', cancel:'キャンセル', addBtn:'追加する', adminLogin:'管理者ログイン', loginDesc:'パスワードを入力すると動画の追加・削除ができます。', password:'パスワード', login:'ログイン', notFound:'動画が見つかりません', fetching:'取得中…', fetchOk:'✓ タイトル・公開日・サムネイルを取得しました', delConfirm:'この動画を削除しますか？', adding:'追加中…', searchPh:'タイトルで検索…', spotify:'Spotify', allTag:'すべて', dailyObs:'✦ Observer-Link',
     mbr:{ all:'すべて', kafu:'花譜', rime:'理芽', harusar:'春猿火', isekai:'ヰ世界情緒', koko:'幸祜', vwp:'V.W.P' },
     tagMap:{}, shelfAdd:'棚に追加', shelfRemove:'棚から削除', shelfFull:'棚がいっぱいです（10曲まで）', shelfEmpty:'曲カードの📌ボタンで棚に追加できます', shelfListenYt:'YouTubeで聴く', shelfAdded:'追加しました', shelfRemoved:'削除しました', shelfHint:'— ジャケットをタップして詳細 —', shelfSongs:'曲', shelfClose:'閉じる', shelfPanelClose:'パネルを閉じる' },
-  en: { howtoMember:'Filter by member', howtoTag:'Search by tag', howtoDaily:'Discover randomly with Today\'s Observation', members:'Members', tags:'Tags', sort:'Sort:', newest:'Newest', oldest:'Oldest', addVideo:'Add Video', fetch:'Fetch', titleLabel:'Title', memberLabel:'Member', tagsLabel:'Tags', tagHint:'(type #tag + Enter)', pubdate:'Publish Date', note:'Notes', cancel:'Cancel', addBtn:'Add', adminLogin:'Admin Login', loginDesc:'Enter password to add/delete videos.', password:'Password', login:'Login', notFound:'No videos found', fetching:'Fetching…', fetchOk:'✓ Loaded title, date & thumbnail', delConfirm:'Delete this video?', adding:'Adding…', searchPh:'Search by title…', spotify:'Spotify', allTag:'All', dailyObs:'✦ Observer-Link',
+  en: { howtoMember:'Filter by member', howtoTag:'Search by tag', howtoDaily:'Discover randomly with Today\'s Observation', members:'Members', tags:'Tags', sort:'Sort:', newest:'Newest', oldest:'Oldest', dailyPick:'✦Daily Pick', addVideo:'Add Video', fetch:'Fetch', titleLabel:'Title', memberLabel:'Member', tagsLabel:'Tags', tagHint:'(type #tag + Enter)', pubdate:'Publish Date', note:'Notes', cancel:'Cancel', addBtn:'Add', adminLogin:'Admin Login', loginDesc:'Enter password to add/delete videos.', password:'Password', login:'Login', notFound:'No videos found', fetching:'Fetching…', fetchOk:'✓ Loaded title, date & thumbnail', delConfirm:'Delete this video?', adding:'Adding…', searchPh:'Search by title…', spotify:'Spotify', allTag:'All', dailyObs:'✦ Observer-Link',
     mbr:{ all:'All', kafu:'KAF', rime:'RIM', harusar:'HARUSARUHI', isekai:'ISEKAIJOUCHO', koko:'KOKO', vwp:'V.W.P' },
     tagMap:{ 'シングル':'Single', 'アニメ':'Anime', 'ゲーム':'Game', '映画':'Film', 'クインテット':'Quintet', 'デュエット':'Duet', 'トリオ':'Trio', '拡声曲':'Amplified', '系譜曲':'Lineage', 'Covered':'Covered', 'Remix':'Remix', 'sinka':'sinka', '社外コラボ':'Collab', 'ライブ':'Live', 'カバー':'Cover', 'コラボ':'Collab' }, shelfAdd:'Add to Shelf', shelfRemove:'Remove from Shelf', shelfFull:'Shelf is full (max 10)', shelfEmpty:'Pin songs with the 📌 button on cards', shelfListenYt:'Listen on YouTube', shelfAdded:'Added', shelfRemoved:'Removed', shelfHint:'— Tap a jacket for details —', shelfSongs:'songs', shelfClose:'Close', shelfPanelClose:'Close panel' },
-  zh: { howtoMember:'按成员筛选', howtoTag:'按标签搜索', howtoDaily:'用今日观测随机发现', members:'成员', tags:'标签', sort:'排序:', newest:'最新', oldest:'最旧', addVideo:'添加视频', fetch:'获取', titleLabel:'标题', memberLabel:'成员', tagsLabel:'标签', tagHint:'（输入#标签后按Enter）', pubdate:'发布日期', note:'备注', cancel:'取消', addBtn:'添加', adminLogin:'管理员登录', loginDesc:'输入密码以添加或删除视频。', password:'密码', login:'登录', notFound:'未找到视频', fetching:'获取中…', fetchOk:'✓ 已获取标题、日期和缩略图', delConfirm:'确认删除此视频？', adding:'添加中…', searchPh:'按标题搜索…', spotify:'Spotify', allTag:'全部', dailyObs:'✦ Observer-Link',
+  zh: { howtoMember:'按成员筛选', howtoTag:'按标签搜索', howtoDaily:'用今日观测随机发现', members:'成员', tags:'标签', sort:'排序:', newest:'最新', oldest:'最旧', dailyPick:'✦今日观测', addVideo:'添加视频', fetch:'获取', titleLabel:'标题', memberLabel:'成员', tagsLabel:'标签', tagHint:'（输入#标签后按Enter）', pubdate:'发布日期', note:'备注', cancel:'取消', addBtn:'添加', adminLogin:'管理员登录', loginDesc:'输入密码以添加或删除视频。', password:'密码', login:'登录', notFound:'未找到视频', fetching:'获取中…', fetchOk:'✓ 已获取标题、日期和缩略图', delConfirm:'确认删除此视频？', adding:'添加中…', searchPh:'按标题搜索…', spotify:'Spotify', allTag:'全部', dailyObs:'✦ Observer-Link',
     mbr:{ all:'全部', kafu:'花谱', rime:'理芽', harusar:'春猿火', isekai:'异世界情绪', koko:'幸祜', vwp:'V.W.P' },
     tagMap:{ 'シングル':'单曲', 'アニメ':'动漫', 'ゲーム':'游戏', '映画':'电影', 'クインテット':'五重唱', 'デュエット':'二重唱', 'トリオ':'三重唱', '拡声曲':'扩声曲', '系譜曲':'系谱曲', 'Covered':'翻唱', 'Remix':'混音', 'sinka':'深化', '社外コラボ':'联动', 'ライブ':'现场', 'カバー':'翻唱', 'コラボ':'合作' }, shelfAdd:'添加到书架', shelfRemove:'从书架移除', shelfFull:'书架已满（最多10首）', shelfEmpty:'点击曲卡上的📌按钮添加到书架', shelfListenYt:'在YouTube收听', shelfAdded:'已添加', shelfRemoved:'已移除', shelfHint:'— 点击封面查看详情 —', shelfSongs:'首', shelfClose:'关闭', shelfPanelClose:'关闭面板' },
-  ko: { howtoMember:'멤버로 필터링', howtoTag:'태그로 검색', howtoDaily:'오늘의 관측으로 랜덤 발견', members:'멤버', tags:'태그', sort:'정렬:', newest:'최신순', oldest:'오래된순', addVideo:'동영상 추가', fetch:'가져오기', titleLabel:'제목', memberLabel:'멤버', tagsLabel:'태그', tagHint:'(#태그 입력 후 Enter)', pubdate:'공개일', note:'메모', cancel:'취소', addBtn:'추가하기', adminLogin:'관리자 로그인', loginDesc:'비밀번호를 입력하면 동영상 추가·삭제가 가능합니다.', password:'비밀번호', login:'로그인', notFound:'동영상을 찾을 수 없습니다', fetching:'가져오는 중…', fetchOk:'✓ 제목·공개일·썸네일을 가져왔습니다', delConfirm:'이 동영상을 삭제하시겠습니까?', adding:'추가 중…', searchPh:'제목으로 검색…', spotify:'Spotify', allTag:'전체', dailyObs:'✦ Observer-Link',
+  ko: { howtoMember:'멤버로 필터링', howtoTag:'태그로 검색', howtoDaily:'오늘의 관측으로 랜덤 발견', members:'멤버', tags:'태그', sort:'정렬:', newest:'최신순', oldest:'오래된순', dailyPick:'✦오늘의 관측', addVideo:'동영상 추가', fetch:'가져오기', titleLabel:'제목', memberLabel:'멤버', tagsLabel:'태그', tagHint:'(#태그 입력 후 Enter)', pubdate:'공개일', note:'메모', cancel:'취소', addBtn:'추가하기', adminLogin:'관리자 로그인', loginDesc:'비밀번호를 입력하면 동영상 추가·삭제가 가능합니다.', password:'비밀번호', login:'로그인', notFound:'동영상을 찾을 수 없습니다', fetching:'가져오는 중…', fetchOk:'✓ 제목·공개일·썸네일을 가져왔습니다', delConfirm:'이 동영상을 삭제하시겠습니까?', adding:'추가 중…', searchPh:'제목으로 검색…', spotify:'Spotify', allTag:'전체', dailyObs:'✦ Observer-Link',
     mbr:{ all:'전체', kafu:'카후', rime:'리메', harusar:'하루사루히', isekai:'이세카이죠초', koko:'코코', vwp:'V.W.P' },
     tagMap:{ 'シングル':'싱글', 'アニメ':'애니메이션', 'ゲーム':'게임', '映画':'영화', 'クインテット':'퀸텟', 'デュエット':'듀엣', 'トリオ':'트리오', '拡声曲':'확성곡', '系譜曲':'계보곡', 'Covered':'커버됨', 'Remix':'리믹스', 'sinka':'심화', '社外コラボ':'콜라보', 'ライブ':'라이브', 'カバー':'커버', 'コラボ':'콜라보' }, shelfAdd:'선반에 추가', shelfRemove:'선반에서 제거', shelfFull:'선반이 가득 찼습니다 (최대 10곡)', shelfEmpty:'곡 카드의 📌 버튼으로 선반에 추가할 수 있습니다', shelfListenYt:'YouTube에서 듣기', shelfAdded:'추가됨', shelfRemoved:'제거됨', shelfHint:'— 재킷을 탭하여 상세 보기 —', shelfSongs:'곡', shelfClose:'닫기', shelfPanelClose:'패널 닫기' }
 };
@@ -20,6 +20,7 @@ function applyI18n(){
   document.querySelectorAll('[data-i18n-sub]').forEach(el=>{ el.textContent = t(el.dataset.i18nSub); });
   document.getElementById('searchInput').placeholder = t('searchPh');
   const sd=document.getElementById('sDaily');if(sd) sd.textContent=t('dailyObs');
+  const sdp=document.getElementById('sDailyPick');if(sdp) sdp.textContent=t('dailyPick');
 }
 
 const MEMBERS = [
@@ -763,8 +764,9 @@ document.getElementById('searchInput').addEventListener('input',e=>{searchQ=e.ta
     document.getElementById(id).classList.add('on');render();
   });
 });
-document.getElementById('sNew').addEventListener('click',()=>{curSort='new';['sNew','sOld','sDaily'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});document.getElementById('sNew').classList.add('on');render();});
-document.getElementById('sOld').addEventListener('click',()=>{curSort='old';['sNew','sOld','sDaily'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});document.getElementById('sOld').classList.add('on');render();});
+document.getElementById('sNew').addEventListener('click',()=>{curSort='new';['sNew','sOld','sDailyPick','sDaily'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});document.getElementById('sNew').classList.add('on');render();});
+document.getElementById('sOld').addEventListener('click',()=>{curSort='old';['sNew','sOld','sDailyPick','sDaily'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});document.getElementById('sOld').classList.add('on');render();});
+document.getElementById('sDailyPick').addEventListener('click',()=>{curSort='daily';['sNew','sOld','sDailyPick','sDaily'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('on');});document.getElementById('sDailyPick').classList.add('on');render();});
 document.getElementById('sDaily').addEventListener('click',()=>{if(typeof openObserverLink==='function') openObserverLink();});
 
 document.querySelectorAll('.lbtn').forEach(btn=>{
@@ -1185,7 +1187,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
   // スタートページ表示中は裏のページをスクロール固定
   document.body.style.overflow = 'hidden';
   const MEMBERS = [
-    {m:'all',    icon:'?',  img:null,  daily:true,            ja:'今日の観測', en:'DAILY',        spd:'48s', bg:'radial-gradient(circle at 38% 32%,#3a3880,#1a1860)', mc:'#b0b8ff', mglow:'rgba(176,184,255,.35)'},
+    {m:'ol',     icon:'✦',  img:null,  ol:true,               ja:'Observer-Link', en:'OBSERVER-LINK', spd:'48s', bg:'radial-gradient(circle at 38% 32%,#2a1e6e,#120d3a)', mc:'#6c5ce7', mglow:'rgba(108,92,231,.35)'},
     {m:'vwp',    icon:'✦',  img:'/icons/V_W_P.png',           ja:'V.W.P',      en:'V.W.P',        spd:'42s', bg:'radial-gradient(circle at 38% 32%,#2c1e50,#0d0a1e)', mc:'#c4b5fd', mglow:'rgba(196,181,253,.35)'},
     {m:'kafu',   icon:'🌸', img:'/icons/KAF.png',             ja:'花譜',       en:'KAF',          spd:'55s', bg:'radial-gradient(circle at 38% 32%,#48182a,#180810)', mc:'#ffb7c5', mglow:'rgba(255,183,197,.35)'},
     {m:'rime',   icon:'🌱', img:'/icons/RIM.png',             ja:'理芽',       en:'RIM',          spd:'46s', bg:'radial-gradient(circle at 38% 32%,#0e284a,#060e1e)', mc:'#7eb8f7', mglow:'rgba(126,184,247,.35)'},
@@ -1263,8 +1265,8 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     el.style.cssText = `left:${x}px;top:${y}px;--spd:${mb.spd};--mc:${mb.mc};--mglow:${mb.mglow};width:${lpSize}px;height:${lpSize}px;`;
     const labelInner = mb.img
       ? `<img src="${mb.img}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
-      : mb.daily
-        ? `<span style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:3rem;color:#07090e;line-height:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%;position:relative;z-index:10;">?</span>`
+      : mb.ol
+        ? `<span style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.6rem;color:#fff;line-height:1;display:flex;align-items:center;justify-content:center;width:100%;height:100%;position:relative;z-index:10;text-shadow:0 0 12px rgba(108,92,231,.6);">✦</span>`
         : `<span style="font-size:.9rem;">${mb.icon}</span>`;
     // 画像ありの場合は背景を黒のみ、画像なしはメンバーカラー背景
     const faceBg = mb.img ? '#0a0910' : mb.bg;
@@ -1284,6 +1286,22 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     document.querySelectorAll('.tt-lp').forEach(l => l.classList.remove('tt-chosen'));
     el.classList.add('tt-chosen');
     chosen = mb;
+
+    // Observer-Link: skip platter animation, transition directly
+    if(mb.ol){
+      infoName.style.color = mb.mc;
+      infoName.textContent = mb.en;
+      infoJa.style.color = 'rgba(160,170,220,0.65)';
+      infoJa.textContent = mb.ja;
+      hint.textContent = '';
+      enterBtn.style.color = '#ccd4ee';
+      enterBtn.style.borderColor = 'rgba(108,92,231,.45)';
+      enterBtn.style.cursor = 'pointer';
+      enterBtn.style.boxShadow = '0 0 14px rgba(108,92,231,0.25)';
+      enterBtn.textContent = '✦ OBSERVER-LINK';
+      setTimeout(() => { busy = false; enterArchive(); }, 350);
+      return;
+    }
 
     ttFace.style.opacity = '0';
     ttPlat.style.animationPlayState = 'paused';
@@ -1319,6 +1337,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
           enterBtn.style.borderColor = 'rgba(176,184,255,.45)';
           enterBtn.style.cursor = 'pointer';
           enterBtn.style.boxShadow = '0 0 14px rgba(160,150,255,0.18)';
+          enterBtn.textContent = '▶ PLAY ARCHIVE';
           hint.textContent = '▶ で入場';
           busy = false;
         }, 900);
@@ -1344,19 +1363,37 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       intro.style.display = 'none';
       document.body.style.overflow = '';
 
-      // メンバーフィルタを適用
       const m = chosen.m;
-      _gtag('event','archive_enter',{member_name:m,view_mode:m==='all'?'daily_obs':'member'});
-      if(m === 'all'){
+
+      // Observer-Link: open OL screen directly
+      if(chosen.ol){
+        _gtag('event','archive_enter',{member_name:'ol',view_mode:'observer_link'});
         selectedMembers = [];
         curMember = 'all';
-        curSort = 'daily'; // 今日の観測モードで入場
-      } else {
-        selectedMembers = [m];
-        curMember = m;
+        curSort = 'new';
+        curTag = 'all';
+        curAlbum = null;
+        searchQ = '';
+        const sq = document.getElementById('searchInput');
+        if(sq) sq.value = '';
+        buildSidebar();
+        updateCounts();
+        render();
+        // Open OL screen after archive renders
+        if(typeof openObserverLink === 'function') openObserverLink();
+        setTimeout(() => {
+          black.style.opacity = '0';
+          setTimeout(() => black.remove(), 600);
+        }, 80);
+        return;
       }
+
+      // メンバーフィルタを適用
+      _gtag('event','archive_enter',{member_name:m,view_mode:'member'});
+      selectedMembers = [m];
+      curMember = m;
       curTag = 'all';
-      if(m !== 'all') curSort = 'new';
+      curSort = 'new';
       curAlbum = null;
       searchQ = '';
       const sq = document.getElementById('searchInput');
