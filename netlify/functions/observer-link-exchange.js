@@ -198,6 +198,18 @@ exports.handler = async (event) => {
     const pool = Array.isArray(fallbackData) ? fallbackData.filter(v => v.id !== numericVideoId) : [];
     const recommended = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
 
+    // Save fallback recommendation to DB
+    if (recommended) {
+      await fetch(
+        `${url}/rest/v1/song_bottles?id=eq.${myBottle.id}`,
+        {
+          method: 'PATCH',
+          headers: sbHeaders,
+          body: JSON.stringify({ status: 'fallback', fallback_video_id: recommended.id }),
+        }
+      );
+    }
+
     return resp(200, {
       success: true,
       is_fallback: true,
