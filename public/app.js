@@ -2580,6 +2580,7 @@ let _olHeroRaf = null;
 let _olHeroT   = 0;
 
 function startOlHeroCanvas(){
+  if(_olHeroRaf) return; // already running
   const cvs = document.getElementById('olHeroCanvas');
   if(!cvs) return;
   const ctx = cvs.getContext('2d');
@@ -2702,6 +2703,9 @@ function olShowScreen(id){
     if(s.id === id){ s.classList.remove('ol-hidden'); s.style.display = ''; }
     else { s.classList.add('ol-hidden'); }
   });
+  // Manage canvas lifecycle: only run while compose screen is visible
+  if(id === 'olComposeScreen') startOlHeroCanvas();
+  else stopOlHeroCanvas();
 }
 
 function olToggleMood(el, mood){
