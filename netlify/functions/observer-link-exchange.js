@@ -37,7 +37,7 @@ exports.handler = async (event) => {
       statusCode: 204,
       headers: {
         'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, x-admin-key',
         'Access-Control-Allow-Methods': 'POST',
       },
     };
@@ -71,14 +71,21 @@ exports.handler = async (event) => {
     const validMessage = typeof message === 'string' ? message.slice(0, 20) || null : null;
     const clientHash = getClientHash(event);
 
-    // Rate limit check
-    const rateData = await sbFetch(
-      `${url}/rest/v1/song_bottles?select=id&client_hash=eq.${clientHash}&created_at=gte.${new Date(Date.now() - 86400000).toISOString()}`,
-      { headers: { apikey: key, Authorization: `Bearer ${key}` } }
-    );
-    const dailyUsed = Array.isArray(rateData) ? rateData.length : 0;
-    if (dailyUsed >= DAILY_LIMIT) {
-      return resp(429, { success: false, error: 'RATE_LIMIT_EXCEEDED', daily_used: dailyUsed, daily_limit: DAILY_LIMIT });
+    // ── admin bypass ──
+    const adminKey = event.headers['x-admin-key'] || '';
+    const isAdmin = adminKey.length > 0 && adminKey === (process.env.ADMIN_PASSWORD || '');
+
+    // Rate limit check (skip for admin)
+    let dailyUsed = 0;
+    if (!isAdmin) {
+      const rateData = await sbFetch(
+        `${url}/rest/v1/song_bottles?select=id&client_hash=eq.${clientHash}&created_at=gte.${new Date(Date.now() - 86400000).toISOString()}`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}` } }
+      );
+      dailyUsed = Array.isArray(rateData) ? rateData.length : 0;
+      if (dailyUsed >= DAILY_LIMIT) {
+        return resp(429, { success: false, error: 'RATE_LIMIT_EXCEEDED', daily_used: dailyUsed, daily_limit: DAILY_LIMIT });
+      }
     }
 
     // Validate video_id exists in videos table
@@ -176,8 +183,9 @@ exports.handler = async (event) => {
             message: matched.message || null,
             time_ago_seconds: timeAgoSeconds,
           },
-          daily_used: dailyUsed + 1,
-          daily_limit: DAILY_LIMIT,
+          daily_used: isAdmin ? 0 : dailyUsed + 1,
+          daily_limit: isAdmin ? 999 : DAILY_LIMIT,
+          is_admin: isAdmin || undefined,
         });
       }
     }
@@ -213,8 +221,9 @@ exports.handler = async (event) => {
         message: null,
         time_ago_seconds: null,
       } : null,
-      daily_used: dailyUsed + 1,
-      daily_limit: DAILY_LIMIT,
+      daily_used: isAdmin ? 0 : dailyUsed + 1,
+      daily_limit: isAdmin ? 999 : DAILY_LIMIT,
+      is_admin: isAdmin || undefined,
     });
   } catch (e) {
     console.error('observer-link-exchange error:', e);
