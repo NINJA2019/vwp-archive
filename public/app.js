@@ -2575,6 +2575,83 @@ function olOpenFromResult(exchangeId){
     </div>`;
 }
 
+/* ── OL hero oscilloscope canvas ── */
+let _olHeroRaf = null;
+let _olHeroT   = 0;
+
+function startOlHeroCanvas(){
+  if(_olHeroRaf) return; // already running
+  const cvs = document.getElementById('olHeroCanvas');
+  if(!cvs) return;
+  const ctx = cvs.getContext('2d');
+  const W = cvs.width, H = cvs.height;
+
+  function drawOlHero(){
+    ctx.fillStyle = '#020508'; ctx.fillRect(0,0,W,H);
+
+    // grid
+    ctx.strokeStyle = 'rgba(96,210,255,0.055)'; ctx.lineWidth = 1;
+    for(let i=1;i<8;i++){ ctx.beginPath(); ctx.moveTo(W/8*i,0); ctx.lineTo(W/8*i,H); ctx.stroke(); }
+    for(let i=1;i<4;i++){ ctx.beginPath(); ctx.moveTo(0,H/4*i); ctx.lineTo(W,H/4*i); ctx.stroke(); }
+    ctx.strokeStyle = 'rgba(96,210,255,0.09)';
+    ctx.beginPath(); ctx.moveTo(0,H/2); ctx.lineTo(W,H/2); ctx.stroke();
+
+    const CY1 = H*0.31, CY2 = H*0.69, amp1 = H*0.22, amp2 = H*0.18;
+
+    // wave A (sender)
+    ctx.beginPath();
+    for(let x=0;x<W;x++){
+      const p = (x/W)*Math.PI*6 - _olHeroT*2.2, n = Math.sin(x*0.04 + _olHeroT*0.7)*0.08;
+      x===0 ? ctx.moveTo(x, CY1 + Math.sin(p+n)*amp1) : ctx.lineTo(x, CY1 + Math.sin(p+n)*amp1);
+    }
+    ctx.strokeStyle = 'rgba(50,150,255,0.9)'; ctx.lineWidth = 1.8;
+    ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(50,150,255,0.55)';
+    ctx.stroke(); ctx.shadowBlur = 0;
+
+    // wave B (receiver)
+    ctx.beginPath();
+    for(let x=0;x<W;x++){
+      const p = (x/W)*Math.PI*6 - _olHeroT*2.0 + 1.1, n = Math.sin(x*0.05 - _olHeroT*0.5)*0.06;
+      x===0 ? ctx.moveTo(x, CY2 + Math.sin(p+n)*amp2) : ctx.lineTo(x, CY2 + Math.sin(p+n)*amp2);
+    }
+    ctx.strokeStyle = 'rgba(130,195,255,0.52)'; ctx.lineWidth = 1.4;
+    ctx.shadowBlur = 6; ctx.shadowColor = 'rgba(130,195,255,0.38)';
+    ctx.stroke(); ctx.shadowBlur = 0;
+
+    // sync traveler dot
+    const sx = (_olHeroT * 60) % W;
+    const sy1 = CY1 + Math.sin((sx/W)*Math.PI*6 - _olHeroT*2.2)*amp1;
+    const sy2 = CY2 + Math.sin((sx/W)*Math.PI*6 - _olHeroT*2.0 + 1.1)*amp2;
+    ctx.setLineDash([2,5]);
+    ctx.beginPath(); ctx.moveTo(sx,sy1); ctx.lineTo(sx,sy2);
+    ctx.strokeStyle = 'rgba(96,210,255,0.20)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.setLineDash([]);
+    [sy1,sy2].forEach(sy => {
+      ctx.beginPath(); ctx.arc(sx,sy,3,0,Math.PI*2);
+      ctx.fillStyle = 'rgba(200,230,255,0.92)'; ctx.fill();
+    });
+
+    // vignette
+    const vg = ctx.createRadialGradient(W/2,H/2,H*0.15,W/2,H/2,W*0.62);
+    vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,0.5)');
+    ctx.fillStyle = vg; ctx.fillRect(0,0,W,H);
+
+    // LINK label
+    ctx.font = '600 10px "Barlow Condensed",sans-serif';
+    ctx.fillStyle = 'rgba(80,180,255,0.28)'; ctx.fillText('LINK',8,14);
+
+    _olHeroT += 0.016;
+    _olHeroRaf = requestAnimationFrame(drawOlHero);
+  }
+
+  _olHeroT = 0;
+  drawOlHero();
+}
+
+function stopOlHeroCanvas(){
+  if(_olHeroRaf){ cancelAnimationFrame(_olHeroRaf); _olHeroRaf = null; }
+}
+
 function olOpen(){
   const screen = document.getElementById('observer-link-screen');
   if(!screen) return;
@@ -2610,10 +2687,12 @@ function olOpen(){
     shelfTab.classList.add('ol-picker-tab-active');
     if(allTab) allTab.classList.remove('ol-picker-tab-active');
   }
+  startOlHeroCanvas();
 }
 window.openObserverLink = olOpen;
 
 function olClose(){
+  stopOlHeroCanvas();
   const screen = document.getElementById('observer-link-screen');
   if(screen){ screen.style.display = 'none'; screen.classList.remove('ol-open'); }
   document.body.style.overflow = '';
@@ -2624,6 +2703,9 @@ function olShowScreen(id){
     if(s.id === id){ s.classList.remove('ol-hidden'); s.style.display = ''; }
     else { s.classList.add('ol-hidden'); }
   });
+  // Manage canvas lifecycle: only run while compose screen is visible
+  if(id === 'olComposeScreen') startOlHeroCanvas();
+  else stopOlHeroCanvas();
 }
 
 function olToggleMood(el, mood){
@@ -2807,9 +2889,9 @@ function olSendRecord(){
   });
 
   olShowScreen('olSendingScreen');
-  // Reset disc animation
+  // Reset disc animation — spin first, fly after API response
   const disc = document.getElementById('olSendingDisc');
-  if(disc){ disc.classList.remove('fly'); void disc.offsetWidth; disc.classList.add('fly'); }
+  if(disc){ disc.classList.remove('fly','spinning'); void disc.offsetWidth; disc.classList.add('spinning'); }
   document.getElementById('olAmbientGlow')?.classList.add('bright');
 
   // API call
@@ -2831,6 +2913,7 @@ function olSendRecord(){
       olShowToast(errMsg);
       olSending = false;
       olUpdateSendBtn();
+      if(disc) disc.classList.remove('spinning');
       olShowScreen('olComposeScreen');
       document.getElementById('olAmbientGlow')?.classList.remove('bright');
       return;
@@ -2854,18 +2937,22 @@ function olSendRecord(){
       _gtag('event','ol_match_success',{sent_video_id:String(olSelectedSong.id),received_video_id:data.received?String(data.received.video_id):'',time_ago_seconds:data.received?.time_ago_seconds||0});
     }
 
-    // Wait for animation, then show result
+    // Transition disc: spin → fly
+    if(disc){ disc.classList.remove('spinning'); void disc.offsetWidth; disc.classList.add('fly'); }
+
+    // Wait for fly animation (3s), then show result
     setTimeout(() => {
       olSending = false;
       olUpdateSendBtn();
       olShowResult(data);
       document.getElementById('olAmbientGlow')?.classList.remove('bright');
-    }, Math.max(0, 2800 - 1000)); // animation is 3s, API takes ~1s
+    }, 2800);
   })
   .catch(() => {
     olShowToast('Network error — please try again');
     olSending = false;
     olUpdateSendBtn();
+    if(disc) disc.classList.remove('spinning');
     olShowScreen('olComposeScreen');
     document.getElementById('olAmbientGlow')?.classList.remove('bright');
   });
