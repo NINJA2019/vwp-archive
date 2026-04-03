@@ -756,7 +756,8 @@ document.getElementById('tagInput').addEventListener('blur',e=>{const val=e.targ
 document.getElementById('tagInputWrap').addEventListener('click',()=>document.getElementById('tagInput').focus());
 
 // events
-document.getElementById('searchInput').addEventListener('input',e=>{searchQ=e.target.value.trim();render();});
+var _searchGa4Timer=null;
+document.getElementById('searchInput').addEventListener('input',e=>{searchQ=e.target.value.trim();render();clearTimeout(_searchGa4Timer);_searchGa4Timer=setTimeout(()=>{const q=searchQ;if(q.length>=2&&typeof gtag==='function'){gtag('event','search',{search_term:q,results_count:filteredCache.length});if(filteredCache.length===0)gtag('event','search_no_result',{search_term:q});}},500);});
 ['vGrid','vList','vTl'].forEach(id=>{
   document.getElementById(id).addEventListener('click',()=>{
     curView={vGrid:'grid',vList:'list',vTl:'timeline'}[id];
