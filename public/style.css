@@ -937,3 +937,18 @@ body.light .ol-share-url{background:rgba(0,0,0,.03);border-color:rgba(0,0,0,.08)
 @keyframes ol-ring-in{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes ol-circle-in{from{transform:scale(0)}to{transform:scale(1)}}
 @keyframes ol-check-draw{to{stroke-dashoffset:0}}
+/* ── OL Quick Send button (PC) ── */
+.ol-quick-send-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.3);backdrop-filter:blur(6px);color:var(--ol-accent,#6c5ce7);cursor:pointer;transition:all .2s ease;padding:0;outline:none;-webkit-tap-highlight-color:transparent;vertical-align:middle}
+.ol-quick-send-btn:hover{background:rgba(108,92,231,.15);border-color:rgba(108,92,231,.3);transform:scale(1.1)}
+.ol-quick-send-btn:active{transform:scale(0.9)}
+.ol-quick-send-btn.sending{pointer-events:none;opacity:.5;animation:ol-qs-pulse .8s ease-in-out infinite}
+.ol-quick-send-btn.sent{color:var(--ol-received,#5dc9a8);border-color:rgba(93,201,168,.3);pointer-events:none}
+.ol-quick-send-btn:disabled{opacity:.25;cursor:not-allowed;pointer-events:none}
+@keyframes ol-qs-pulse{0%,100%{opacity:.5}50%{opacity:.8}}
+body.light .ol-quick-send-btn{background:rgba(255,255,255,.6);border-color:rgba(108,92,231,.15)}
+body.light .ol-quick-send-btn:hover{background:rgba(108,92,231,.1)}
+/* ── OL Quick Send button (mobile card) ── */
+.mc-card-ol{position:absolute;top:14px;right:64px;z-index:10;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);border:1px solid rgba(108,92,231,.2);color:var(--ol-accent,#6c5ce7);cursor:pointer;transition:all .2s;padding:0;outline:none;-webkit-tap-highlight-color:transparent}
+.mc-card-ol:active{transform:scale(0.88)}
+.mc-card-ol.sending{pointer-events:none;opacity:.5;animation:ol-qs-pulse .8s ease-in-out infinite}
+.mc-card-ol.sent{color:var(--ol-received,#5dc9a8);border-color:rgba(93,201,168,.3);pointer-events:none}

@@ -551,7 +551,7 @@ function renderGrid(list){
       <div class="cbody">
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div>
         <div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div>
-        <div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div>
+        <div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${typeof olQuickSendHtml==="function"?olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div>
       </div>
     </div>`).join('')+`</div>`;
 }
@@ -561,7 +561,7 @@ function renderList(list){
     <a class="litem" style="animation-delay:${i*.022}s" href="${safeUrl(v.url)}" target="_blank" rel="noopener">
       <div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div>
       <div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>
-      ${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
+      ${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${typeof olQuickSendHtml==="function"?olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
     </a>`).join('')+`</div>`;
 }
 function renderTimeline(list){
@@ -575,7 +575,7 @@ function renderTimeline(list){
       <div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div>
       <div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div>
       <div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>
-      ${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
+      ${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${typeof olQuickSendHtml==="function"?olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
     </div>`;
   });
   return html+'</div>';
@@ -603,7 +603,7 @@ function loadMoreItems(){
       const div=document.createElement('div');
       div.className='vcard';div.style.animationDelay=((start+i)*.022)+'s';
       div.onclick=()=>trackSongClick(v.id,safeUrl(v.url));
-      div.innerHTML=`<div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div><div class="cbody"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div><div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div></div>`;
+      div.innerHTML=`<div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div><div class="cbody"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div><div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${typeof olQuickSendHtml==="function"?olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div></div>`;
       wrap.appendChild(div);
     });
   } else if(curView==='list'){
@@ -613,7 +613,7 @@ function loadMoreItems(){
       a.className='litem';a.style.animationDelay=((start+i)*.022)+'s';
       a.href=safeUrl(v.url);a.target='_blank';a.rel='noopener';
       a.addEventListener('click',()=>_gtag('event','song_click',{song_title:v.title||'',member_name:v.member||'',video_date:v.date||'',album_id:v.album_id?String(v.album_id):''}));
-      a.innerHTML=`<div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div><div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
+      a.innerHTML=`<div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div><div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${typeof olQuickSendHtml==="function"?olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
       wrap.appendChild(a);
     });
   } else {
@@ -634,7 +634,7 @@ function loadMoreItems(){
       const row=document.createElement('div');
       row.className='tl-row';row.style.animationDelay=((start+i)*.022)+'s';
       row.onclick=()=>trackSongClick(v.id,safeUrl(v.url));
-      row.innerHTML=`<div class="tl-dot"></div><div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div><div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
+      row.innerHTML=`<div class="tl-dot"></div><div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div><div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${typeof olQuickSendHtml==="function"?olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
       tl.appendChild(row);
     });
   }
@@ -1744,6 +1744,9 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
         '<div class="mc-card-pin'+(window.isOnShelf && window.isOnShelf(song.id) ? ' mc-pinned' : '')+'" role="button" aria-label="棚に追加">' +
           '<svg viewBox="0 0 24 24"><path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 8 12 8 12s8-6.75 8-12c0-4.42-3.58-8-8-8z"/><circle cx="12" cy="10" r="2.5" fill="none"/></svg>' +
         '</div>' +
+        '<div class="mc-card-ol" role="button" aria-label="Observer-Linkで送る" data-vid="'+song.id+'">' +
+          '<svg viewBox="0 0 16 16" width="16" height="16" fill="none"><circle cx="4" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><line x1="6.5" y1="8" x2="9.5" y2="8" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.5 1.5"/></svg>' +
+        '</div>' +
         '<div class="mc-card-cta" role="button">' +
           '<svg viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19"/></svg>' +
           '<span>YOUTUBE</span>' +
@@ -1755,7 +1758,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       // Tap → LP peek (lazy canvas draw)
       card.addEventListener('click', e => {
         if(Math.abs(mcTouchCurY - mcTouchStartY) > 15) return;
-        if(e.target.closest('.mc-card-pin') || e.target.closest('.mc-card-cta')) return;
+        if(e.target.closest('.mc-card-pin') || e.target.closest('.mc-card-ol') || e.target.closest('.mc-card-cta')) return;
         if(!lpWrap.querySelector('canvas') && window.drawVinylDisc){
           const canvas = document.createElement('canvas');
           window.drawVinylDisc(canvas, color, 140);
@@ -1777,6 +1780,15 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
           pinBtn.classList.add('mc-pinned');
         }
       });
+
+      // OL Quick Send
+      const olBtn = card.querySelector('.mc-card-ol');
+      if(olBtn){
+        olBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          if(window.olQuickSend) window.olQuickSend(song.id, olBtn, e);
+        });
+      }
 
       // CTA → YouTube
       const cta = card.querySelector('.mc-card-cta');
@@ -3136,6 +3148,99 @@ function olShowToast(msg){
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2200);
 }
+
+// === OL QUICK SEND ===
+const OL_QS_SVG = '<svg viewBox="0 0 16 16" width="16" height="16" fill="none"><circle cx="4" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><line x1="6.5" y1="8" x2="9.5" y2="8" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.5 1.5"/></svg>';
+
+window.olQuickSendHtml = function(id){
+  return '<button class="ol-quick-send-btn" title="Observer-Link" aria-label="Observer-Linkで送る" data-vid="'+id+'" onclick="olQuickSend('+id+',this,event)">'+OL_QS_SVG+'</button>';
+};
+
+window.olQuickSend = function(videoId, btnEl, evt){
+  if(evt){ evt.stopPropagation(); evt.preventDefault(); }
+  if(btnEl.classList.contains('sending') || btnEl.classList.contains('sent')) return;
+
+  // Determine source view
+  var source = 'grid';
+  if(btnEl.closest('.mc-card')) source = 'mobile_card';
+  else if(btnEl.closest('.vlist') || btnEl.closest('.litem')) source = 'list';
+  else if(btnEl.closest('.tl')) source = 'timeline';
+
+  btnEl.classList.add('sending');
+
+  var allVids = (typeof videos !== 'undefined') ? videos : [];
+  var song = allVids.find(function(v){ return String(v.id) === String(videoId); });
+  _gtag('event','ol_quick_send',{
+    video_id: String(videoId),
+    member_name: song ? song.member : '',
+    source: source
+  });
+
+  var headers = {'Content-Type':'application/json'};
+  if(isAdmin){ var pw = getStoredPw(); if(pw) headers['x-admin-key'] = pw; }
+
+  fetch('/.netlify/functions/observer-link-exchange', {
+    method: 'POST',
+    headers: headers,
+    body: JSON.stringify({ video_id: Number(videoId), mood_tags: [], message: null })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(!data.success){
+      btnEl.classList.remove('sending');
+      var errMsg = data.error === 'RATE_LIMIT_EXCEEDED' ? 'Daily limit reached (10/10)' : 'Something went wrong';
+      olShowToast(errMsg);
+      return;
+    }
+
+    // Update daily counter
+    olDailyUsed = data.daily_used != null ? data.daily_used : (olDailyUsed + 1);
+    olUpdateSendBtn();
+
+    // Save received record
+    if(data.received && !data.is_fallback){
+      olSaveReceivedRecord(data.received.video_id);
+    }
+
+    btnEl.classList.remove('sending');
+    btnEl.classList.add('sent');
+
+    // GA4 match event
+    if(data.is_fallback){
+      _gtag('event','ol_match_fallback',{sent_video_id:String(videoId),received_video_id:data.received?String(data.received.video_id):''});
+    } else {
+      _gtag('event','ol_match_success',{sent_video_id:String(videoId),received_video_id:data.received?String(data.received.video_id):'',time_ago_seconds:data.received?.time_ago_seconds||0});
+    }
+
+    // Open OL screen → sending → result
+    olLastExchangeId = data.exchange_id;
+    olLastReceived = data.received;
+
+    var screen = document.getElementById('observer-link-screen');
+    if(screen){ screen.style.display = ''; screen.classList.add('ol-open'); }
+    document.body.style.overflow = 'hidden';
+
+    olShowScreen('olSendingScreen');
+    var disc = document.getElementById('olSendingDisc');
+    if(disc){ disc.classList.remove('fly','spinning'); void disc.offsetWidth; disc.classList.add('spinning'); }
+    document.getElementById('olAmbientGlow')?.classList.add('bright');
+
+    // Brief spin then fly
+    setTimeout(function(){
+      if(disc){ disc.classList.remove('spinning'); void disc.offsetWidth; disc.classList.add('fly'); }
+      setTimeout(function(){
+        olSending = false;
+        olUpdateSendBtn();
+        olShowResult(data);
+        document.getElementById('olAmbientGlow')?.classList.remove('bright');
+      }, 2800);
+    }, 800);
+  })
+  .catch(function(){
+    btnEl.classList.remove('sending');
+    olShowToast('Network error — please try again');
+  });
+};
 
 // Init after DOM ready
 if(document.readyState === 'loading'){
