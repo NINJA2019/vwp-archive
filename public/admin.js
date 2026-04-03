@@ -69,22 +69,13 @@ Admin.DB = (() => {
     if (order) url += '&order=' + order;
     if (limit) url += '&limit=' + limit;
     var h = headers();
-    if (p.head) {
-      h['Prefer'] = 'count=exact';
-      h['Range'] = '0-0';
-    }
     var res = await fetch(url, { headers: h });
-    if (p.head) {
-      var range = res.headers.get('content-range');
-      if (range) {
-        var parts = range.split('/');
-        return parseInt(parts[1], 10) || 0;
-      }
-      return 0;
+    if (!res.ok) {
+      console.error('[Admin.DB] HTTP ' + res.status + ' for ' + table + ' (' + url + ')');
     }
     var data = await res.json();
     if (!Array.isArray(data)) {
-      console.error('[Admin.DB] query error:', table, data);
+      console.error('[Admin.DB] non-array response:', table, url, data);
       return [];
     }
     return data;
@@ -215,13 +206,16 @@ Admin.Tabs.register('songs', {
   async render(el) {
     var U = Admin.UI;
     try {
-      var [totalCount, unlinkedCount, dupRows, albumCount, allVideos] = await Promise.all([
-        Admin.DB.query('videos', { select: 'id', head: true }),
-        Admin.DB.query('videos', { select: 'id', filter: 'album_id=is.null', head: true }),
+      var [totalRows, unlinkedRows, dupRows, albumRows, allVideos] = await Promise.all([
+        Admin.DB.query('videos', { select: 'id' }),
+        Admin.DB.query('videos', { select: 'id', filter: 'album_id=is.null' }),
         Admin.DB.query('videos', { select: 'url', order: 'url' }),
-        Admin.DB.query('albums', { select: 'id', head: true }),
+        Admin.DB.query('albums', { select: 'id' }),
         Admin.DB.query('videos', { select: 'id,title,member,date,url', order: 'date.desc', limit: '1000' })
       ]);
+      var totalCount = totalRows.length;
+      var unlinkedCount = unlinkedRows.length;
+      var albumCount = albumRows.length;
 
       // Count duplicates
       var urlMap = {};
@@ -391,11 +385,13 @@ Admin.Tabs.register('health', {
   async render(el) {
     var U = Admin.UI;
     try {
-      var [songCount, bottleCount, freshVideos] = await Promise.all([
-        Admin.DB.query('videos', { select: 'id', head: true }),
-        Admin.DB.query('song_bottles', { select: 'id', head: true }),
+      var [songRows, bottleRows, freshVideos] = await Promise.all([
+        Admin.DB.query('videos', { select: 'id' }),
+        Admin.DB.query('song_bottles', { select: 'id' }),
         Admin.DB.query('videos', { select: 'id,title,member,date', order: 'date.desc', limit: '500' })
       ]);
+      var songCount = songRows.length;
+      var bottleCount = bottleRows.length;
 
       // Freshness per solo member
       var freshness = [];
