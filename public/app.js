@@ -2706,6 +2706,8 @@ window.openObserverLink = olOpen;
 function olClose(){
   stopOlHeroCanvas();
   olParticles.destroy();
+  olSendingParticles.destroy();
+  olResetSendingView();
   const screen = document.getElementById('observer-link-screen');
   if(screen){ screen.style.display = 'none'; screen.classList.remove('ol-open'); }
   document.body.style.overflow = '';
@@ -2887,8 +2889,90 @@ function olCreatePickerItem(song){
   return el;
 }
 
+// === SENDING PARTICLES ===
+var olSendingParticles = {
+  canvas:null, ctx:null, raf:null, dots:[],
+  init:function(canvasEl){
+    this.canvas = canvasEl;
+    this.ctx = canvasEl.getContext('2d');
+    this.dots = [];
+    this.resize();
+    this._onResize = this.resize.bind(this);
+    window.addEventListener('resize', this._onResize);
+    var rect = canvasEl.parentElement.getBoundingClientRect();
+    for(var i=0;i<40;i++){
+      this.dots.push({
+        x:Math.random()*rect.width,
+        y:Math.random()*rect.height,
+        vx:(Math.random()-.5)*.3,
+        vy:-(.2+Math.random()*.4),
+        r:Math.random()*1.5+.5,
+        a:Math.random()*.15+.03,
+        life:Math.random()*Math.PI*2
+      });
+    }
+    if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches) this.animate();
+  },
+  resize:function(){
+    if(!this.canvas) return;
+    var d = devicePixelRatio||1;
+    var r = this.canvas.parentElement.getBoundingClientRect();
+    this.canvas.width = r.width*d; this.canvas.height = r.height*d;
+    this.canvas.style.width = r.width+'px'; this.canvas.style.height = r.height+'px';
+    this.ctx.scale(d,d);
+  },
+  animate:function(){
+    var self = this;
+    var ctx = this.ctx;
+    var r = this.canvas.parentElement.getBoundingClientRect();
+    ctx.clearRect(0,0,r.width,r.height);
+    this.dots.forEach(function(d){
+      d.x += d.vx; d.y += d.vy; d.life += .02;
+      if(d.y < -10){ d.y = r.height+10; d.x = Math.random()*r.width; }
+      if(d.x < -10) d.x = r.width+10;
+      if(d.x > r.width+10) d.x = -10;
+      var pulse = (Math.sin(d.life)+1)/2;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(108,92,231,'+(d.a+pulse*.05)+')';
+      ctx.fill();
+    });
+    this.raf = requestAnimationFrame(function(){ self.animate(); });
+  },
+  destroy:function(){
+    if(this.raf) cancelAnimationFrame(this.raf);
+    this.raf = null; this.dots = [];
+    if(this._onResize) window.removeEventListener('resize', this._onResize);
+  }
+};
+
 // === SEND ===
 let olSending = false;
+
+function olShowSendingCard(song){
+  var card = document.getElementById('olSendingCard');
+  if(!card || !song) return;
+  var vid = ytId(song.url || '');
+  var thumb = vid ? 'https://img.youtube.com/vi/'+vid+'/mqdefault.jpg' : '';
+  var memberDisplay = olGetMemberDisplay(song.member);
+  card.innerHTML = '<div class="ol-sending-card-thumb">'+(thumb?'<img src="'+esc(thumb)+'" alt="">':'')+'</div>'
+    + '<div style="overflow:hidden"><div class="ol-sending-card-member">'+esc(memberDisplay)+'</div>'
+    + '<div class="ol-sending-card-title">'+esc(song.title)+'</div></div>';
+  card.classList.add('visible');
+}
+
+function olResetSendingView(){
+  var view = document.getElementById('olSendingScreen');
+  if(view) view.classList.remove('matched');
+  var title = document.getElementById('olSendingTitle');
+  if(title){ title.textContent = 'LINKING OBSERVERS'; title.style.color = ''; }
+  var sub = document.getElementById('olSendingSub');
+  if(sub) sub.textContent = 'Searching for a match...';
+  var card = document.getElementById('olSendingCard');
+  if(card){ card.classList.remove('visible'); card.innerHTML = ''; }
+  olSendingParticles.destroy();
+}
+
 function olSendRecord(){
   if(!olSelectedSong || olSending) return;
   olSending = true;
@@ -2902,10 +2986,12 @@ function olSendRecord(){
     has_message: msg ? 'true' : 'false',
   });
 
+  // Reset and show sending screen
+  olResetSendingView();
   olShowScreen('olSendingScreen');
-  // Reset disc animation — spin first, fly after API response
-  const disc = document.getElementById('olSendingDisc');
-  if(disc){ disc.classList.remove('fly','spinning'); void disc.offsetWidth; disc.classList.add('spinning'); }
+  olShowSendingCard(olSelectedSong);
+  var pCanvas = document.getElementById('ol-sending-particles');
+  if(pCanvas) olSendingParticles.init(pCanvas);
   document.getElementById('olAmbientGlow')?.classList.add('bright');
 
   // API call
@@ -2929,7 +3015,7 @@ function olSendRecord(){
       olShowToast(errMsg);
       olSending = false;
       olUpdateSendBtn();
-      if(disc) disc.classList.remove('spinning');
+      olResetSendingView();
       olShowScreen('olComposeScreen');
       document.getElementById('olAmbientGlow')?.classList.remove('bright');
       return;
@@ -2958,22 +3044,28 @@ function olSendRecord(){
       _gtag('event','ol_match_success',{sent_video_id:String(olSelectedSong.id),received_video_id:data.received?String(data.received.video_id):'',time_ago_seconds:data.received?.time_ago_seconds||0});
     }
 
-    // Transition disc: spin → fly
-    if(disc){ disc.classList.remove('spinning'); void disc.offsetWidth; disc.classList.add('fly'); }
+    // Match transition: converge pulses + green + "LINK ESTABLISHED"
+    var view = document.getElementById('olSendingScreen');
+    var title = document.getElementById('olSendingTitle');
+    var sub = document.getElementById('olSendingSub');
+    if(view) view.classList.add('matched');
+    if(title){ title.textContent = 'LINK ESTABLISHED'; title.style.color = '#22c55e'; }
+    if(sub) sub.textContent = 'A record from another observer';
 
-    // Wait for fly animation (3s), then show result
+    // Fade to result after match animation
     setTimeout(() => {
       olSending = false;
       olUpdateSendBtn();
+      olResetSendingView();
       olShowResult(data);
       document.getElementById('olAmbientGlow')?.classList.remove('bright');
-    }, 2800);
+    }, 1300);
   })
   .catch(() => {
     olShowToast('Network error — please try again');
     olSending = false;
     olUpdateSendBtn();
-    if(disc) disc.classList.remove('spinning');
+    olResetSendingView();
     olShowScreen('olComposeScreen');
     document.getElementById('olAmbientGlow')?.classList.remove('bright');
   });
@@ -3163,6 +3255,9 @@ function olShowResult(data){
     + '<div class="ol-cards-area">' + sentCardHtml + connectorHtml + receivedCardHtml + '</div>'
     + actionsHtml;
 
+  // Clean up sending view before showing result
+  olResetSendingView();
+
   olShowScreen('olResultScreen');
 
   // Init particles
@@ -3236,6 +3331,8 @@ window.olTrackXShare = function() {
 
 window.olResetCompose = function(){
   olParticles.destroy();
+  olSendingParticles.destroy();
+  olResetSendingView();
   olSelectedSong = null;
   olSelectedMoods = [];
   olSending = false;
@@ -3342,20 +3439,29 @@ window.olQuickSend = function(videoId, btnEl, evt){
     if(screen){ screen.style.display = ''; screen.classList.add('ol-open'); }
     document.body.style.overflow = 'hidden';
 
+    // Show Shazam-style sending screen with match transition
+    olResetSendingView();
     olShowScreen('olSendingScreen');
-    var disc = document.getElementById('olSendingDisc');
-    if(disc){ disc.classList.remove('fly','spinning'); void disc.offsetWidth; disc.classList.add('spinning'); }
+    olShowSendingCard(song);
+    var qsCanvas = document.getElementById('ol-sending-particles');
+    if(qsCanvas) olSendingParticles.init(qsCanvas);
     document.getElementById('olAmbientGlow')?.classList.add('bright');
 
-    // Brief spin then fly
+    // Match transition after brief pause
     setTimeout(function(){
-      if(disc){ disc.classList.remove('spinning'); void disc.offsetWidth; disc.classList.add('fly'); }
+      var view = document.getElementById('olSendingScreen');
+      var title = document.getElementById('olSendingTitle');
+      var sub = document.getElementById('olSendingSub');
+      if(view) view.classList.add('matched');
+      if(title){ title.textContent = 'LINK ESTABLISHED'; title.style.color = '#22c55e'; }
+      if(sub) sub.textContent = 'A record from another observer';
       setTimeout(function(){
         olSending = false;
         olUpdateSendBtn();
+        olResetSendingView();
         olShowResult(data);
         document.getElementById('olAmbientGlow')?.classList.remove('bright');
-      }, 2800);
+      }, 1300);
     }, 800);
   })
   .catch(function(){
