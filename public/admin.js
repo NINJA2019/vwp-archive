@@ -82,7 +82,12 @@ Admin.DB = (() => {
       }
       return 0;
     }
-    return res.json();
+    var data = await res.json();
+    if (!Array.isArray(data)) {
+      console.error('[Admin.DB] query error:', table, data);
+      return [];
+    }
+    return data;
   }
 
   async function rpc(fnName, params) {
