@@ -2705,10 +2705,12 @@ window.openObserverLink = olOpen;
 
 function olClose(){
   stopOlHeroCanvas();
+  olParticles.destroy();
   const screen = document.getElementById('observer-link-screen');
   if(screen){ screen.style.display = 'none'; screen.classList.remove('ol-open'); }
   document.body.style.overflow = '';
 }
+window.olClose = olClose;
 
 function olShowScreen(id){
   document.querySelectorAll('#observer-link-screen .ol-screen').forEach(s => {
@@ -2993,61 +2995,180 @@ function olGetMemberDisplay(memberStr){
   return memberStr;
 }
 
-function olShowResult(data){
-  const sent = data.sent;
-  const received = data.received;
-  const isFallback = data.is_fallback;
-
-  const sentVid = ytId(sent.url || '');
-  const sentThumb = sentVid ? 'https://img.youtube.com/vi/'+sentVid+'/mqdefault.jpg' : '';
-  const sentMemberDisplay = olGetMemberDisplay(sent.member);
-  const sentColor = getMemberColor(sent.member);
-
-  let receivedHtml = '';
-  if(received){
-    const recVid = ytId(received.url || '');
-    const recThumb = recVid ? 'https://img.youtube.com/vi/'+recVid+'/mqdefault.jpg' : '';
-    const recMemberDisplay = olGetMemberDisplay(received.member);
-    const recColor = getMemberColor(received.member);
-
-    receivedHtml = '<div class="ol-exchange-card">'
-      + '<div class="ol-card-label received">RECEIVED RECORD</div>'
-      + '<div class="ol-card-content">'
-      + '<img class="ol-card-thumb" src="'+esc(recThumb)+'" alt="">'
-      + '<div class="ol-card-info"><div class="ol-card-member" style="color:'+recColor+'">'+esc(recMemberDisplay)+'</div>'
-      + '<div class="ol-card-title">'+esc(received.title)+'</div>'
-      + '<div class="ol-card-meta">'+esc(received.date||'')+'</div></div></div>'
-      + (received.mood_tags && received.mood_tags.length ? '<div class="ol-card-tags">'+received.mood_tags.map(m=>'<span class="ol-card-tag">'+esc(m)+'</span>').join('')+'</div>' : '')
-      + (received.message ? '<div class="ol-card-msg">'+esc(received.message)+'</div>' : '')
-      + (recVid ? '<button class="ol-card-yt-btn" onclick="olClickYoutube(\''+esc(received.url)+'\',\''+esc(String(received.video_id))+'\',\''+esc(received.member)+'\')">&#9654;&ensp;YOUTUBE</button>' : '')
-      + '</div>';
-
-    // Set share data and document title
-    olSetShareData(received.title, olLastExchangeId || '');
+// === OL PARTICLE SYSTEM ===
+var olParticles = {
+  canvas:null, ctx:null, W:0, H:0,
+  particles:[], raf:null, burstFired:false,
+  init:function(canvasEl){
+    this.canvas = canvasEl;
+    this.ctx = canvasEl.getContext('2d');
+    this.resize();
+    this._onResize = this.resize.bind(this);
+    window.addEventListener('resize', this._onResize);
+    this.animate();
+    setTimeout(this.burst.bind(this), 1400);
+  },
+  resize:function(){
+    this.W = this.canvas.width = this.canvas.offsetWidth;
+    this.H = this.canvas.height = this.canvas.offsetHeight;
+  },
+  spawn:function(x,y,isBurst){
+    var angle = Math.random()*Math.PI*2;
+    var speed = isBurst ? (2+Math.random()*6) : (0.3+Math.random()*1.5);
+    var colors = [[108,92,231],[93,201,168],[200,220,255]];
+    this.particles.push({
+      x:x, y:y,
+      vx:Math.cos(angle)*speed,
+      vy:Math.sin(angle)*speed-(isBurst?2:0),
+      life:1,
+      decay:isBurst?(0.008+Math.random()*0.015):(0.002+Math.random()*0.005),
+      size:isBurst?(1.5+Math.random()*3):(0.5+Math.random()*1.5),
+      color:colors[Math.floor(Math.random()*colors.length)]
+    });
+  },
+  burst:function(){
+    if(this.burstFired) return;
+    this.burstFired = true;
+    var cx = this.W/2;
+    var cy = Math.min(this.H*0.22, 180);
+    for(var i=0;i<60;i++) this.spawn(cx, cy, true);
+  },
+  animate:function(){
+    var self = this;
+    var ctx = this.ctx, W = this.W, H = this.H, ps = this.particles;
+    ctx.clearRect(0,0,W,H);
+    if(ps.length<30 && Math.random()<0.15){
+      this.spawn(Math.random()*W, H*0.1+Math.random()*H*0.5, false);
+    }
+    for(var i=ps.length-1;i>=0;i--){
+      var p=ps[i];
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.02; p.vx*=0.99; p.life-=p.decay;
+      var r=Math.max(0,p.size*p.life);
+      if(r<0.01||p.life<=0){ps.splice(i,1);continue;}
+      ctx.globalAlpha=p.life*0.8;
+      ctx.fillStyle='rgb('+p.color[0]+','+p.color[1]+','+p.color[2]+')';
+      ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=p.life*0.15;
+      ctx.beginPath();ctx.arc(p.x,p.y,r*3,0,Math.PI*2);ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    this.raf = requestAnimationFrame(function(){self.animate();});
+  },
+  destroy:function(){
+    if(this.raf) cancelAnimationFrame(this.raf);
+    this.raf = null;
+    this.particles = [];
+    this.burstFired = false;
+    if(this._onResize) window.removeEventListener('resize', this._onResize);
   }
+};
 
-  const introSub = !received ? 'Something went wrong — try again'
+function olShowResult(data){
+  var sent = data.sent;
+  var received = data.received;
+  var isFallback = data.is_fallback;
+
+  var sentVid = ytId(sent.url || '');
+  var sentThumb = sentVid ? 'https://img.youtube.com/vi/'+sentVid+'/mqdefault.jpg' : '';
+  var sentMemberDisplay = olGetMemberDisplay(sent.member);
+  var sentColor = getMemberColor(sent.member);
+
+  // Build badge
+  var labelText = (received && !isFallback) ? 'LINKED' : 'RECOMMENDED';
+  var subText = !received ? 'Something went wrong — try again'
     : isFallback ? 'No bottles in the sea yet — here\'s a recommendation'
     : 'From an observer ' + (olFormatTimeAgo(received.time_ago_seconds) || 'moments') + ' ago';
 
-  var checkHtml = (received && !isFallback)
-    ? '<div class="ol-check-wrap"><div class="ol-check-ring"><div class="ol-check-circle"><svg class="ol-check-svg" viewBox="0 0 24 24"><polyline points="4 12 10 18 20 6"/></svg></div></div></div>'
-    : '';
-  var introTitle = (received && !isFallback) ? 'Link established' : 'Observer-Link';
-
-  document.getElementById('olResultBody').innerHTML =
-    checkHtml
-    + '<div class="ol-result-intro"><div class="ol-result-intro-title">'+esc(introTitle)+'</div><div class="ol-result-intro-sub">'+esc(introSub)+'</div></div>'
-    + '<div class="ol-exchange-card"><div class="ol-card-label yours">YOUR RECORD</div><div class="ol-card-content"><img class="ol-card-thumb" src="'+esc(sentThumb)+'" alt=""><div class="ol-card-info"><div class="ol-card-member" style="color:'+sentColor+'">'+esc(sentMemberDisplay)+'</div><div class="ol-card-title">'+esc(sent.title)+'</div><div class="ol-card-meta">'+esc(sent.date||'')+'</div></div></div>'
-    + (sent.mood_tags && sent.mood_tags.length ? '<div class="ol-card-tags">'+sent.mood_tags.map(m=>'<span class="ol-card-tag">'+esc(m)+'</span>').join('')+'</div>' : '')
-    + (sent.message ? '<div class="ol-card-msg">'+esc(sent.message)+'</div>' : '')
+  var badgeHtml = '<canvas id="olResultParticles"></canvas>'
+    + '<div class="ol-ambient"></div>'
+    + '<div class="ol-match-badge">'
+    + '<div class="ol-ring-container">'
+    + '<div class="ol-ring ol-ring-1"></div><div class="ol-ring ol-ring-2"></div><div class="ol-ring ol-ring-3"></div>'
+    + '<div class="ol-ripple ol-ripple-1"></div><div class="ol-ripple ol-ripple-2"></div><div class="ol-ripple ol-ripple-3"></div>'
+    + '<div class="ol-match-circle"><svg class="ol-checkmark" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg></div>'
     + '</div>'
-    + receivedHtml
-    + '<div class="ol-result-actions"><button class="ol-btn-again" onclick="olResetCompose()">SEND ANOTHER</button>'
-    + (received ? '<button class="ol-btn-share" onclick="olShareResult()">SHARE</button>' : '')
+    + '<div class="ol-match-label">'+esc(labelText)+'</div>'
+    + '<div class="ol-match-sub">'+esc(subText)+'</div>'
     + '</div>';
 
+  // Sent card
+  var sentCardHtml = '<div class="ol-record-card ol-card-sent">'
+    + '<div class="ol-card-label sent">Your record</div>'
+    + '<div class="ol-card-body">'
+    + '<div class="ol-card-thumb"><img src="'+esc(sentThumb)+'" alt="" loading="lazy"></div>'
+    + '<div class="ol-card-meta-wrap"><div class="ol-card-member" style="color:'+sentColor+'">'+esc(sentMemberDisplay)+'</div>'
+    + '<div class="ol-card-title">'+esc(sent.title)+'</div>'
+    + '<div class="ol-card-date">'+esc(sent.date||'')+'</div></div></div></div>';
+
+  // Connector
+  var connectorHtml = '<div class="ol-connector"><svg viewBox="0 0 20 28" fill="none"><line x1="10" y1="0" x2="10" y2="28" stroke="rgba(108,92,231,.2)" stroke-width="1" stroke-dasharray="3 3"/><circle cx="10" cy="14" r="3" fill="none" stroke="rgba(93,201,168,.3)" stroke-width="1"/><circle cx="10" cy="14" r="1" fill="rgba(93,201,168,.5)"/></svg></div>';
+
+  // Received card
+  var receivedCardHtml = '';
+  if(received){
+    var recVid = ytId(received.url || '');
+    var recThumb = recVid ? 'https://img.youtube.com/vi/'+recVid+'/mqdefault.jpg' : '';
+    var recMemberDisplay = olGetMemberDisplay(received.member);
+    var recColor = getMemberColor(received.member);
+
+    receivedCardHtml = '<div class="ol-record-card ol-card-received">'
+      + '<div class="ol-card-label received">Received record</div>'
+      + '<div class="ol-card-body">'
+      + '<div class="ol-card-thumb"><img src="'+esc(recThumb)+'" alt="" loading="lazy">'
+      + '<div class="ol-mini-disc"></div></div>'
+      + '<div class="ol-card-meta-wrap"><div class="ol-card-member" style="color:'+recColor+'">'+esc(recMemberDisplay)+'</div>'
+      + '<div class="ol-card-title">'+esc(received.title)+'</div>'
+      + '<div class="ol-card-date">'+esc(received.date||'')+'</div></div></div>';
+
+    // Time badge (only for real matches)
+    if(!isFallback && received.time_ago_seconds != null){
+      receivedCardHtml += '<div class="ol-time-badge"><div class="ol-pulse-dot"></div><span>Sent '+esc(olFormatTimeAgo(received.time_ago_seconds))+' ago</span></div>';
+    }
+    // Mood tags
+    if(received.mood_tags && received.mood_tags.length){
+      receivedCardHtml += '<div class="ol-mood-row">'+received.mood_tags.map(function(m){return '<span class="ol-mood-pill">'+esc(m)+'</span>';}).join('')+'</div>';
+    }
+    // Message
+    if(received.message){
+      receivedCardHtml += '<div class="ol-card-msg">'+esc(received.message)+'</div>';
+    }
+    // YouTube button
+    if(recVid){
+      receivedCardHtml += '<button class="ol-yt-btn" onclick="olClickYoutube(\''+esc(received.url)+'\',\''+esc(String(received.video_id))+'\',\''+esc(received.member)+'\')">'
+        + '<svg viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19"/></svg>'
+        + 'LISTEN ON YOUTUBE</button>';
+    }
+    receivedCardHtml += '</div>';
+
+    olSetShareData(received.title, olLastExchangeId || '');
+  }
+
+  // Actions
+  var actionsHtml = '<div class="ol-actions">'
+    + (received ? '<button class="ol-action-btn ol-action-primary" onclick="olShareResult()">'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>'
+      + 'SHARE THIS LINK</button>' : '')
+    + '<div class="ol-action-row">'
+    + '<button class="ol-action-btn ol-action-secondary" onclick="olResetCompose()">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-11.36L1 10"/></svg>'
+    + 'SEND ANOTHER</button>'
+    + '<button class="ol-action-btn ol-action-secondary" onclick="olClose()">'
+    + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+    + 'CLOSE</button>'
+    + '</div></div>';
+
+  // Assemble
+  var body = document.getElementById('olResultBody');
+  body.innerHTML = badgeHtml
+    + '<div class="ol-cards-area">' + sentCardHtml + connectorHtml + receivedCardHtml + '</div>'
+    + actionsHtml;
+
   olShowScreen('olResultScreen');
+
+  // Init particles
+  olParticles.destroy();
+  var pCanvas = document.getElementById('olResultParticles');
+  if(pCanvas) olParticles.init(pCanvas);
 }
 
 window.olClickYoutube = function(url, videoId, member){
@@ -3114,6 +3235,7 @@ window.olTrackXShare = function() {
 };
 
 window.olResetCompose = function(){
+  olParticles.destroy();
   olSelectedSong = null;
   olSelectedMoods = [];
   olSending = false;
