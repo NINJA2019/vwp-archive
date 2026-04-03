@@ -68,20 +68,7 @@ Admin.DB = (() => {
     if (filter) url += '&' + filter;
     if (order) url += '&order=' + order;
     if (limit) url += '&limit=' + limit;
-    var h = headers();
-    if (p.head) {
-      h['Prefer'] = 'count=exact';
-      h['Range'] = '0-0';
-    }
-    var res = await fetch(url, { headers: h });
-    if (p.head) {
-      var range = res.headers.get('content-range');
-      if (range) {
-        var parts = range.split('/');
-        return parseInt(parts[1], 10) || 0;
-      }
-      return 0;
-    }
+    var res = await fetch(url, { headers: headers() });
     var data = await res.json();
     if (!Array.isArray(data)) {
       console.error('[Admin.DB] query error:', table, data);
@@ -215,11 +202,11 @@ Admin.Tabs.register('songs', {
   async render(el) {
     var U = Admin.UI;
     try {
-      var [totalCount, unlinkedCount, dupRows, albumCount, allVideos] = await Promise.all([
-        Admin.DB.query('videos', { select: 'id', head: true }),
-        Admin.DB.query('videos', { select: 'id', filter: 'album_id=is.null', head: true }),
+      var [totalRows, unlinkedRows, dupRows, albumRows, allVideos] = await Promise.all([
+        Admin.DB.query('videos', { select: 'id' }),
+        Admin.DB.query('videos', { select: 'id', filter: 'album_id=is.null' }),
         Admin.DB.query('videos', { select: 'url', order: 'url' }),
-        Admin.DB.query('albums', { select: 'id', head: true }),
+        Admin.DB.query('albums', { select: 'id' }),
         Admin.DB.query('videos', { select: 'id,title,member,date,url', order: 'date.desc', limit: '1000' })
       ]);
 
@@ -246,10 +233,10 @@ Admin.Tabs.register('songs', {
       el.innerHTML =
         '<div class="adm-section">' + U.section('Quick stats') +
         '<div class="adm-grid adm-grid-4">' +
-        U.metric(totalCount.toLocaleString(), 'Total songs') +
-        U.metric(unlinkedCount, 'Unlinked albums', { status: unlinkedCount > 50 ? 'warn' : '' }) +
+        U.metric(totalRows.length.toLocaleString(), 'Total songs') +
+        U.metric(unlinkedRows.length, 'Unlinked albums', { status: unlinkedRows.length > 50 ? 'warn' : '' }) +
         U.metric(dupCount, 'Duplicate URLs', { status: dupCount > 0 ? 'danger' : '' }) +
-        U.metric(albumCount, 'Albums') +
+        U.metric(albumRows.length, 'Albums') +
         '</div></div>' +
 
         '<div class="adm-section">' + U.section('Content freshness', U.badge('live', 'info')) +
@@ -391,9 +378,9 @@ Admin.Tabs.register('health', {
   async render(el) {
     var U = Admin.UI;
     try {
-      var [songCount, bottleCount, freshVideos] = await Promise.all([
-        Admin.DB.query('videos', { select: 'id', head: true }),
-        Admin.DB.query('song_bottles', { select: 'id', head: true }),
+      var [songRows, bottleRows, freshVideos] = await Promise.all([
+        Admin.DB.query('videos', { select: 'id' }),
+        Admin.DB.query('song_bottles', { select: 'id' }),
         Admin.DB.query('videos', { select: 'id,title,member,date', order: 'date.desc', limit: '500' })
       ]);
 
@@ -416,10 +403,10 @@ Admin.Tabs.register('health', {
         '<div class="adm-section">' + U.section('Database') +
         '<div class="adm-grid adm-grid-2">' +
         '<div class="adm-card"><div style="font-weight:500;font-size:12px;margin-bottom:4px">Videos</div>' +
-        '<div style="font-family:var(--f-ui);font-size:18px;font-weight:700">' + songCount.toLocaleString() +
+        '<div style="font-family:var(--f-ui);font-size:18px;font-weight:700">' + songRows.length.toLocaleString() +
         ' <span style="font-size:12px;color:var(--admin-text-dim);font-weight:300">records</span></div></div>' +
         '<div class="adm-card"><div style="font-weight:500;font-size:12px;margin-bottom:4px">Bottles</div>' +
-        '<div style="font-family:var(--f-ui);font-size:18px;font-weight:700">' + bottleCount.toLocaleString() +
+        '<div style="font-family:var(--f-ui);font-size:18px;font-weight:700">' + bottleRows.length.toLocaleString() +
         ' <span style="font-size:12px;color:var(--admin-text-dim);font-weight:300">records</span></div></div>' +
         '</div></div>' +
 
