@@ -801,7 +801,7 @@ body.light .shelf-empty { color: var(--dim); }
 .tt-lp[data-m="ol"] .tt-lp-face{box-shadow:0 0 0px 1.5px rgba(108,92,231,.45),0 0 10px 2px rgba(108,92,231,.18),0 0 24px 6px rgba(80,60,200,.10),0 0 55px 14px rgba(60,40,180,.06);animation:ol-ring-pulse 2.8s ease-in-out infinite}
 @keyframes ol-ring-pulse{0%,100%{box-shadow:0 0 0px 1.5px rgba(108,92,231,.45),0 0 10px 2px rgba(108,92,231,.18),0 0 24px 6px rgba(80,60,200,.10),0 0 55px 14px rgba(60,40,180,.06)}50%{box-shadow:0 0 0px 2.5px rgba(150,130,255,.90),0 0 20px 6px rgba(108,92,231,.48),0 0 44px 12px rgba(80,60,200,.28),0 0 90px 26px rgba(60,40,180,.16)}}
 /* Sending — Shazam-style pulse */
-.ol-sending-view{z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}
+.ol-sending-view{z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center}
 #ol-sending-particles{position:absolute;inset:0;z-index:0;pointer-events:none}
 .ol-sending-pulse-container{position:relative;width:280px;height:280px;display:flex;align-items:center;justify-content:center;z-index:1}
 .ol-pulse-ring{position:absolute;width:80px;height:80px;border-radius:50%;border:1px solid var(--ol-accent,#6c5ce7);opacity:0;animation:ol-pulse-out 2.8s cubic-bezier(.25,.46,.45,.94) infinite}
@@ -931,6 +931,30 @@ body.light .shelf-empty { color: var(--dim); }
 .ol-toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:#111627;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:10px 20px;font-size:12px;color:rgba(232,236,248,.45);z-index:10100;opacity:0;transition:all .4s cubic-bezier(.4,0,.2,1);white-space:nowrap}
 .ol-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #observer-link-screen ::-webkit-scrollbar{width:0;height:0}
+/* ── OL Mobile (≤700px) ── */
+@media(max-width:700px){
+  .ol-hero{padding:4px 0 12px}
+  .ol-hero-canvas{height:56px}
+  .ol-hero-title{font-size:18px;margin-top:8px}
+  .ol-hero-sub{font-size:11px;margin-top:4px}
+  .ol-section-label{margin-bottom:8px}
+  .ol-song-select{padding:10px;margin-bottom:14px}
+  .ol-mood-tags{margin-bottom:14px}
+  .ol-msg-wrap{margin-bottom:16px}
+  .ol-send-btn{padding:14px}
+  .ol-daily-counter{margin-top:8px}
+  .ol-sending-pulse-container{width:220px;height:220px}
+  .ol-sending-text-area{margin-top:28px}
+  .ol-sending-card{margin-top:24px}
+}
+@media(max-width:380px){
+  .ol-hero-canvas{display:none}
+  .ol-hero{padding:2px 0 8px}
+  .ol-hero-title{margin-top:0}
+  .ol-sending-pulse-container{width:180px;height:180px}
+  .ol-center-disc{width:72px;height:72px}
+  .ol-lp-icon{width:42px;height:42px}
+}
 @media(prefers-reduced-motion:reduce){.ol-pulse-ring,.ol-center-disc,.ol-sending-title,.ol-lp-icon svg{animation:none!important}}
 
 /* === RECEIVED RECORDS shelf === */
