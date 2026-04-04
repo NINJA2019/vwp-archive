@@ -55,6 +55,7 @@ Admin.Auth = (() => {
 Admin.DB = (() => {
   function headers() {
     const t = Admin.Auth.getToken();
+    if (!t) throw new Error('No auth token — check SUPABASE_SECRET_KEY env var or re-login');
     return { 'apikey': t, 'Authorization': 'Bearer ' + t };
   }
 
@@ -64,20 +65,22 @@ Admin.DB = (() => {
     var filter = p.filter || '';
     var order = p.order || '';
     var limit = p.limit || '';
-    var url = Admin.Auth.getUrl() + '/rest/v1/' + table + '?select=' + encodeURIComponent(select);
+    var base = Admin.Auth.getUrl();
+    if (!base) throw new Error('Supabase URL is not set — check SUPABASE_URL env var');
+    var url = base + '/rest/v1/' + table + '?select=' + encodeURIComponent(select);
     if (filter) url += '&' + filter;
     if (order) url += '&order=' + order;
     if (limit) url += '&limit=' + limit;
     var h = headers();
     var res = await fetch(url, { headers: h });
     if (!res.ok) {
-      console.error('[Admin.DB] HTTP ' + res.status + ' for ' + table);
-      return [];
+      var detail = '';
+      try { var b = await res.json(); detail = b.message || b.msg || JSON.stringify(b); } catch(e) { detail = res.statusText; }
+      throw new Error('HTTP ' + res.status + ' on ' + table + ': ' + detail);
     }
     var data = await res.json();
     if (!Array.isArray(data)) {
-      console.error('[Admin.DB] non-array response:', table, data);
-      return [];
+      throw new Error(table + ' returned non-array: ' + JSON.stringify(data).slice(0, 200));
     }
     return data;
   }
@@ -89,8 +92,9 @@ Admin.DB = (() => {
       body: JSON.stringify(params || {})
     });
     if (!res.ok) {
-      console.error('[Admin.DB] RPC ' + fnName + ' failed: HTTP ' + res.status);
-      return null;
+      var detail = '';
+      try { var b = await res.json(); detail = b.message || JSON.stringify(b); } catch(e) { detail = res.statusText; }
+      throw new Error('RPC ' + fnName + ' HTTP ' + res.status + ': ' + detail);
     }
     return res.json();
   }
