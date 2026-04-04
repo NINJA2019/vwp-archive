@@ -3,49 +3,55 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>V.W.P ARCHIVE — Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Barlow+Condensed:wght@300;400;600;700&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="admin.css?v=5">
+<title>MU-TH-UR 6000 — V.W.P ARCHIVE</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css?v=6">
 </head>
 <body>
+<div class="crt-wrap">
+  <div class="crt-flicker"></div>
 
-<div id="auth-gate">
-  <canvas id="grid-bg"></canvas>
-  <div class="terminal" id="terminal">
-    <div class="glyph-row" id="glyphs"></div>
-    <div class="sys-id">
-      <div class="designation">V.W.P ARCHIVE</div>
-      <div class="sub">OBSERVATION TERMINAL — NODE 07</div>
-    </div>
-    <div class="status-log" id="status-log"></div>
-    <div class="auth-area" id="auth-area">
-      <div class="auth-prompt">AUTHORIZATION SEQUENCE</div>
-      <div class="auth-input-wrap">
-        <input type="password" id="auth-input" placeholder="ENTER CODE" autocomplete="off">
+  <div id="auth-gate">
+    <canvas id="grid-bg"></canvas>
+    <div class="terminal" id="terminal">
+      <div class="sys-id">
+        <div class="mu">MU-TH-UR 6000</div>
+        <div class="designation">V.W.P ARCHIVE</div>
+        <div class="sub">INTERFACE 2037 — NOSTROMO TERMINAL</div>
       </div>
-      <div class="auth-err" id="auth-err"></div>
-    </div>
-    <div class="auth-footer">
-      ARCHIVE SYSTEMS v2.7.1 — LAST ACTIVE: 2,847 CYCLES AGO<br>
-      MAINTENANCE PROTOCOL REQUIRES LEVEL-3 CLEARANCE
+      <div class="status-log" id="status-log"></div>
+      <div class="auth-area" id="auth-area">
+        <div class="auth-prompt">AUTHORIZATION REQUIRED</div>
+        <div class="auth-input-wrap">
+          <input type="password" id="auth-input" placeholder="ENTER ACCESS CODE" autocomplete="off">
+        </div>
+        <div class="auth-err" id="auth-err"></div>
+      </div>
+      <div class="auth-footer">
+        WEYLAND-YUTANI CORP — BUILDING BETTER WORLDS<br>
+        SYSTEM REQUIRES LEVEL-3 CLEARANCE
+      </div>
     </div>
   </div>
+
+  <div class="boot-seq" id="boot-seq">
+    <div class="boot-text" id="boot-text">REACTIVATING SYSTEM...</div>
+    <div class="boot-bar-outer"><div class="boot-bar-inner" id="boot-bar"></div></div>
+  </div>
+
+  <div class="admin-shell" id="admin-shell">
+    <header class="admin-header">
+      <div class="admin-title"><strong>MU-TH-UR</strong> — V.W.P ARCHIVE TERMINAL</div>
+      <button class="admin-logout" id="logout-btn">DISCONNECT</button>
+    </header>
+    <nav class="tab-nav" id="tab-nav"></nav>
+    <main class="tab-content" id="tab-content"></main>
+  </div>
+
 </div>
 
-<div class="boot-seq" id="boot-seq">
-  <div class="boot-text" id="boot-text">REACTIVATING SYSTEM...</div>
-  <div class="boot-bar-outer"><div class="boot-bar-inner" id="boot-bar"></div></div>
-</div>
+<div id="modal-root"></div>
 
-<div class="admin-shell" id="admin-shell" style="display:none">
-  <header class="admin-header">
-    <div class="admin-title"><strong>ADMIN</strong> — V.W.P ARCHIVE</div>
-    <button class="admin-logout" id="logout-btn">LOGOUT</button>
-  </header>
-  <nav class="tab-nav" id="tab-nav"></nav>
-  <main class="tab-content" id="tab-content"></main>
-</div>
-
-<script src="admin.js?v=5"></script>
+<script src="admin.js?v=6"></script>
 </body>
 </html>
