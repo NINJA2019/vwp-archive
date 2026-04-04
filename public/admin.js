@@ -237,7 +237,7 @@ MU.Tabs.register('songs', {
       var results = await Promise.all([
         MU.DB.query('videos', { select: 'id', limit: '9999' }),
         MU.DB.query('videos', { select: 'id', filter: 'album_id=is.null', limit: '9999' }),
-        MU.DB.query('albums', { select: 'id,title', limit: '999' }),
+        MU.DB.query('albums', { select: 'id,name', limit: '999' }),
         MU.DB.query('videos', {
           select: 'id,title,member,date,url,tags,note,spotify_url,album_id',
           order: 'date.desc.nullslast', limit: '9999'
@@ -267,7 +267,7 @@ MU.Tabs.register('songs', {
 
       // Album map for display
       var albumMap = {};
-      albumRows.forEach(function(a) { albumMap[a.id] = a.title; });
+      albumRows.forEach(function(a) { albumMap[a.id] = a.name; });
 
       // ── Render stats ──
       var statsHtml =
@@ -440,7 +440,7 @@ MU.Tabs.register('songs', {
           '<div class="n-form-row"><div class="n-form-label">NOTE</div><input class="n-input" id="add-note"></div>' +
           '<div class="n-form-row"><div class="n-form-label">ALBUM</div>' +
           '<select class="n-select" id="add-album" style="width:100%"><option value="">NONE</option>' +
-          state.albums.map(function(a) { return '<option value="' + a.id + '">' + esc(a.title) + '</option>'; }).join('') +
+          state.albums.map(function(a) { return '<option value="' + a.id + '">' + esc(a.name) + '</option>'; }).join('') +
           '</select></div>';
 
         var modal = MU.Modal.open('ADD NEW RECORD', html, {
@@ -511,7 +511,7 @@ MU.Tabs.register('songs', {
           '<div class="n-form-row"><div class="n-form-label">ALBUM</div>' +
           '<select class="n-select" id="edit-album" style="width:100%"><option value="">NONE</option>' +
           state.albums.map(function(a) {
-            return '<option value="' + a.id + '"' + (String(video.album_id) === String(a.id) ? ' selected' : '') + '>' + esc(a.title) + '</option>';
+            return '<option value="' + a.id + '"' + (String(video.album_id) === String(a.id) ? ' selected' : '') + '>' + esc(a.name) + '</option>';
           }).join('') + '</select></div>' +
           '<div class="n-form-row"><div class="n-form-label">URL</div>' +
           '<div style="font-size:10px;color:var(--text-xdim);word-break:break-all">' + esc(video.url || '') + '</div></div>';
@@ -569,7 +569,7 @@ MU.Tabs.register('songs', {
           '<input class="n-input" id="import-tags"></div>' +
           '<div class="n-form-row"><div class="n-form-label">ALBUM (OPTIONAL)</div>' +
           '<select class="n-select" id="import-album" style="width:100%"><option value="">NONE</option>' +
-          state.albums.map(function(a) { return '<option value="' + a.id + '">' + esc(a.title) + '</option>'; }).join('') +
+          state.albums.map(function(a) { return '<option value="' + a.id + '">' + esc(a.name) + '</option>'; }).join('') +
           '</select></div>' +
           '<div id="import-result"></div>';
 
