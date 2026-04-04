@@ -16,7 +16,6 @@ const Admin = {};
 /* ═══ Auth ═══ */
 Admin.Auth = (() => {
   let _token = sessionStorage.getItem('admin_token');
-  let _supabaseUrl = sessionStorage.getItem('admin_supabase_url');
 
   return {
     async login(password) {
@@ -29,9 +28,7 @@ Admin.Auth = (() => {
         const data = await res.json();
         if (data.ok) {
           _token = data.token;
-          _supabaseUrl = data.supabase_url;
           sessionStorage.setItem('admin_token', _token);
-          sessionStorage.setItem('admin_supabase_url', _supabaseUrl);
           return { ok: true };
         }
         return { ok: false, msg: data.msg || 'ACCESS DENIED' };
@@ -41,41 +38,37 @@ Admin.Auth = (() => {
     },
     logout() {
       _token = null;
-      _supabaseUrl = null;
       sessionStorage.removeItem('admin_token');
       sessionStorage.removeItem('admin_supabase_url');
     },
-    isAuthed() { return !!_token && !!_supabaseUrl; },
-    getToken() { return _token; },
-    getUrl() { return _supabaseUrl; }
+    isAuthed() { return !!_token; },
+    getToken() { return _token; }
   };
 })();
 
 /* ═══ DB ═══ */
 Admin.DB = (() => {
-  function headers() {
-    const t = Admin.Auth.getToken();
-    if (!t) throw new Error('No auth token — check SUPABASE_SECRET_KEY env var or re-login');
-    return { 'apikey': t, 'Authorization': 'Bearer ' + t };
-  }
-
   async function query(table, params) {
     var p = params || {};
-    var select = p.select || '*';
-    var filter = p.filter || '';
-    var order = p.order || '';
-    var limit = p.limit || '';
-    var base = Admin.Auth.getUrl();
-    if (!base) throw new Error('Supabase URL is not set — check SUPABASE_URL env var');
-    var url = base + '/rest/v1/' + table + '?select=' + encodeURIComponent(select);
-    if (filter) url += '&' + filter;
-    if (order) url += '&order=' + order;
-    if (limit) url += '&limit=' + limit;
-    var h = headers();
-    var res = await fetch(url, { headers: h });
+    var token = Admin.Auth.getToken();
+    if (!token) throw new Error('No session token — please re-login');
+    var res = await fetch('/.netlify/functions/admin-query', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({
+        table: table,
+        select: p.select || '*',
+        filter: p.filter || '',
+        order: p.order || '',
+        limit: p.limit || ''
+      })
+    });
     if (!res.ok) {
       var detail = '';
-      try { var b = await res.json(); detail = b.message || b.msg || JSON.stringify(b); } catch(e) { detail = res.statusText; }
+      try { var b = await res.json(); detail = b.error || b.message || JSON.stringify(b); } catch(e) { detail = res.statusText; }
       throw new Error('HTTP ' + res.status + ' on ' + table + ': ' + detail);
     }
     var data = await res.json();
@@ -85,21 +78,7 @@ Admin.DB = (() => {
     return data;
   }
 
-  async function rpc(fnName, params) {
-    var res = await fetch(Admin.Auth.getUrl() + '/rest/v1/rpc/' + fnName, {
-      method: 'POST',
-      headers: Object.assign({ 'Content-Type': 'application/json' }, headers()),
-      body: JSON.stringify(params || {})
-    });
-    if (!res.ok) {
-      var detail = '';
-      try { var b = await res.json(); detail = b.message || JSON.stringify(b); } catch(e) { detail = res.statusText; }
-      throw new Error('RPC ' + fnName + ' HTTP ' + res.status + ': ' + detail);
-    }
-    return res.json();
-  }
-
-  return { query: query, rpc: rpc };
+  return { query: query };
 })();
 
 /* ═══ UI ═══ */
