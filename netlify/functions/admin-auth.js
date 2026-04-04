@@ -1,6 +1,9 @@
 // POST /.netlify/functions/admin-auth
 // Body: { password: string }
-// Response: { ok: true, token: string, supabase_url: string } | { ok: false, msg: string }
+// Response: { ok: true, token: string } | { ok: false, msg: string }
+// token is a SHA-256 session hash (NOT the Supabase secret key — that stays server-side)
+
+const crypto = require('crypto');
 
 exports.handler = async (event) => {
   const CORS_HEADERS = {
@@ -33,13 +36,16 @@ exports.handler = async (event) => {
       };
     }
 
+    const sessionToken = crypto.createHash('sha256')
+      .update(process.env.ADMIN_PASSWORD)
+      .digest('hex');
+
     return {
       statusCode: 200,
       headers: CORS_HEADERS,
       body: JSON.stringify({
         ok: true,
-        token: process.env.SUPABASE_SECRET_KEY,
-        supabase_url: process.env.SUPABASE_URL
+        token: sessionToken
       })
     };
   } catch (e) {
