@@ -71,11 +71,12 @@ Admin.DB = (() => {
     var h = headers();
     var res = await fetch(url, { headers: h });
     if (!res.ok) {
-      console.error('[Admin.DB] HTTP ' + res.status + ' for ' + table + ' (' + url + ')');
+      console.error('[Admin.DB] HTTP ' + res.status + ' for ' + table);
+      return [];
     }
     var data = await res.json();
     if (!Array.isArray(data)) {
-      console.error('[Admin.DB] non-array response:', table, url, data);
+      console.error('[Admin.DB] non-array response:', table, data);
       return [];
     }
     return data;
@@ -87,6 +88,10 @@ Admin.DB = (() => {
       headers: Object.assign({ 'Content-Type': 'application/json' }, headers()),
       body: JSON.stringify(params || {})
     });
+    if (!res.ok) {
+      console.error('[Admin.DB] RPC ' + fnName + ' failed: HTTP ' + res.status);
+      return null;
+    }
     return res.json();
   }
 
