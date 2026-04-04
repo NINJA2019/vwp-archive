@@ -303,7 +303,8 @@ Admin.Tabs.register('ol', {
       });
       var memArr = Object.keys(memberOL).map(function(m) {
         var d = memberOL[m];
-        return { id: m, name: memberName(m), color: memberColor(m), sent: d.sent, matched: d.matched, fallback: d.fallback, total: d.sent + d.matched + d.fallback };
+        var w = d.sent - d.matched - d.fallback;
+        return { id: m, name: memberName(m), color: memberColor(m), waiting: w, matched: d.matched, fallback: d.fallback, total: d.sent };
       }).sort(function(a, b) { return b.total - a.total; });
       var mxM = Math.max.apply(null, memArr.map(function(m) { return m.total; }).concat([1]));
 
@@ -347,7 +348,7 @@ Admin.Tabs.register('ol', {
             U.dot(m.color) +
             '<span style="width:52px;font-family:var(--f-ui);font-size:12px;font-weight:600;color:' + m.color + '">' + m.name + '</span>' +
             '<div class="adm-sbar" style="flex:1">' +
-            '<div style="flex:' + m.sent + ';background:' + m.color + ';opacity:.55;height:100%"></div>' +
+            '<div style="flex:' + m.waiting + ';background:' + m.color + ';opacity:.55;height:100%"></div>' +
             '<div style="flex:' + m.matched + ';background:var(--ok);opacity:.45;height:100%"></div>' +
             '<div style="flex:' + m.fallback + ';background:var(--danger);opacity:.35;height:100%"></div></div>' +
             '<span style="font-family:var(--f-ui);font-size:12px;font-weight:600;width:24px;text-align:right">' + m.total + '</span></div>';
