@@ -109,7 +109,7 @@ Admin.UI = {
       '%;background:' + (c || 'var(--ok)') + ';opacity:.6"></div></div>';
   },
   status: function(t, y) {
-    var colors = { match: 'var(--ok)', fallback: 'var(--danger)', waiting: 'var(--warn)', expired: 'var(--admin-text-dim)' };
+    var colors = { matched: 'var(--ok)', fallback: 'var(--danger)', waiting: 'var(--warn)', expired: 'var(--admin-text-dim)' };
     return '<span style="color:' + (colors[y] || 'var(--admin-text-dim)') + ';font-size:11px">' + t + '</span>';
   },
   dot: function(c) { return '<span class="adm-dot" style="background:' + c + '"></span>'; },
