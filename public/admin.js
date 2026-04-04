@@ -616,7 +616,7 @@ MU.Tabs.register('ol', {
           select: 'id,status,video_id,matched_with,fallback_video_id,created_at,client_hash,message',
           order: 'created_at.desc', limit: '50'
         }),
-        MU.DB.query('videos', { select: 'id,title,member' })
+        MU.DB.query('videos', { select: 'id,title,member', limit: '9999' })
       ]);
       var allBottles = results[0];
       var recentBottles = results[1];
