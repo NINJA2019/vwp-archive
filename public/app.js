@@ -2943,6 +2943,9 @@ var olSendingParticles = {
   destroy:function(){
     if(this.raf) cancelAnimationFrame(this.raf);
     this.raf = null; this.dots = [];
+    if(this.canvas && this.ctx){
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
     if(this._onResize) window.removeEventListener('resize', this._onResize);
   }
 };
