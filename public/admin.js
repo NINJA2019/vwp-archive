@@ -109,7 +109,7 @@ Admin.UI = {
       '%;background:' + (c || 'var(--ok)') + ';opacity:.6"></div></div>';
   },
   status: function(t, y) {
-    var colors = { match: 'var(--ok)', fallback: 'var(--danger)', waiting: 'var(--warn)', expired: 'var(--admin-text-dim)' };
+    var colors = { matched: 'var(--ok)', fallback: 'var(--danger)', waiting: 'var(--warn)', expired: 'var(--admin-text-dim)' };
     return '<span style="color:' + (colors[y] || 'var(--admin-text-dim)') + ';font-size:11px">' + t + '</span>';
   },
   dot: function(c) { return '<span class="adm-dot" style="background:' + c + '"></span>'; },
@@ -241,9 +241,9 @@ Admin.Tabs.register('songs', {
         '<div class="adm-section">' + U.section('Quick stats') +
         '<div class="adm-grid adm-grid-4">' +
         U.metric(totalCount.toLocaleString(), 'Total songs') +
-        U.metric(unlinkedCount, 'Unlinked albums', { status: unlinkedCount > 50 ? 'warn' : '' }) +
-        U.metric(dupCount, 'Duplicate URLs', { status: dupCount > 0 ? 'danger' : '' }) +
-        U.metric(albumCount, 'Albums') +
+        U.metric(unlinkedCount.toLocaleString(), 'Unlinked albums', { status: unlinkedCount > 50 ? 'warn' : '' }) +
+        U.metric(dupCount.toLocaleString(), 'Duplicate URLs', { status: dupCount > 0 ? 'danger' : '' }) +
+        U.metric(albumCount.toLocaleString(), 'Albums') +
         '</div></div>' +
 
         '<div class="adm-section">' + U.section('Content freshness', U.badge('live', 'info')) +
@@ -303,7 +303,8 @@ Admin.Tabs.register('ol', {
       });
       var memArr = Object.keys(memberOL).map(function(m) {
         var d = memberOL[m];
-        return { id: m, name: memberName(m), color: memberColor(m), sent: d.sent, matched: d.matched, fallback: d.fallback, total: d.sent + d.matched + d.fallback };
+        var w = d.sent - d.matched - d.fallback;
+        return { id: m, name: memberName(m), color: memberColor(m), waiting: w, matched: d.matched, fallback: d.fallback, total: d.sent };
       }).sort(function(a, b) { return b.total - a.total; });
       var mxM = Math.max.apply(null, memArr.map(function(m) { return m.total; }).concat([1]));
 
@@ -347,7 +348,7 @@ Admin.Tabs.register('ol', {
             U.dot(m.color) +
             '<span style="width:52px;font-family:var(--f-ui);font-size:12px;font-weight:600;color:' + m.color + '">' + m.name + '</span>' +
             '<div class="adm-sbar" style="flex:1">' +
-            '<div style="flex:' + m.sent + ';background:' + m.color + ';opacity:.55;height:100%"></div>' +
+            '<div style="flex:' + m.waiting + ';background:' + m.color + ';opacity:.55;height:100%"></div>' +
             '<div style="flex:' + m.matched + ';background:var(--ok);opacity:.45;height:100%"></div>' +
             '<div style="flex:' + m.fallback + ';background:var(--danger);opacity:.35;height:100%"></div></div>' +
             '<span style="font-family:var(--f-ui);font-size:12px;font-weight:600;width:24px;text-align:right">' + m.total + '</span></div>';
@@ -376,6 +377,17 @@ Admin.Tabs.register('ol', {
     } catch (e) {
       el.innerHTML = U.alert('Failed to load OL data: ' + U.esc(e.message));
     }
+  }
+});
+
+/* ═══ Tab: GA4 ═══ */
+Admin.Tabs.register('ga4', {
+  label: 'GA4', order: 30,
+  render: function(el) {
+    el.innerHTML =
+      '<div class="adm-section">' + Admin.UI.section('Google Analytics') +
+      Admin.UI.note('GA4 integration is not yet configured. Visit the <a href="https://analytics.google.com" target="_blank" rel="noopener" style="color:var(--info)">Google Analytics dashboard</a> for traffic data.') +
+      '</div>';
   }
 });
 
