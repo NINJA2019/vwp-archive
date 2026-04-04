@@ -241,9 +241,9 @@ Admin.Tabs.register('songs', {
         '<div class="adm-section">' + U.section('Quick stats') +
         '<div class="adm-grid adm-grid-4">' +
         U.metric(totalCount.toLocaleString(), 'Total songs') +
-        U.metric(unlinkedCount, 'Unlinked albums', { status: unlinkedCount > 50 ? 'warn' : '' }) +
-        U.metric(dupCount, 'Duplicate URLs', { status: dupCount > 0 ? 'danger' : '' }) +
-        U.metric(albumCount, 'Albums') +
+        U.metric(unlinkedCount.toLocaleString(), 'Unlinked albums', { status: unlinkedCount > 50 ? 'warn' : '' }) +
+        U.metric(dupCount.toLocaleString(), 'Duplicate URLs', { status: dupCount > 0 ? 'danger' : '' }) +
+        U.metric(albumCount.toLocaleString(), 'Albums') +
         '</div></div>' +
 
         '<div class="adm-section">' + U.section('Content freshness', U.badge('live', 'info')) +
