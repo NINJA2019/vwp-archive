@@ -380,6 +380,17 @@ Admin.Tabs.register('ol', {
   }
 });
 
+/* ═══ Tab: GA4 ═══ */
+Admin.Tabs.register('ga4', {
+  label: 'GA4', order: 30,
+  render: function(el) {
+    el.innerHTML =
+      '<div class="adm-section">' + Admin.UI.section('Google Analytics') +
+      Admin.UI.note('GA4 integration is not yet configured. Visit the <a href="https://analytics.google.com" target="_blank" rel="noopener" style="color:var(--info)">Google Analytics dashboard</a> for traffic data.') +
+      '</div>';
+  }
+});
+
 /* ═══ Tab: HEALTH ═══ */
 Admin.Tabs.register('health', {
   label: 'HEALTH', order: 40,
