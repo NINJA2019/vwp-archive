@@ -205,7 +205,7 @@ exports.handler = async (event) => {
         {
           method: 'PATCH',
           headers: sbHeaders,
-          body: JSON.stringify({ status: 'fallback', fallback_video_id: recommended.id }),
+          body: JSON.stringify({ status: 'fallback_matched', fallback_video_id: recommended.id }),
         }
       );
     }
