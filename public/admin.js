@@ -1,31 +1,60 @@
-/* ═══ V.W.P ARCHIVE — ADMIN PANEL ═══
+/* ═══ MU-TH-UR 6000 — NOSTROMO TERMINAL ═══
+ * V.W.P ARCHIVE ADMIN v2
  *
  * Architecture:
- *   Admin.Auth  — login/logout via Netlify Function
- *   Admin.DB    — Supabase REST query abstraction
- *   Admin.UI    — component factory (metric, section, badge, bar, table, etc.)
- *   Admin.Tabs  — tab registry + routing
+ *   MU.Auth    — login / logout / session token
+ *   MU.DB      — CRUD proxy via admin-query.js
+ *   MU.Decode  — text decode animation (glyph → character)
+ *   MU.UI      — component helpers
+ *   MU.Tabs    — tab registry + routing
  *
- * Adding a new tab:
- *   Admin.Tabs.register('id', { label, order, dot, init, render })
- *
- * ═══════════════════════════════════ */
+ * Tabs:
+ *   SONGS DATABASE  — full CRUD, search, pagination, inline edit, tag bulk, playlist import
+ *   OBSERVER-LINK   — stats, moderation, hourly heatmap, client hash threat
+ */
 
-const Admin = {};
+var MU = {};
+
+/* ═══ Constants ═══ */
+var MEMBERS = {
+  vwp:     { name: 'V.W.P',   color: 'var(--c-vwp)' },
+  kafu:    { name: 'KAF',     color: 'var(--c-kafu)' },
+  rime:    { name: 'RIM',     color: 'var(--c-rime)' },
+  harusar: { name: 'HARU',    color: 'var(--c-harusar)' },
+  isekai:  { name: 'JOUCHO',  color: 'var(--c-isekai)' },
+  koko:    { name: 'KOKO',    color: 'var(--c-koko)' }
+};
+var MEMBER_IDS = Object.keys(MEMBERS);
+var PAGE_SIZE = 50;
+
+function memberName(m) {
+  if (!m) return '?';
+  var parts = m.split(' ');
+  if (parts.length === 1) return (MEMBERS[m] || {}).name || m.toUpperCase();
+  return parts.map(function(s) { return (MEMBERS[s] || {}).name || s.toUpperCase(); }).join('+');
+}
+function memberColor(m) {
+  if (!m) return 'var(--text-xdim)';
+  var parts = m.split(' ');
+  if (parts.length === 1) return (MEMBERS[m] || {}).color || 'var(--text-xdim)';
+  return 'var(--c-vwp)';
+}
+function daysSince(d) { return d ? Math.floor((Date.now() - new Date(d)) / 86400000) : 999; }
+function fmtDate(d) { return d ? d.slice(0, 10).replace(/-/g, '/') : '—'; }
+function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
 /* ═══ Auth ═══ */
-Admin.Auth = (() => {
-  let _token = sessionStorage.getItem('admin_token');
-
+MU.Auth = (function() {
+  var _token = sessionStorage.getItem('admin_token');
   return {
     async login(password) {
       try {
-        const res = await fetch('/.netlify/functions/admin-auth', {
+        var res = await fetch('/.netlify/functions/admin-auth', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password })
+          body: JSON.stringify({ password: password })
         });
-        const data = await res.json();
+        var data = await res.json();
         if (data.ok) {
           _token = data.token;
           sessionStorage.setItem('admin_token', _token);
@@ -33,256 +62,580 @@ Admin.Auth = (() => {
         }
         return { ok: false, msg: data.msg || 'ACCESS DENIED' };
       } catch (e) {
-        return { ok: false, msg: 'NETWORK ERROR — BRIDGE OFFLINE' };
+        return { ok: false, msg: 'NETWORK FAILURE — BRIDGE OFFLINE' };
       }
     },
-    logout() {
-      _token = null;
-      sessionStorage.removeItem('admin_token');
-      sessionStorage.removeItem('admin_supabase_url');
-    },
-    isAuthed() { return !!_token; },
-    getToken() { return _token; }
+    logout: function() { _token = null; sessionStorage.removeItem('admin_token'); },
+    isAuthed: function() { return !!_token; },
+    getToken: function() { return _token; }
   };
 })();
 
 /* ═══ DB ═══ */
-Admin.DB = (() => {
-  async function query(table, params) {
-    var p = params || {};
-    var token = Admin.Auth.getToken();
-    if (!token) throw new Error('No session token — please re-login');
+MU.DB = (function() {
+  async function call(body) {
+    var token = MU.Auth.getToken();
+    if (!token) throw new Error('NO SESSION — RE-LOGIN REQUIRED');
     var res = await fetch('/.netlify/functions/admin-query', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + token
-      },
-      body: JSON.stringify({
-        table: table,
-        select: p.select || '*',
-        filter: p.filter || '',
-        order: p.order || '',
-        limit: p.limit || ''
-      })
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(body)
     });
-    if (!res.ok) {
-      var detail = '';
-      try { var b = await res.json(); detail = b.error || b.message || JSON.stringify(b); } catch(e) { detail = res.statusText; }
-      throw new Error('HTTP ' + res.status + ' on ' + table + ': ' + detail);
-    }
     var data = await res.json();
-    if (!Array.isArray(data)) {
-      throw new Error(table + ' returned non-array: ' + JSON.stringify(data).slice(0, 200));
+    if (!res.ok) {
+      var msg = data.error || data.message || JSON.stringify(data);
+      throw new Error('HTTP ' + res.status + ': ' + msg);
     }
     return data;
   }
-
-  return { query: query };
+  return {
+    query: function(table, params) {
+      var p = params || {};
+      return call({
+        table: table, select: p.select || '*',
+        filter: p.filter || '', order: p.order || '',
+        limit: p.limit || '', offset: p.offset || ''
+      }).then(function(data) {
+        if (!Array.isArray(data)) throw new Error(table + ' RETURNED NON-ARRAY');
+        return data;
+      });
+    },
+    insert: function(table, data) { return call({ action: 'insert', table: table, data: data }); },
+    update: function(table, id, data) { return call({ action: 'update', table: table, id: id, data: data }); },
+    remove: function(table, id) { return call({ action: 'delete', table: table, id: id }); },
+    youtube: function(videoId) { return call({ action: 'youtube', videoId: videoId }); },
+    playlistImport: function(playlistId, member, tags, albumId) {
+      return call({ action: 'playlist-import', playlistId: playlistId, member: member, tags: tags || '', album_id: albumId || null });
+    }
+  };
 })();
 
-/* ═══ UI ═══ */
-Admin.UI = {
-  metric: function(v, l, opts) {
-    var o = opts || {};
-    var c = o.status ? ' ' + o.status : '';
-    return '<div class="adm-card adm-metric"><div class="adm-metric-val' + c + '">' + v +
-      '</div><div class="adm-metric-label">' + l + '</div>' +
-      (o.sub ? '<div class="adm-metric-sub">' + o.sub + '</div>' : '') + '</div>';
+/* ═══ UI Helpers ═══ */
+MU.UI = {
+  metric: function(val, label, cls) {
+    return '<div class="n-card n-metric"><div class="n-metric-val' +
+      (cls ? ' ' + cls : '') + '">' + val + '</div><div class="n-metric-label">' + label + '</div></div>';
   },
-  section: function(t, b) { return '<div class="adm-section-title">' + t + (b || '') + '</div>'; },
-  badge: function(t, y) { return '<span class="adm-badge adm-badge-' + (y || 'accent') + '">' + t + '</span>'; },
-  bar: function(p, c) {
-    return '<div class="adm-bar"><div class="adm-bar-fill" style="width:' + p +
-      '%;background:' + (c || 'var(--ok)') + ';opacity:.6"></div></div>';
+  section: function(title, badge) {
+    return '<div class="n-section-title">' + title + (badge || '') + '</div>';
   },
-  status: function(t, y) {
-    var colors = { matched: 'var(--ok)', fallback: 'var(--danger)', waiting: 'var(--warn)', expired: 'var(--admin-text-dim)' };
-    return '<span style="color:' + (colors[y] || 'var(--admin-text-dim)') + ';font-size:11px">' + t + '</span>';
+  badge: function(text, type) {
+    return ' <span class="n-badge' + (type ? ' n-badge-' + type : '') + '">' + text + '</span>';
   },
-  dot: function(c) { return '<span class="adm-dot" style="background:' + c + '"></span>'; },
-  alert: function(t, y) { return '<div class="adm-alert adm-alert-' + (y || 'danger') + '">' + t + '</div>'; },
-  note: function(t) { return '<div class="adm-note">' + t + '</div>'; },
-  freshColor: function(d) { return d <= 30 ? 'var(--ok)' : d <= 60 ? 'var(--warn)' : 'var(--danger)'; },
-  hourColor: function(v, m) { var p = v / m; return p > .6 ? 'var(--warn)' : p > .3 ? 'var(--admin-text-sub)' : 'var(--admin-text-dim)'; },
-  loading: function() { return '<div class="adm-loading">LOADING DATA...</div>'; },
-  esc: function(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  loading: function() { return '<div class="n-loading">ACCESSING DATABASE...</div>'; },
+  alert: function(msg, type) {
+    return '<div class="n-alert' + (type ? ' n-alert-' + type : '') + '">' + msg + '</div>';
+  },
+  dot: function(color) { return '<span class="n-dot" style="background:' + color + '"></span>'; },
+  tag: function(t) { return '<span class="n-tag">' + esc(t) + '</span>'; },
+  freshColor: function(d) { return d <= 30 ? 'var(--phosphor)' : d <= 60 ? 'var(--amber)' : 'var(--red)'; },
+  hourColor: function(v, m) {
+    var p = v / m;
+    return p > .6 ? 'var(--amber)' : p > .3 ? 'var(--text-dim)' : 'var(--text-xdim)';
+  }
 };
 
-/* ═══ Tabs ═══ */
-Admin.Tabs = (() => {
-  var R = {};
-  var A = null;
-  var nav = function() { return document.getElementById('tab-nav'); };
-  var cnt = function() { return document.getElementById('tab-content'); };
+/* ═══ Decode Animation ═══ */
+MU.Decode = (function() {
+  var GLYPHS = '◇◈⊕⊗△▽⬡⬢☉⊙◉▣▤▥▦▧▨▩';
+  function decode(el) {
+    var text = el.textContent;
+    if (!text || text.length > 200) return;
+    var chars = text.split('');
+    el.textContent = '';
+    chars.forEach(function(ch, i) {
+      var span = document.createElement('span');
+      span.className = 'decode-char';
+      span.textContent = GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
+      el.appendChild(span);
+      setTimeout(function() { span.textContent = ch; }, 30 + i * 15 + Math.random() * 20);
+    });
+  }
+  function decodeAll(container) {
+    var els = container.querySelectorAll('[data-decode]');
+    els.forEach(function(el) { decode(el); });
+  }
+  return { decode: decode, decodeAll: decodeAll };
+})();
 
+/* ═══ Tabs ═══ */
+MU.Tabs = (function() {
+  var registry = {};
+  var active = null;
   return {
-    register: function(id, cfg) { R[id] = Object.assign({}, cfg, { _init: false }); },
+    register: function(id, cfg) { registry[id] = cfg; },
     mount: function() {
-      var n = nav(), c = cnt();
-      n.innerHTML = ''; c.innerHTML = '';
-      var s = Object.entries(R).sort(function(a, b) { return (a[1].order || 0) - (b[1].order || 0); });
-      s.forEach(function(entry) {
+      var nav = document.getElementById('tab-nav');
+      var cnt = document.getElementById('tab-content');
+      nav.innerHTML = ''; cnt.innerHTML = '';
+      var sorted = Object.entries(registry).sort(function(a, b) { return (a[1].order || 0) - (b[1].order || 0); });
+      sorted.forEach(function(entry) {
         var id = entry[0], cfg = entry[1];
-        var b = document.createElement('button');
-        b.className = 'tab-btn'; b.dataset.tab = id;
-        b.innerHTML = cfg.label + '<span class="tab-dot' + (cfg.dot ? ' visible' : '') + '"></span>';
-        b.addEventListener('click', function() { Admin.Tabs.switchTo(id); });
-        n.appendChild(b);
-        var p = document.createElement('div');
-        p.className = 'tab-panel'; p.id = 'panel-' + id;
-        c.appendChild(p);
+        var btn = document.createElement('button');
+        btn.className = 'tab-btn'; btn.dataset.tab = id;
+        btn.textContent = cfg.label;
+        btn.addEventListener('click', function() { MU.Tabs.switchTo(id); });
+        nav.appendChild(btn);
+        var panel = document.createElement('div');
+        panel.className = 'tab-panel'; panel.id = 'panel-' + id;
+        cnt.appendChild(panel);
       });
-      if (s.length) this.switchTo(s[0][0]);
+      if (sorted.length) this.switchTo(sorted[0][0]);
     },
     switchTo: function(id) {
-      if (!R[id]) return;
-      A = id;
-      nav().querySelectorAll('.tab-btn').forEach(function(b) {
+      if (!registry[id]) return;
+      active = id;
+      document.querySelectorAll('.tab-btn').forEach(function(b) {
         b.classList.toggle('active', b.dataset.tab === id);
       });
       document.querySelectorAll('.tab-panel').forEach(function(p) {
         p.classList.toggle('active', p.id === 'panel-' + id);
       });
-      var cfg = R[id], p = document.getElementById('panel-' + id);
-      p.innerHTML = Admin.UI.loading();
-      cfg.render(p);
-      if (!cfg._init && cfg.init) { cfg.init(p); cfg._init = true; }
-    }
+      var panel = document.getElementById('panel-' + id);
+      panel.innerHTML = MU.UI.loading();
+      registry[id].render(panel);
+    },
+    getActive: function() { return active; }
   };
 })();
 
-/* ═══ Member helpers ═══ */
-var MEMBER_COLORS = {
-  vwp: 'var(--c-vwp)', kafu: 'var(--c-kafu)', rime: 'var(--c-rime)',
-  harusar: 'var(--c-harusar)', isekai: 'var(--c-isekai)', koko: 'var(--c-koko)'
+/* ═══ Modal ═══ */
+MU.Modal = {
+  open: function(title, contentHtml, opts) {
+    opts = opts || {};
+    var root = document.getElementById('modal-root');
+    root.innerHTML = '<div class="n-modal-bg"><div class="n-modal">' +
+      '<div class="n-modal-title">' + title + '</div>' +
+      '<div class="n-modal-body">' + contentHtml + '</div>' +
+      (opts.noActions ? '' : '<div class="n-form-actions">' +
+        '<button class="n-btn" id="modal-cancel">CANCEL</button>' +
+        '<button class="n-btn" id="modal-ok">' + (opts.okLabel || 'CONFIRM') + '</button>' +
+      '</div>') +
+      '</div></div>';
+    var bg = root.querySelector('.n-modal-bg');
+    bg.addEventListener('click', function(e) { if (e.target === bg) MU.Modal.close(); });
+    if (document.getElementById('modal-cancel')) {
+      document.getElementById('modal-cancel').addEventListener('click', MU.Modal.close);
+    }
+    if (document.getElementById('modal-ok') && opts.onOk) {
+      document.getElementById('modal-ok').addEventListener('click', function() { opts.onOk(); });
+    }
+    return root.querySelector('.n-modal');
+  },
+  close: function() { document.getElementById('modal-root').innerHTML = ''; }
 };
-var MEMBER_NAMES = {
-  vwp: 'V.W.P', kafu: 'KAF', rime: 'RIM',
-  harusar: 'HARU', isekai: 'JOUCHO', koko: 'KOKO'
-};
 
-function memberColor(m) {
-  if (!m) return 'var(--admin-text-dim)';
-  var solo = m.split(' ');
-  if (solo.length === 1) return MEMBER_COLORS[m] || 'var(--admin-text-dim)';
-  return 'var(--c-vwp)';
-}
-
-function memberName(m) {
-  if (!m) return '?';
-  var solo = m.split(' ');
-  if (solo.length === 1) return MEMBER_NAMES[m] || m.toUpperCase();
-  return solo.map(function(s) { return MEMBER_NAMES[s] || s.toUpperCase(); }).join('+');
-}
-
-function daysSince(dateStr) {
-  if (!dateStr) return 999;
-  var d = new Date(dateStr);
-  var now = new Date();
-  return Math.floor((now - d) / 86400000);
-}
-
-function fmtDate(d) {
-  if (!d) return '—';
-  return d.slice(0, 10).replace(/-/g, '/');
-}
-
-/* ═══ Tab: SONGS ═══ */
-Admin.Tabs.register('songs', {
-  label: 'SONGS', order: 10,
-  async render(el) {
-    var U = Admin.UI;
+/* ═══════════════════════════════════════
+ *   TAB: SONGS DATABASE
+ * ═══════════════════════════════════════ */
+MU.Tabs.register('songs', {
+  label: 'SONGS DATABASE', order: 10,
+  render: async function(el) {
+    var U = MU.UI;
     try {
-      var [totalRows, unlinkedRows, dupRows, albumRows, allVideos] = await Promise.all([
-        Admin.DB.query('videos', { select: 'id' }),
-        Admin.DB.query('videos', { select: 'id', filter: 'album_id=is.null' }),
-        Admin.DB.query('videos', { select: 'url', order: 'url' }),
-        Admin.DB.query('albums', { select: 'id' }),
-        Admin.DB.query('videos', { select: 'id,title,member,date,url', order: 'date.desc', limit: '1000' })
+      // Fetch data
+      var results = await Promise.all([
+        MU.DB.query('videos', { select: 'id', limit: '9999' }),
+        MU.DB.query('videos', { select: 'id', filter: 'album_id=is.null', limit: '9999' }),
+        MU.DB.query('albums', { select: 'id,title', limit: '999' }),
+        MU.DB.query('videos', {
+          select: 'id,title,member,date,url,tags,note,spotify_url,album_id',
+          order: 'date.desc.nullslast', limit: '9999'
+        })
       ]);
-      var totalCount = totalRows.length;
-      var unlinkedCount = unlinkedRows.length;
-      var albumCount = albumRows.length;
+      var totalRows = results[0];
+      var unlinkedRows = results[1];
+      var albumRows = results[2];
+      var allVideos = results[3];
 
-      // Count duplicates
+      // Duplicate count
       var urlMap = {};
-      dupRows.forEach(function(r) { urlMap[r.url] = (urlMap[r.url] || 0) + 1; });
+      allVideos.forEach(function(v) { urlMap[v.url] = (urlMap[v.url] || 0) + 1; });
       var dupCount = Object.values(urlMap).filter(function(c) { return c > 1; }).length;
 
-      // Freshness per solo member
+      // Freshness per member
       var freshness = [];
-      var seenMember = {};
+      var seen = {};
       allVideos.forEach(function(v) {
-        if (!v.member || v.member.indexOf(' ') !== -1) return;
-        if (seenMember[v.member]) return;
-        seenMember[v.member] = true;
-        freshness.push({
-          member: v.member, title: v.title, date: v.date,
-          days: daysSince(v.date), color: memberColor(v.member)
-        });
+        if (!v.member || v.member.indexOf(' ') !== -1 || seen[v.member]) return;
+        seen[v.member] = true;
+        var d = daysSince(v.date);
+        freshness.push({ member: v.member, title: v.title, date: v.date, days: d });
       });
       freshness.sort(function(a, b) { return a.days - b.days; });
-      var stale = freshness.filter(function(f) { return f.days > 60; });
+      var staleMembers = freshness.filter(function(f) { return f.days > 60; });
 
-      el.innerHTML =
-        '<div class="adm-section">' + U.section('Quick stats') +
-        '<div class="adm-grid adm-grid-4">' +
-        U.metric(totalCount.toLocaleString(), 'Total songs') +
-        U.metric(unlinkedCount.toLocaleString(), 'Unlinked albums', { status: unlinkedCount > 50 ? 'warn' : '' }) +
-        U.metric(dupCount.toLocaleString(), 'Duplicate URLs', { status: dupCount > 0 ? 'danger' : '' }) +
-        U.metric(albumCount.toLocaleString(), 'Albums') +
+      // Album map for display
+      var albumMap = {};
+      albumRows.forEach(function(a) { albumMap[a.id] = a.title; });
+
+      // ── Render stats ──
+      var statsHtml =
+        '<div class="n-section">' + U.section('QUICK STATS') +
+        '<div class="n-grid n-g4">' +
+          U.metric(totalRows.length.toLocaleString(), 'TOTAL SONGS') +
+          U.metric(unlinkedRows.length.toLocaleString(), 'UNLINKED', unlinkedRows.length > 50 ? 'warn' : '') +
+          U.metric(dupCount.toLocaleString(), 'DUPLICATES', dupCount > 0 ? 'err' : '') +
+          U.metric(albumRows.length.toLocaleString(), 'ALBUMS') +
         '</div></div>' +
 
-        '<div class="adm-section">' + U.section('Content freshness', U.badge('live', 'info')) +
-        '<div class="adm-card adm-card-wide">' +
+        '<div class="n-section">' + U.section('CONTENT FRESHNESS', U.badge('LIVE')) +
+        '<div class="n-card n-card-wide">' +
         freshness.map(function(f) {
-          return '<div class="adm-fresh-row">' + U.dot(f.color) +
-            '<span style="width:56px;font-family:var(--f-ui);font-size:12px;font-weight:600;color:' + f.color + '">' +
-            memberName(f.member) + '</span>' +
-            '<span style="flex:1;font-size:11px;color:var(--admin-text-sub)">' +
-            U.esc(f.title) + ' — ' + fmtDate(f.date) + '</span>' +
-            '<span style="font-family:var(--f-ui);font-size:12px;font-weight:600;color:' +
-            U.freshColor(f.days) + '">' + f.days + 'd ago</span></div>';
+          var c = memberColor(f.member);
+          return '<div class="n-fresh-row">' + U.dot(c) +
+            '<span style="width:56px;font-size:11px;color:' + c + '">' + memberName(f.member) + '</span>' +
+            '<span style="flex:1;font-size:10px;color:var(--text-dim)">' + esc(f.title) + ' — ' + fmtDate(f.date) + '</span>' +
+            '<span style="font-size:11px;color:' + U.freshColor(f.days) + '">' + f.days + 'D</span></div>';
         }).join('') +
-        (stale.length ? U.alert(stale.map(function(m) { return memberName(m.member); }).join(', ') + ' — 60d+ since last update') : '') +
+        (staleMembers.length ? U.alert(staleMembers.map(function(m) { return memberName(m.member); }).join(', ') + ' — 60D+ SINCE LAST UPDATE', 'warn') : '') +
         '</div></div>';
+
+      // ── Table state ──
+      var state = {
+        videos: allVideos,
+        filtered: allVideos.slice(),
+        page: 0,
+        search: '',
+        sortCol: 'date',
+        sortAsc: false,
+        memberFilter: '',
+        albums: albumRows,
+        albumMap: albumMap
+      };
+
+      // ── Toolbar ──
+      var toolbarHtml =
+        '<div class="n-section">' + U.section('SONG TABLE', U.badge(allVideos.length + ' RECORDS')) +
+        '<div class="n-toolbar">' +
+          '<input class="n-input" id="song-search" placeholder="SEARCH TITLE / URL...">' +
+          '<select class="n-select" id="song-member-filter"><option value="">ALL MEMBERS</option>' +
+          MEMBER_IDS.map(function(m) { return '<option value="' + m + '">' + memberName(m) + '</option>'; }).join('') +
+          '</select>' +
+          '<button class="n-btn" id="song-add-btn">+ ADD RECORD</button>' +
+          '<button class="n-btn n-btn-amber" id="song-import-btn">PLAYLIST IMPORT</button>' +
+        '</div>' +
+        '<div id="song-table-wrap"></div>' +
+        '<div class="n-pagination" id="song-pagination"></div>' +
+        '</div>';
+
+      el.innerHTML = statsHtml + toolbarHtml;
+      MU.Decode.decodeAll(el);
+
+      // ── Table rendering ──
+      function applyFilters() {
+        var q = state.search.toLowerCase();
+        state.filtered = state.videos.filter(function(v) {
+          if (state.memberFilter && v.member !== state.memberFilter && (!v.member || v.member.indexOf(state.memberFilter) === -1)) return false;
+          if (q && (v.title || '').toLowerCase().indexOf(q) === -1 && (v.url || '').toLowerCase().indexOf(q) === -1 && (v.tags || '').toLowerCase().indexOf(q) === -1) return false;
+          return true;
+        });
+        // Sort
+        state.filtered.sort(function(a, b) {
+          var av = a[state.sortCol] || '', bv = b[state.sortCol] || '';
+          if (av < bv) return state.sortAsc ? -1 : 1;
+          if (av > bv) return state.sortAsc ? 1 : -1;
+          return 0;
+        });
+        state.page = 0;
+        renderTable();
+      }
+
+      function renderTable() {
+        var start = state.page * PAGE_SIZE;
+        var pageData = state.filtered.slice(start, start + PAGE_SIZE);
+        var totalPages = Math.ceil(state.filtered.length / PAGE_SIZE) || 1;
+
+        var cols = [
+          { key: 'title', label: 'TITLE', sort: true },
+          { key: 'member', label: 'MEMBER', sort: true },
+          { key: 'date', label: 'DATE', sort: true },
+          { key: 'tags', label: 'TAGS', sort: false },
+          { key: '_actions', label: '', sort: false }
+        ];
+
+        var thead = '<tr>' + cols.map(function(c) {
+          var cls = c.sort ? ' sortable' : '';
+          if (c.key === state.sortCol) cls += ' sorted' + (state.sortAsc ? ' asc' : '');
+          return '<th class="' + cls + '" data-sort="' + (c.sort ? c.key : '') + '">' + c.label + '</th>';
+        }).join('') + '</tr>';
+
+        var tbody = pageData.map(function(v) {
+          var tags = (v.tags || '').split(',').filter(Boolean).map(function(t) { return MU.UI.tag(t.trim()); }).join('');
+          var mc = memberColor(v.member);
+          return '<tr data-id="' + v.id + '">' +
+            '<td class="title-col">' + esc(v.title || '—') + '</td>' +
+            '<td style="color:' + mc + '">' + memberName(v.member) + '</td>' +
+            '<td class="mono">' + fmtDate(v.date) + '</td>' +
+            '<td>' + tags + '</td>' +
+            '<td class="r"><div class="n-btn-group">' +
+              '<button class="n-btn n-btn-sm song-edit" data-id="' + v.id + '">EDIT</button>' +
+              '<button class="n-btn n-btn-sm n-btn-red song-del" data-id="' + v.id + '">DEL</button>' +
+            '</div></td></tr>';
+        }).join('');
+
+        document.getElementById('song-table-wrap').innerHTML =
+          '<table class="n-table"><thead>' + thead + '</thead><tbody>' +
+          (tbody || '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-xdim)">NO RECORDS FOUND</td></tr>') +
+          '</tbody></table>';
+
+        document.getElementById('song-pagination').innerHTML =
+          '<span>' + state.filtered.length + ' RECORDS — PAGE ' + (state.page + 1) + '/' + totalPages + '</span>' +
+          '<div class="n-btn-group">' +
+            '<button class="n-btn n-btn-sm" id="page-prev"' + (state.page === 0 ? ' disabled' : '') + '>&lt; PREV</button>' +
+            '<button class="n-btn n-btn-sm" id="page-next"' + (state.page >= totalPages - 1 ? ' disabled' : '') + '>NEXT &gt;</button>' +
+          '</div>';
+
+        // Sort handlers
+        document.querySelectorAll('#song-table-wrap th[data-sort]').forEach(function(th) {
+          if (!th.dataset.sort) return;
+          th.addEventListener('click', function() {
+            if (state.sortCol === th.dataset.sort) { state.sortAsc = !state.sortAsc; }
+            else { state.sortCol = th.dataset.sort; state.sortAsc = true; }
+            applyFilters();
+          });
+        });
+
+        // Pagination
+        var prevBtn = document.getElementById('page-prev');
+        var nextBtn = document.getElementById('page-next');
+        if (prevBtn) prevBtn.addEventListener('click', function() { if (state.page > 0) { state.page--; renderTable(); } });
+        if (nextBtn) nextBtn.addEventListener('click', function() { state.page++; renderTable(); });
+
+        // Edit/Delete handlers
+        document.querySelectorAll('.song-edit').forEach(function(btn) {
+          btn.addEventListener('click', function() { openEditModal(btn.dataset.id); });
+        });
+        document.querySelectorAll('.song-del').forEach(function(btn) {
+          btn.addEventListener('click', function() { confirmDelete(btn.dataset.id); });
+        });
+      }
+
+      // Search + filter events
+      var searchTimer;
+      document.getElementById('song-search').addEventListener('input', function(e) {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(function() { state.search = e.target.value; applyFilters(); }, 200);
+      });
+      document.getElementById('song-member-filter').addEventListener('change', function(e) {
+        state.memberFilter = e.target.value; applyFilters();
+      });
+
+      applyFilters();
+
+      // ── Add record ──
+      document.getElementById('song-add-btn').addEventListener('click', function() {
+        var html =
+          '<div class="n-form-row"><div class="n-form-label">YOUTUBE URL OR VIDEO ID</div>' +
+          '<input class="n-input" id="add-url" placeholder="https://youtube.com/watch?v=..."></div>' +
+          '<button class="n-btn n-btn-sm" id="add-fetch" style="margin-bottom:12px">FETCH METADATA</button>' +
+          '<div id="add-fetched"></div>' +
+          '<div class="n-form-row"><div class="n-form-label">TITLE</div><input class="n-input" id="add-title"></div>' +
+          '<div class="n-form-row"><div class="n-form-label">DATE (YYYY-MM-DD)</div><input class="n-input" id="add-date"></div>' +
+          '<div class="n-form-row"><div class="n-form-label">MEMBER</div>' +
+          '<select class="n-select" id="add-member" style="width:100%">' +
+          MEMBER_IDS.map(function(m) { return '<option value="' + m + '">' + memberName(m) + '</option>'; }).join('') +
+          '<option value="vwp">V.W.P (GROUP)</option></select></div>' +
+          '<div class="n-form-row"><div class="n-form-label">TAGS (COMMA-SEP)</div><input class="n-input" id="add-tags"></div>' +
+          '<div class="n-form-row"><div class="n-form-label">NOTE</div><input class="n-input" id="add-note"></div>' +
+          '<div class="n-form-row"><div class="n-form-label">ALBUM</div>' +
+          '<select class="n-select" id="add-album" style="width:100%"><option value="">NONE</option>' +
+          state.albums.map(function(a) { return '<option value="' + a.id + '">' + esc(a.title) + '</option>'; }).join('') +
+          '</select></div>';
+
+        var modal = MU.Modal.open('ADD NEW RECORD', html, {
+          okLabel: 'INSERT',
+          onOk: async function() {
+            var url = document.getElementById('add-url').value.trim();
+            var title = document.getElementById('add-title').value.trim();
+            var member = document.getElementById('add-member').value;
+            if (!url || !title || !member) { alert('URL, TITLE, AND MEMBER REQUIRED'); return; }
+            // Normalize URL
+            var vidMatch = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+            if (vidMatch) url = 'https://www.youtube.com/watch?v=' + vidMatch[1];
+
+            try {
+              await MU.DB.insert('videos', {
+                url: url,
+                title: title,
+                date: document.getElementById('add-date').value.trim() || null,
+                member: member,
+                tags: document.getElementById('add-tags').value.trim(),
+                note: document.getElementById('add-note').value.trim(),
+                album_id: document.getElementById('add-album').value || null,
+                spotify_url: null
+              });
+              MU.Modal.close();
+              MU.Tabs.switchTo('songs');
+            } catch (e) {
+              alert('INSERT FAILED: ' + e.message);
+            }
+          }
+        });
+
+        // Fetch metadata
+        document.getElementById('add-fetch').addEventListener('click', async function() {
+          var urlVal = document.getElementById('add-url').value.trim();
+          var vidMatch = urlVal.match(/(?:v=|youtu\.be\/|^)([a-zA-Z0-9_-]{11})(?:$|&)/);
+          if (!vidMatch) { document.getElementById('add-fetched').innerHTML = MU.UI.alert('INVALID VIDEO ID'); return; }
+          document.getElementById('add-fetched').innerHTML = '<div class="n-loading">QUERYING YOUTUBE API...</div>';
+          try {
+            var meta = await MU.DB.youtube(vidMatch[1]);
+            document.getElementById('add-title').value = meta.title || '';
+            document.getElementById('add-date').value = meta.date || '';
+            if (!document.getElementById('add-url').value.match(/youtube\.com|youtu\.be/)) {
+              document.getElementById('add-url').value = 'https://www.youtube.com/watch?v=' + vidMatch[1];
+            }
+            document.getElementById('add-fetched').innerHTML = MU.UI.alert('METADATA LOADED: ' + esc(meta.title), 'ok');
+          } catch (e) {
+            document.getElementById('add-fetched').innerHTML = MU.UI.alert('FETCH FAILED: ' + e.message);
+          }
+        });
+      });
+
+      // ── Edit modal ──
+      function openEditModal(id) {
+        var video = state.videos.find(function(v) { return String(v.id) === String(id); });
+        if (!video) return;
+        var html =
+          '<div class="n-form-row"><div class="n-form-label">TITLE</div><input class="n-input" id="edit-title" value="' + esc(video.title || '') + '"></div>' +
+          '<div class="n-form-row"><div class="n-form-label">DATE (YYYY-MM-DD)</div><input class="n-input" id="edit-date" value="' + esc(video.date || '') + '"></div>' +
+          '<div class="n-form-row"><div class="n-form-label">MEMBER</div>' +
+          '<select class="n-select" id="edit-member" style="width:100%">' +
+          MEMBER_IDS.map(function(m) {
+            return '<option value="' + m + '"' + (video.member === m ? ' selected' : '') + '>' + memberName(m) + '</option>';
+          }).join('') + '</select></div>' +
+          '<div class="n-form-row"><div class="n-form-label">TAGS (COMMA-SEP)</div><input class="n-input" id="edit-tags" value="' + esc(video.tags || '') + '"></div>' +
+          '<div class="n-form-row"><div class="n-form-label">NOTE</div><input class="n-input" id="edit-note" value="' + esc(video.note || '') + '"></div>' +
+          '<div class="n-form-row"><div class="n-form-label">SPOTIFY URL</div><input class="n-input" id="edit-spotify" value="' + esc(video.spotify_url || '') + '" style="text-transform:none"></div>' +
+          '<div class="n-form-row"><div class="n-form-label">ALBUM</div>' +
+          '<select class="n-select" id="edit-album" style="width:100%"><option value="">NONE</option>' +
+          state.albums.map(function(a) {
+            return '<option value="' + a.id + '"' + (String(video.album_id) === String(a.id) ? ' selected' : '') + '>' + esc(a.title) + '</option>';
+          }).join('') + '</select></div>' +
+          '<div class="n-form-row"><div class="n-form-label">URL</div>' +
+          '<div style="font-size:10px;color:var(--text-xdim);word-break:break-all">' + esc(video.url || '') + '</div></div>';
+
+        MU.Modal.open('EDIT RECORD #' + id, html, {
+          okLabel: 'SAVE',
+          onOk: async function() {
+            try {
+              await MU.DB.update('videos', id, {
+                title: document.getElementById('edit-title').value.trim(),
+                date: document.getElementById('edit-date').value.trim() || null,
+                member: document.getElementById('edit-member').value,
+                tags: document.getElementById('edit-tags').value.trim(),
+                note: document.getElementById('edit-note').value.trim(),
+                spotify_url: document.getElementById('edit-spotify').value.trim() || null,
+                album_id: document.getElementById('edit-album').value || null
+              });
+              MU.Modal.close();
+              MU.Tabs.switchTo('songs');
+            } catch (e) {
+              alert('UPDATE FAILED: ' + e.message);
+            }
+          }
+        });
+      }
+
+      // ── Delete confirm ──
+      function confirmDelete(id) {
+        var video = state.videos.find(function(v) { return String(v.id) === String(id); });
+        if (!video) return;
+        MU.Modal.open('CONFIRM DELETION', MU.UI.alert('PURGE RECORD #' + id + ': ' + esc(video.title || '?') + '?', 'warn'), {
+          okLabel: 'PURGE',
+          onOk: async function() {
+            try {
+              await MU.DB.remove('videos', id);
+              MU.Modal.close();
+              MU.Tabs.switchTo('songs');
+            } catch (e) {
+              alert('DELETE FAILED: ' + e.message);
+            }
+          }
+        });
+      }
+
+      // ── Playlist import ──
+      document.getElementById('song-import-btn').addEventListener('click', function() {
+        var html =
+          '<div class="n-form-row"><div class="n-form-label">YOUTUBE PLAYLIST ID</div>' +
+          '<input class="n-input" id="import-playlist" placeholder="PL..."></div>' +
+          '<div class="n-form-row"><div class="n-form-label">MEMBER</div>' +
+          '<select class="n-select" id="import-member" style="width:100%">' +
+          MEMBER_IDS.map(function(m) { return '<option value="' + m + '">' + memberName(m) + '</option>'; }).join('') +
+          '</select></div>' +
+          '<div class="n-form-row"><div class="n-form-label">TAGS (COMMA-SEP, OPTIONAL)</div>' +
+          '<input class="n-input" id="import-tags"></div>' +
+          '<div class="n-form-row"><div class="n-form-label">ALBUM (OPTIONAL)</div>' +
+          '<select class="n-select" id="import-album" style="width:100%"><option value="">NONE</option>' +
+          state.albums.map(function(a) { return '<option value="' + a.id + '">' + esc(a.title) + '</option>'; }).join('') +
+          '</select></div>' +
+          '<div id="import-result"></div>';
+
+        MU.Modal.open('PLAYLIST IMPORT', html, {
+          okLabel: 'IMPORT',
+          onOk: async function() {
+            var plId = document.getElementById('import-playlist').value.trim();
+            var member = document.getElementById('import-member').value;
+            var tags = document.getElementById('import-tags').value.trim();
+            var albumId = document.getElementById('import-album').value;
+            if (!plId) { alert('PLAYLIST ID REQUIRED'); return; }
+            document.getElementById('import-result').innerHTML = '<div class="n-loading">IMPORTING... THIS MAY TAKE A MOMENT</div>';
+            try {
+              var result = await MU.DB.playlistImport(plId, member, tags, albumId);
+              document.getElementById('import-result').innerHTML =
+                MU.UI.alert('COMPLETE — TOTAL: ' + result.total + ' / INSERTED: ' + result.inserted + ' / SKIPPED: ' + result.skipped, 'ok');
+              // Disable OK button to prevent double import
+              var okBtn = document.getElementById('modal-ok');
+              if (okBtn) { okBtn.disabled = true; okBtn.textContent = 'DONE'; }
+            } catch (e) {
+              document.getElementById('import-result').innerHTML = MU.UI.alert('IMPORT FAILED: ' + e.message);
+            }
+          }
+        });
+      });
+
     } catch (e) {
-      el.innerHTML = U.alert('Failed to load song data: ' + U.esc(e.message));
+      el.innerHTML = MU.UI.alert('SYSTEM ERROR: ' + esc(e.message));
     }
   }
 });
 
-/* ═══ Tab: OBSERVER-LINK ═══ */
-Admin.Tabs.register('ol', {
-  label: 'OBSERVER-LINK', order: 20, dot: true,
-  async render(el) {
-    var U = Admin.UI;
+/* ═══════════════════════════════════════
+ *   TAB: OBSERVER-LINK
+ * ═══════════════════════════════════════ */
+MU.Tabs.register('ol', {
+  label: 'OBSERVER-LINK', order: 20,
+  render: async function(el) {
+    var U = MU.UI;
     try {
-      var [allBottles, recentBottles, allVideos] = await Promise.all([
-        Admin.DB.query('song_bottles', { select: 'id,status,video_id,created_at,client_hash' }),
-        Admin.DB.query('song_bottles', {
-          select: 'id,status,video_id,matched_with,fallback_video_id,created_at,client_hash',
-          order: 'created_at.desc', limit: '10'
+      var results = await Promise.all([
+        MU.DB.query('song_bottles', { select: 'id,status,video_id,created_at,client_hash,message', limit: '9999' }),
+        MU.DB.query('song_bottles', {
+          select: 'id,status,video_id,matched_with,fallback_video_id,created_at,client_hash,message',
+          order: 'created_at.desc', limit: '50'
         }),
-        Admin.DB.query('videos', { select: 'id,title,member' })
+        MU.DB.query('videos', { select: 'id,title,member' })
       ]);
+      var allBottles = results[0];
+      var recentBottles = results[1];
+      var allVideos = results[2];
 
-      // Video lookup map
+      // Video lookup
       var vidMap = {};
       allVideos.forEach(function(v) { vidMap[v.id] = v; });
 
       // Status counts
-      var statusCounts = { waiting: 0, matched: 0, fallback: 0, expired: 0 };
-      allBottles.forEach(function(b) { statusCounts[b.status] = (statusCounts[b.status] || 0) + 1; });
+      var sc = { waiting: 0, matched: 0, fallback: 0, expired: 0 };
+      allBottles.forEach(function(b) { sc[b.status] = (sc[b.status] || 0) + 1; });
 
-      // Member OL breakdown
+      // Member breakdown
       var memberOL = {};
       allBottles.forEach(function(b) {
         var v = vidMap[b.video_id];
         if (!v || !v.member) return;
-        var members = v.member.split(' ');
-        members.forEach(function(m) {
+        v.member.split(' ').forEach(function(m) {
           if (!memberOL[m]) memberOL[m] = { sent: 0, matched: 0, fallback: 0 };
           memberOL[m].sent++;
           if (b.status === 'matched') memberOL[m].matched++;
@@ -291,158 +644,170 @@ Admin.Tabs.register('ol', {
       });
       var memArr = Object.keys(memberOL).map(function(m) {
         var d = memberOL[m];
-        var w = d.sent - d.matched - d.fallback;
-        return { id: m, name: memberName(m), color: memberColor(m), waiting: w, matched: d.matched, fallback: d.fallback, total: d.sent };
+        return { id: m, waiting: d.sent - d.matched - d.fallback, matched: d.matched, fallback: d.fallback, total: d.sent };
       }).sort(function(a, b) { return b.total - a.total; });
-      var mxM = Math.max.apply(null, memArr.map(function(m) { return m.total; }).concat([1]));
+      var maxMem = Math.max.apply(null, memArr.map(function(m) { return m.total; }).concat([1]));
 
-      // Hourly distribution (JST = UTC+9)
+      // Hourly distribution (JST)
       var hourly = new Array(24).fill(0);
       allBottles.forEach(function(b) {
         if (!b.created_at) return;
-        var d = new Date(b.created_at);
-        var jstH = (d.getUTCHours() + 9) % 24;
-        hourly[jstH]++;
+        var h = (new Date(b.created_at).getUTCHours() + 9) % 24;
+        hourly[h]++;
       });
-      var mxH = Math.max.apply(null, hourly.concat([1]));
-      var pk = hourly.indexOf(mxH);
-      var total = hourly.reduce(function(a, b) { return a + b; }, 0);
-      var evShare = total ? Math.round(hourly.slice(18, 24).reduce(function(a, b) { return a + b; }, 0) / total * 100) : 0;
+      var maxH = Math.max.apply(null, hourly.concat([1]));
+      var peakH = hourly.indexOf(maxH);
+      var totalB = hourly.reduce(function(a, b) { return a + b; }, 0);
+      var evShare = totalB ? Math.round(hourly.slice(18, 24).reduce(function(a, b) { return a + b; }, 0) / totalB * 100) : 0;
 
-      // Recent exchanges table
-      var recentHtml = recentBottles.map(function(b) {
-        var sentV = vidMap[b.video_id];
-        var time = b.created_at ? new Date(b.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' }) : '—';
-        var hash = (b.client_hash || '').slice(0, 4);
-        return '<tr><td class="mono">' + time + '</td>' +
-          '<td>' + U.status(b.status, b.status) + '</td>' +
-          '<td class="title">' + (sentV ? U.esc(sentV.title) : '?') + '</td>' +
-          '<td class="mono">' + hash + '...</td></tr>';
-      }).join('');
+      // Client hash frequency (threat detection)
+      var hashCount = {};
+      allBottles.forEach(function(b) {
+        if (b.client_hash) hashCount[b.client_hash] = (hashCount[b.client_hash] || 0) + 1;
+      });
+      var suspectHashes = Object.entries(hashCount)
+        .filter(function(e) { return e[1] >= 10; })
+        .sort(function(a, b) { return b[1] - a[1]; })
+        .slice(0, 10);
 
-      el.innerHTML =
-        '<div class="adm-section">' + U.section('Bottle pool', U.badge('Supabase', 'accent')) +
-        '<div class="adm-grid adm-grid-4">' +
-        U.metric(statusCounts.waiting, 'Waiting', { status: 'warn' }) +
-        U.metric(statusCounts.matched, 'Matched', { status: 'ok' }) +
-        U.metric(statusCounts.fallback, 'Fallback', { status: 'danger' }) +
-        U.metric(statusCounts.expired || 0, 'Expired 7d+') +
-        '</div></div>' +
+      // ── Render ──
+      var statsHtml =
+        '<div class="n-section">' + U.section('BOTTLE POOL') +
+        '<div class="n-grid n-g4">' +
+          U.metric(sc.waiting, 'WAITING', 'warn') +
+          U.metric(sc.matched, 'MATCHED') +
+          U.metric(sc.fallback, 'FALLBACK', 'err') +
+          U.metric(sc.expired || 0, 'EXPIRED') +
+        '</div></div>';
 
-        '<div class="adm-section">' + U.section('Member breakdown', U.badge('live', 'info')) +
-        '<div class="adm-card adm-card-wide">' +
+      var memberHtml =
+        '<div class="n-section">' + U.section('MEMBER BREAKDOWN') +
+        '<div class="n-card n-card-wide">' +
         memArr.map(function(m) {
-          return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--admin-border)">' +
-            U.dot(m.color) +
-            '<span style="width:52px;font-family:var(--f-ui);font-size:12px;font-weight:600;color:' + m.color + '">' + m.name + '</span>' +
-            '<div class="adm-sbar" style="flex:1">' +
-            '<div style="flex:' + m.waiting + ';background:' + m.color + ';opacity:.55;height:100%"></div>' +
-            '<div style="flex:' + m.matched + ';background:var(--ok);opacity:.45;height:100%"></div>' +
-            '<div style="flex:' + m.fallback + ';background:var(--danger);opacity:.35;height:100%"></div></div>' +
-            '<span style="font-family:var(--f-ui);font-size:12px;font-weight:600;width:24px;text-align:right">' + m.total + '</span></div>';
+          var c = memberColor(m.id);
+          return '<div class="n-fresh-row">' + U.dot(c) +
+            '<span style="width:52px;font-size:11px;color:' + c + '">' + memberName(m.id) + '</span>' +
+            '<div class="n-sbar" style="flex:1;display:flex;gap:1px;height:16px;overflow:hidden">' +
+              '<div style="flex:' + m.waiting + ';background:' + c + ';opacity:.55;height:100%"></div>' +
+              '<div style="flex:' + m.matched + ';background:var(--phosphor);opacity:.45;height:100%"></div>' +
+              '<div style="flex:' + m.fallback + ';background:var(--red);opacity:.35;height:100%"></div>' +
+            '</div>' +
+            '<span style="font-size:11px;width:28px;text-align:right">' + m.total + '</span></div>';
         }).join('') +
-        '</div></div>' +
+        '</div></div>';
 
-        '<div class="adm-section">' + U.section('Hourly (JST)', U.badge('Peak: ' + pk + ':00', 'warn')) +
-        '<div class="adm-card adm-card-wide">' +
-        '<div class="adm-grid adm-grid-3" style="margin-bottom:12px">' +
-        U.metric(pk + ':00', 'Most active') +
-        U.metric(evShare + '%', '18-24 share') +
-        U.metric(allBottles.length, 'Total bottles') +
+      var hourlyHtml =
+        '<div class="n-section">' + U.section('HOURLY DISTRIBUTION (JST)', U.badge('PEAK: ' + peakH + ':00', 'warn')) +
+        '<div class="n-card n-card-wide">' +
+        '<div class="n-grid n-g3" style="margin-bottom:12px">' +
+          U.metric(peakH + ':00', 'PEAK HOUR') +
+          U.metric(evShare + '%', '18-24 SHARE') +
+          U.metric(allBottles.length, 'TOTAL BOTTLES') +
         '</div>' +
-        '<div class="adm-hours">' + hourly.map(function(v) {
-          return '<div class="adm-hour-bar" style="height:' + (v / mxH * 100) + '%;background:' +
-            U.hourColor(v, mxH) + ';opacity:' + (v / mxH * .6 + .2) + '"></div>';
+        '<div class="n-hours">' + hourly.map(function(v) {
+          return '<div class="n-hour-bar" style="height:' + (v / maxH * 100) + '%;background:' +
+            U.hourColor(v, maxH) + ';opacity:' + (v / maxH * .6 + .2) + '"></div>';
         }).join('') + '</div>' +
-        '<div class="adm-hour-labels">' + hourly.map(function(_, i) {
+        '<div class="n-hour-labels">' + hourly.map(function(_, i) {
           return '<span>' + (i % 3 === 0 ? i : '') + '</span>';
-        }).join('') + '</div></div></div>' +
+        }).join('') + '</div></div></div>';
 
-        '<div class="adm-section">' + U.section('Recent exchanges') +
-        '<div class="adm-card adm-card-wide"><table class="adm-table">' +
-        '<thead><tr><th>Time</th><th>Status</th><th>Sent</th><th>Hash</th></tr></thead>' +
-        '<tbody>' + recentHtml + '</tbody></table></div></div>';
-    } catch (e) {
-      el.innerHTML = U.alert('Failed to load OL data: ' + U.esc(e.message));
-    }
-  }
-});
+      // Recent bottles with moderation
+      var recentHtml =
+        '<div class="n-section">' + U.section('RECENT EXCHANGES') +
+        '<div class="n-card n-card-wide"><table class="n-table"><thead><tr>' +
+          '<th>TIME</th><th>STATUS</th><th>SONG</th><th>MSG</th><th>HASH</th><th></th>' +
+        '</tr></thead><tbody>' +
+        recentBottles.map(function(b) {
+          var sentV = vidMap[b.video_id];
+          var time = b.created_at ? new Date(b.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Tokyo' }) : '—';
+          var hash = (b.client_hash || '').slice(0, 6);
+          var statusCls = b.status === 'matched' ? 'n-status-ok' : b.status === 'fallback' ? 'n-status-err' : b.status === 'waiting' ? 'n-status-warn' : 'n-status-dim';
+          var msg = b.message ? esc(b.message).slice(0, 30) : '<span style="color:var(--text-xdim)">—</span>';
+          return '<tr data-bottle-id="' + b.id + '">' +
+            '<td class="mono">' + time + '</td>' +
+            '<td><span class="n-status ' + statusCls + '">' + (b.status || '?').toUpperCase() + '</span></td>' +
+            '<td class="title-col">' + (sentV ? esc(sentV.title) : '?') + '</td>' +
+            '<td>' + msg + '</td>' +
+            '<td class="mono">' + hash + '</td>' +
+            '<td class="r"><div class="n-btn-group">' +
+              (b.message ? '<button class="n-btn n-btn-sm n-btn-amber ol-null-msg" data-id="' + b.id + '">NULL MSG</button>' : '') +
+              '<button class="n-btn n-btn-sm n-btn-red ol-purge" data-id="' + b.id + '">PURGE</button>' +
+            '</div></td></tr>';
+        }).join('') +
+        '</tbody></table></div></div>';
 
-/* ═══ Tab: GA4 ═══ */
-Admin.Tabs.register('ga4', {
-  label: 'GA4', order: 30,
-  render: function(el) {
-    el.innerHTML =
-      '<div class="adm-section">' + Admin.UI.section('Google Analytics') +
-      Admin.UI.note('GA4 integration is not yet configured. Visit the <a href="https://analytics.google.com" target="_blank" rel="noopener" style="color:var(--info)">Google Analytics dashboard</a> for traffic data.') +
-      '</div>';
-  }
-});
+      // Client hash threat table
+      var threatHtml = '';
+      if (suspectHashes.length) {
+        threatHtml =
+          '<div class="n-section">' + U.section('CLIENT HASH THREAT DETECTION', U.badge('ANOMALY', 'err')) +
+          '<div class="n-card n-card-wide"><table class="n-table"><thead><tr>' +
+            '<th>HASH</th><th>COUNT</th><th>THREAT LEVEL</th><th></th>' +
+          '</tr></thead><tbody>' +
+          suspectHashes.map(function(entry) {
+            var h = entry[0], cnt = entry[1];
+            var level = cnt >= 50 ? 'CRITICAL' : cnt >= 20 ? 'HIGH' : 'ELEVATED';
+            var cls = cnt >= 50 ? 'n-status-err' : cnt >= 20 ? 'n-status-warn' : 'n-status-dim';
+            return '<tr>' +
+              '<td class="mono">' + h.slice(0, 12) + '...</td>' +
+              '<td>' + cnt + '</td>' +
+              '<td><span class="n-status ' + cls + '">' + level + '</span></td>' +
+              '<td class="r"><button class="n-btn n-btn-sm n-btn-red ol-ban-hash" data-hash="' + esc(h) + '">BAN</button></td></tr>';
+          }).join('') +
+          '</tbody></table></div></div>';
+      }
 
-/* ═══ Tab: HEALTH ═══ */
-Admin.Tabs.register('health', {
-  label: 'HEALTH', order: 40,
-  async render(el) {
-    var U = Admin.UI;
-    try {
-      var [songRows, bottleRows, freshVideos] = await Promise.all([
-        Admin.DB.query('videos', { select: 'id' }),
-        Admin.DB.query('song_bottles', { select: 'id' }),
-        Admin.DB.query('videos', { select: 'id,title,member,date', order: 'date.desc', limit: '500' })
-      ]);
-      var songCount = songRows.length;
-      var bottleCount = bottleRows.length;
+      el.innerHTML = statsHtml + memberHtml + hourlyHtml + recentHtml + threatHtml;
+      MU.Decode.decodeAll(el);
 
-      // Freshness per solo member
-      var freshness = [];
-      var seenMember = {};
-      freshVideos.forEach(function(v) {
-        if (!v.member || v.member.indexOf(' ') !== -1) return;
-        if (seenMember[v.member]) return;
-        seenMember[v.member] = true;
-        freshness.push({
-          member: v.member, title: v.title, date: v.date,
-          days: daysSince(v.date), color: memberColor(v.member)
+      // ── Moderation handlers ──
+      // NULL MSG — clear message field
+      el.querySelectorAll('.ol-null-msg').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          var id = btn.dataset.id;
+          if (!confirm('NULL MESSAGE ON BOTTLE #' + id + '?')) return;
+          try {
+            await MU.DB.update('song_bottles', id, { message: null });
+            btn.textContent = 'DONE';
+            btn.disabled = true;
+          } catch (e) { alert('FAILED: ' + e.message); }
         });
       });
-      freshness.sort(function(a, b) { return a.days - b.days; });
-      var stale = freshness.filter(function(f) { return f.days > 60; });
 
-      el.innerHTML =
-        '<div class="adm-section">' + U.section('Database') +
-        '<div class="adm-grid adm-grid-2">' +
-        '<div class="adm-card"><div style="font-weight:500;font-size:12px;margin-bottom:4px">Videos</div>' +
-        '<div style="font-family:var(--f-ui);font-size:18px;font-weight:700">' + songCount.toLocaleString() +
-        ' <span style="font-size:12px;color:var(--admin-text-dim);font-weight:300">records</span></div></div>' +
-        '<div class="adm-card"><div style="font-weight:500;font-size:12px;margin-bottom:4px">Bottles</div>' +
-        '<div style="font-family:var(--f-ui);font-size:18px;font-weight:700">' + bottleCount.toLocaleString() +
-        ' <span style="font-size:12px;color:var(--admin-text-dim);font-weight:300">records</span></div></div>' +
-        '</div></div>' +
+      // PURGE — delete bottle
+      el.querySelectorAll('.ol-purge').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          var id = btn.dataset.id;
+          if (!confirm('PURGE BOTTLE #' + id + '? THIS CANNOT BE UNDONE.')) return;
+          try {
+            await MU.DB.remove('song_bottles', id);
+            var row = btn.closest('tr');
+            if (row) row.remove();
+          } catch (e) { alert('FAILED: ' + e.message); }
+        });
+      });
 
-        '<div class="adm-section">' + U.section('Content freshness', U.badge('live', 'info')) +
-        '<div class="adm-card adm-card-wide">' +
-        freshness.map(function(f) {
-          return '<div class="adm-fresh-row">' + U.dot(f.color) +
-            '<span style="width:56px;font-family:var(--f-ui);font-size:12px;font-weight:600;color:' + f.color + '">' +
-            memberName(f.member) + '</span>' +
-            '<span style="flex:1;font-size:11px;color:var(--admin-text-sub)">' +
-            U.esc(f.title) + ' — ' + fmtDate(f.date) + '</span>' +
-            '<span style="font-family:var(--f-ui);font-size:12px;font-weight:600;color:' +
-            U.freshColor(f.days) + '">' + f.days + 'd ago</span></div>';
-        }).join('') +
-        (stale.length ? U.alert(stale.map(function(m) { return memberName(m.member); }).join(', ') + ' — 60d+ since last update') : '') +
-        '</div></div>' +
+      // BAN hash — placeholder (would need a ban_list table or similar)
+      el.querySelectorAll('.ol-ban-hash').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          alert('BAN SYSTEM NOT YET IMPLEMENTED.\nHASH: ' + btn.dataset.hash + '\nManually add to ban list in Supabase.');
+        });
+      });
 
-        U.note('Netlify usage (functions/bandwidth) is available in the <a href="https://app.netlify.com" target="_blank" rel="noopener" style="color:var(--info)">Netlify dashboard</a>. Supabase usage is in the <a href="https://supabase.com/dashboard" target="_blank" rel="noopener" style="color:var(--info)">Supabase dashboard</a>.');
     } catch (e) {
-      el.innerHTML = U.alert('Failed to load health data: ' + U.esc(e.message));
+      el.innerHTML = U.alert('SYSTEM ERROR: ' + esc(e.message));
     }
   }
 });
 
-/* ═══ Background circuit grid ═══ */
+/* ═══════════════════════════════════════
+ *   Background Grid (Auth Gate)
+ * ═══════════════════════════════════════ */
 (function() {
-  var c = document.getElementById('grid-bg'), ctx = c.getContext('2d');
+  var c = document.getElementById('grid-bg');
+  if (!c) return;
+  var ctx = c.getContext('2d');
   var W, H, t = 0;
   function resize() {
     var d = devicePixelRatio || 1;
@@ -455,7 +820,7 @@ Admin.Tabs.register('health', {
   var nodes = [], sp = 60;
   for (var x = sp; x < innerWidth; x += sp)
     for (var y = sp; y < innerHeight; y += sp)
-      if (Math.random() < .35) nodes.push({ x: x, y: y, life: Math.random() * Math.PI * 2, speed: .3 + Math.random() * .5 });
+      if (Math.random() < .3) nodes.push({ x: x, y: y, life: Math.random() * Math.PI * 2, speed: .3 + Math.random() * .5 });
   var edges = [];
   nodes.forEach(function(a, i) {
     nodes.forEach(function(b, j) {
@@ -472,40 +837,30 @@ Admin.Tabs.register('health', {
       ctx.beginPath(); ctx.moveTo(a.x, a.y);
       if (Math.random() < .5) { ctx.lineTo(b.x, a.y); ctx.lineTo(b.x, b.y); }
       else { ctx.lineTo(a.x, b.y); ctx.lineTo(b.x, b.y); }
-      ctx.strokeStyle = 'rgba(74,234,220,' + (.015 + p * .02) + ')'; ctx.lineWidth = .5; ctx.stroke();
+      ctx.strokeStyle = 'rgba(51,255,102,' + (.015 + p * .02) + ')'; ctx.lineWidth = .5; ctx.stroke();
     });
     nodes.forEach(function(n) {
       var p = (Math.sin(t * n.speed + n.life) + 1) / 2;
       ctx.beginPath(); ctx.arc(n.x, n.y, 1.5, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(74,234,220,' + (.04 + p * .08) + ')'; ctx.fill();
+      ctx.fillStyle = 'rgba(51,255,102,' + (.04 + p * .08) + ')'; ctx.fill();
     });
     requestAnimationFrame(draw);
   }
   draw();
 })();
 
-/* ═══ Glyph rotation ═══ */
-(function() {
-  var sets = [
-    '\u27C1 \u22B9 \u25C7 \u27D0 \u2295 \u25CE \u27E1 \u229B',
-    '\u25B3 \u25C9 \u2B21 \u2298 \u25BD \u25C8 \u2B22 \u2297',
-    '\u27D0 \u22B9 \u27E1 \u25C7 \u2295 \u27C1 \u25CE \u229B'
-  ];
-  var el = document.getElementById('glyphs'), i = 0;
-  function cycle() { el.textContent = sets[i % sets.length]; i++; }
-  cycle(); setInterval(cycle, 4000);
-})();
-
-/* ═══ Boot log ═══ */
+/* ═══════════════════════════════════════
+ *   Boot Log + Auth Flow
+ * ═══════════════════════════════════════ */
 var BootLog = (function() {
   var el = document.getElementById('status-log');
   var lines = [
-    { text: 'SYSTEM DORMANT \u2014 INITIATING WAKE SEQUENCE', delay: 300 },
-    { text: 'SCANNING ARCHIVE INTEGRITY......... <span class="ok">OK</span>', delay: 600 },
-    { text: 'OBSERVATION DATABASE: CONNECTING...', delay: 400 },
+    { text: 'MU-TH-UR 6000 — INITIALIZING', delay: 300 },
+    { text: 'CORE SYSTEMS: <span class="ok">ONLINE</span>', delay: 500 },
+    { text: 'ARCHIVE DATABASE: CONNECTING...', delay: 400 },
     { text: 'LINK SUBSYSTEM: STANDBY', delay: 350 },
-    { text: 'NETWORK BRIDGE: <span class="warn">DEGRADED</span> \u2014 FALLBACK ACTIVE', delay: 500 },
-    { text: 'AWAITING OPERATOR CLEARANCE <span class="blink">_</span>', delay: 300 }
+    { text: 'NETWORK RELAY: <span class="warn">DEGRADED</span> — FALLBACK ACTIVE', delay: 500 },
+    { text: 'AWAITING AUTHORIZATION <span class="blink">_</span>', delay: 300 }
   ];
   var idx = 0;
   function next() {
@@ -515,13 +870,13 @@ var BootLog = (function() {
       return;
     }
     var d = document.createElement('div'); d.className = 'log-line'; d.innerHTML = lines[idx].text;
-    el.appendChild(d); requestAnimationFrame(function() { d.classList.add('visible'); });
+    el.appendChild(d);
+    requestAnimationFrame(function() { d.classList.add('visible'); });
     idx++; setTimeout(next, lines[idx - 1].delay);
   }
   return { start: function() { idx = 0; el.innerHTML = ''; setTimeout(next, 500); } };
 })();
 
-/* ═══ Boot sequence ═══ */
 (function() {
   var gate = document.getElementById('auth-gate'),
     input = document.getElementById('auth-input'),
@@ -532,19 +887,18 @@ var BootLog = (function() {
     bootBar = document.getElementById('boot-bar'),
     terminal = document.getElementById('terminal');
 
-  // Auto-login if session exists
-  if (Admin.Auth.isAuthed()) {
+  if (MU.Auth.isAuthed()) {
     gate.style.display = 'none';
-    shell.style.display = 'flex';
-    document.body.style.background = 'var(--admin-bg)';
-    Admin.Tabs.mount();
+    shell.classList.add('active');
+    document.body.style.overflow = 'auto';
+    MU.Tabs.mount();
   } else {
     BootLog.start();
   }
 
   input.addEventListener('keydown', async function(e) {
     if (e.key !== 'Enter') return;
-    var res = await Admin.Auth.login(input.value);
+    var res = await MU.Auth.login(input.value);
     if (res.ok) {
       errEl.textContent = '';
       gate.style.transition = 'opacity .5s'; gate.style.opacity = '0';
@@ -554,9 +908,9 @@ var BootLog = (function() {
           { text: 'CLEARANCE ACCEPTED', pct: 10 },
           { text: 'DECRYPTING ARCHIVE INDEX...', pct: 25 },
           { text: 'LOADING OBSERVATION DATABASE...', pct: 50 },
-          { text: 'INITIALIZING LINK SUBSYSTEM...', pct: 70 },
-          { text: 'MOUNTING ADMIN INTERFACE...', pct: 90 },
-          { text: 'SYSTEM ONLINE', pct: 100 }
+          { text: 'INTERFACE 2037 — MOUNTING...', pct: 70 },
+          { text: 'MU-TH-UR ONLINE', pct: 90 },
+          { text: 'SYSTEM READY', pct: 100 }
         ];
         var i = 0;
         function next() {
@@ -565,9 +919,9 @@ var BootLog = (function() {
               bootSeq.style.transition = 'opacity .4s'; bootSeq.style.opacity = '0';
               setTimeout(function() {
                 bootSeq.classList.remove('active');
-                shell.style.display = 'flex';
-                document.body.style.background = 'var(--admin-bg)';
-                Admin.Tabs.mount();
+                shell.classList.add('active');
+                document.body.style.overflow = 'auto';
+                MU.Tabs.mount();
               }, 400);
             }, 400);
             return;
@@ -586,9 +940,8 @@ var BootLog = (function() {
   });
 
   document.getElementById('logout-btn').addEventListener('click', function() {
-    Admin.Auth.logout();
-    shell.style.display = 'none';
-    document.body.style.background = 'var(--crt-bg)';
+    MU.Auth.logout();
+    shell.classList.remove('active');
     document.body.style.overflow = 'hidden';
     gate.style.display = 'flex'; gate.style.opacity = '1';
     input.value = ''; errEl.textContent = '';
