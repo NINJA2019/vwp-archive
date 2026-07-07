@@ -1,3 +1,18 @@
+// videos取得専用: migration未適用で status 列が存在しない場合（PostgREST 42703）は
+// status=eq.published フィルタなしで1回だけ再試行する。
+// migration適用前は status 列が存在しない = pending 行も存在し得ないため、
+// フィルタなしは従来挙動そのもので安全。
+// 戻り値はパース済みJSON（失敗時は null）。呼び出し側は Array.isArray でチェックする。
+async function fetchVideoRows(url, headers) {
+  let res = await fetch(url, { headers });
+  let body = await res.text().catch(() => '');
+  if (!res.ok && body.includes('42703') && url.includes('&status=eq.published')) {
+    res = await fetch(url.replace('&status=eq.published', ''), { headers });
+    body = await res.text().catch(() => '');
+  }
+  try { return JSON.parse(body); } catch (e) { return null; }
+}
+
 exports.handler = async (event) => {
   const siteUrl = 'https://vwp-archive.netlify.app';
 
@@ -30,11 +45,10 @@ exports.handler = async (event) => {
     const bottle = bottles[0];
 
     // Get sent video info
-    const sentVideoRes = await fetch(
-      `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${bottle.video_id}`,
-      { headers: sbHeaders }
+    const sentVideos = await fetchVideoRows(
+      `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${bottle.video_id}&status=eq.published`,
+      sbHeaders
     );
-    const sentVideos = await sentVideoRes.json();
     const sentVideo = Array.isArray(sentVideos) && sentVideos.length > 0 ? sentVideos[0] : null;
 
     // Get received video info (from matched_with)
@@ -48,22 +62,20 @@ exports.handler = async (event) => {
       const matchedBottles = await matchedRes.json();
       if (Array.isArray(matchedBottles) && matchedBottles.length > 0) {
         receivedBottle = matchedBottles[0];
-        const recVideoRes = await fetch(
-          `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${receivedBottle.video_id}`,
-          { headers: sbHeaders }
+        const recVideos = await fetchVideoRows(
+          `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${receivedBottle.video_id}&status=eq.published`,
+          sbHeaders
         );
-        const recVideos = await recVideoRes.json();
         receivedVideo = Array.isArray(recVideos) && recVideos.length > 0 ? recVideos[0] : null;
       }
     }
 
     // Handle fallback recommendations
     if (bottle.status === 'fallback_matched' && bottle.fallback_video_id) {
-      const fbVideoRes = await fetch(
-        `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${bottle.fallback_video_id}`,
-        { headers: sbHeaders }
+      const fbVideos = await fetchVideoRows(
+        `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${bottle.fallback_video_id}&status=eq.published`,
+        sbHeaders
       );
-      const fbVideos = await fbVideoRes.json();
       const fbVideo = Array.isArray(fbVideos) && fbVideos.length > 0 ? fbVideos[0] : null;
       if (fbVideo) {
         return fallbackResultPage(siteUrl, id, sentVideo, bottle, fbVideo);

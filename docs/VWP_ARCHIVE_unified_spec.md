@@ -52,8 +52,32 @@
 ### データ構造（Supabase videos テーブル）
 ```
 id, member (スペース区切り: "kafu rime"), title, url, date, tags (スペース区切り: "シングル アニメ"),
-note, spotify_url, album_id
+note, spotify_url, album_id,
+status TEXT NOT NULL DEFAULT 'published' CHECK (status IN ('published','pending','rejected')),
+content_type TEXT NOT NULL DEFAULT 'song' CHECK (content_type IN ('song','live','shorts','announcement')),
+source TEXT DEFAULT 'manual',
+ingested_at TIMESTAMPTZ
 ```
+
+**status フィールドの運用ルール:**
+- `published`: 公開。公開系videos取得クエリでのみ返却される（`status=eq.published` フィルタ必須）
+- `pending`: 自動取り込み後の審査待ち。Admin INCOMINGキューで確認・PUBLISH/REJECT操作を行う
+- `rejected`: 不採用。DBには残すが公開しない
+- **自動publishは永久にしない（絶対条件10番）**: ingest-youtubeは常に`pending`でINSERTする
+
+**content_type フィールド（ingest-youtubeによる自動分類）:**
+- `shorts`: duration ≤ 60秒 または #shorts タグ
+- `live`: liveStreamingDetails あり または ライブ系キーワード（ワンマン/ライブ映像/LIVE/不可解/現象/狂想）
+- `announcement`: 告知系キーワード（告知/トレーラー/Teaser/XFD/クロスフェード/予告/開催決定/発売決定/情報解禁）
+- `song`: 上記に該当しないもの（デフォルト）
+
+**ingest_channels テーブル（PR-A1で新規追加）:**
+```
+id SERIAL PK, member_id TEXT, channel_id TEXT UNIQUE,
+uploads_playlist_id TEXT, enabled BOOLEAN DEFAULT true,
+last_checked_at TIMESTAMPTZ, last_video_published_at TIMESTAMPTZ
+```
+Yukiがチャンネル行を手動INSERTして有効化する。
 
 ### メンバー定義
 | ID | 表示名 | Emoji | カラー | LP盤の見え方 |

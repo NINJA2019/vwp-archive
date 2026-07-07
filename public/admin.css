@@ -439,3 +439,69 @@ canvas#grid-bg { position: absolute; inset: 0; z-index: 0; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; }
 }
+
+/* ═══ LAYER 9 — INCOMING TRANSMISSION Tab ═══ */
+
+/* サブタブ */
+.ic-subtabs {
+  display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.ic-subtab {
+  font-family: var(--f); font-size: 10px; letter-spacing: 1px; padding: 4px 12px;
+  border: 1px solid var(--border-dim); background: none;
+  color: var(--text-dim); cursor: pointer; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.ic-subtab:hover { color: var(--phosphor); border-color: var(--border); }
+.ic-subtab.active {
+  color: var(--phosphor); border-color: var(--phosphor);
+  background: var(--phosphor-08);
+}
+
+/* バルク操作バー */
+.ic-bulk-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0; margin-bottom: 8px; gap: 12px; flex-wrap: wrap;
+}
+.ic-check-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; letter-spacing: 1px; color: var(--text-dim); cursor: pointer;
+}
+.ic-check-label input[type="checkbox"] { accent-color: var(--phosphor); width: 13px; height: 13px; }
+
+/* テーブル */
+.ic-table { table-layout: fixed; }
+.ic-table td:nth-child(1) { width: 28px; }
+.ic-table td:nth-child(2) { width: 56px; }
+.ic-table td:nth-child(3) { width: auto; }
+.ic-table td:nth-child(4) { width: 110px; }
+.ic-table td:nth-child(5) { width: 80px; }
+.ic-table td:nth-child(6) { width: 110px; }
+.ic-table td:nth-child(7) { width: 120px; }
+.ic-table td:nth-child(8) { width: 200px; }
+
+/* サムネ */
+.ic-thumb-cell { padding: 4px 6px !important; }
+.ic-thumb {
+  width: 48px; height: 36px; object-fit: cover; display: block;
+  border: 1px solid var(--border-dim);
+}
+
+/* タイトル */
+.ic-title {
+  font-size: 10px !important; word-break: break-all; line-height: 1.4;
+  max-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* インライン編集インプット */
+.ic-table .n-input-sm, .ic-table .n-select {
+  font-size: 10px; padding: 2px 5px; width: 100%;
+  text-transform: none;
+}
+.ic-table .n-select { font-size: 10px; padding: 2px 4px; }
+
+@media (max-width: 768px) {
+  .ic-subtabs { gap: 2px; }
+  .ic-table td:nth-child(2),
+  .ic-table td:nth-child(7) { display: none; }
+}
