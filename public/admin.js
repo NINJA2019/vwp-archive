@@ -292,7 +292,6 @@ MU.Tabs.register('incoming', {
             var ytId = (v.url || '').match(/(?:v=|youtu\.be\/)([^&?#]+)/);
             ytId = ytId ? ytId[1] : '';
             var thumb = ytId ? 'https://img.youtube.com/vi/' + ytId + '/default.jpg' : '';
-            var mc = memberColor(v.member);
             var chk = state.selected.has(v.id) ? ' checked' : '';
             return '<tr data-id="' + v.id + '">' +
               '<td><input type="checkbox" class="ic-row-chk"' + chk + ' data-id="' + v.id + '"></td>' +
