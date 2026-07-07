@@ -10,7 +10,7 @@ exports.handler = async () => {
     const pageSize = 1000;
     while (true) {
       const res = await fetch(
-        `${url}/rest/v1/videos?select=*&order=date.desc&limit=${pageSize}&offset=${offset}`,
+        `${url}/rest/v1/videos?select=*&status=eq.published&order=date.desc&limit=${pageSize}&offset=${offset}`,
         { headers }
       );
       const data = await res.json();

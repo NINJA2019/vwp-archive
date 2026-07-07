@@ -31,7 +31,7 @@ exports.handler = async (event) => {
 
     // Get sent video info
     const sentVideoRes = await fetch(
-      `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${bottle.video_id}`,
+      `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${bottle.video_id}&status=eq.published`,
       { headers: sbHeaders }
     );
     const sentVideos = await sentVideoRes.json();
@@ -49,7 +49,7 @@ exports.handler = async (event) => {
       if (Array.isArray(matchedBottles) && matchedBottles.length > 0) {
         receivedBottle = matchedBottles[0];
         const recVideoRes = await fetch(
-          `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${receivedBottle.video_id}`,
+          `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${receivedBottle.video_id}&status=eq.published`,
           { headers: sbHeaders }
         );
         const recVideos = await recVideoRes.json();
@@ -60,7 +60,7 @@ exports.handler = async (event) => {
     // Handle fallback recommendations
     if (bottle.status === 'fallback_matched' && bottle.fallback_video_id) {
       const fbVideoRes = await fetch(
-        `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${bottle.fallback_video_id}`,
+        `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${bottle.fallback_video_id}&status=eq.published`,
         { headers: sbHeaders }
       );
       const fbVideos = await fbVideoRes.json();

@@ -90,7 +90,7 @@ exports.handler = async (event) => {
 
     // Validate video_id exists in videos table
     const videoData = await sbFetch(
-      `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${numericVideoId}`,
+      `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${numericVideoId}&status=eq.published`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` } }
     );
     if (!Array.isArray(videoData) || videoData.length === 0) {
@@ -154,7 +154,7 @@ exports.handler = async (event) => {
 
         // Get matched video info
         const matchedVideoData = await sbFetch(
-          `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${matched.video_id}`,
+          `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${matched.video_id}&status=eq.published`,
           { headers: { apikey: key, Authorization: `Bearer ${key}` } }
         );
         const receivedVideo = (Array.isArray(matchedVideoData) && matchedVideoData.length > 0) ? matchedVideoData[0] : null;
@@ -192,7 +192,7 @@ exports.handler = async (event) => {
 
     // Fallback: no match available — recommend a random song
     const fallbackData = await sbFetch(
-      `${url}/rest/v1/videos?select=id,title,member,date,url&limit=50`,
+      `${url}/rest/v1/videos?select=id,title,member,date,url&status=eq.published&limit=50`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` } }
     );
     const pool = Array.isArray(fallbackData) ? fallbackData.filter(v => v.id !== numericVideoId) : [];
