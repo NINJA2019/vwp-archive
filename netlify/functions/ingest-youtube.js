@@ -230,11 +230,12 @@ exports.handler = async (event) => {
         const videoDetails = {};
         (vtData.items || []).forEach(v => { videoDetails[v.id] = v; });
 
-        // (e) Supabase で既存URL突合（全件fetch禁止 — idリストで絞り込み）
+        // (e) Supabase で既存URL突合（全件fetch禁止 — urlリストで絞り込み）
+        // 生成するURLは https://www.youtube.com/watch?v=VIDEOID 形式で & を含まないため安全
         const candidateUrls = videoIds.map(id => `https://www.youtube.com/watch?v=${id}`);
-        const encodedUrls = candidateUrls.map(u => encodeURIComponent(u)).join(',');
+        const inFilter = candidateUrls.map(u => `"${u}"`).join(',');
         const existingRes = await sbFetch(
-          `${SUPABASE_URL}/rest/v1/videos?select=url&url=in.(${candidateUrls.map(u => `"${u}"`).join(',')})`,
+          `${SUPABASE_URL}/rest/v1/videos?select=url&url=in.(${inFilter})`,
           { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
         );
         const existingUrls = new Set(
