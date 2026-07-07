@@ -162,6 +162,21 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: JSON.stringify({ message: '有効なチャンネルがありません', results }) };
     }
 
+    // (e) Supabase で既存videoId突合（チャンネル横断・ループ外で1回だけfetch）
+    // pending含む全件 — status不問でないと重複取りこぼし
+    // 憲法5: 1,000件超は limit=10000&offset=0 を明示（デフォルトLIMIT 1000でsilent drop）
+    const existingRows = await sbFetch(
+      `${SUPABASE_URL}/rest/v1/videos?select=url&limit=10000&offset=0`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    );
+    if (Array.isArray(existingRows) && existingRows.length >= 10000) {
+      console.error('videos件数が全件fetch上限(10000)に到達。dedup不完全のため取り込み中止。ページング実装が必要。');
+      return { statusCode: 500, body: JSON.stringify({ error: 'videos件数が上限に到達。ページング未実装のため安全のため中止。', count: existingRows.length }) };
+    }
+    const existingVideoIds = new Set(
+      (Array.isArray(existingRows) ? existingRows : []).map(r => ytId(r.url)).filter(Boolean)
+    );
+
     for (const channel of channels) {
       try {
         let uploadsPlaylistId = channel.uploads_playlist_id;
@@ -236,16 +251,6 @@ exports.handler = async (event) => {
         const videoDetails = {};
         (vtData.items || []).forEach(v => { videoDetails[v.id] = v; });
 
-        // (e) Supabase で既存videoId突合（pending含む全件 — status不問でないと重複取りこぼし）
-        // 憲法5: 1,000件超は limit=10000&offset=0 を明示（デフォルトLIMIT 1000でsilent drop）
-        const existingRows = await sbFetch(
-          `${SUPABASE_URL}/rest/v1/videos?select=url&limit=10000&offset=0`,
-          { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
-        );
-        const existingVideoIds = new Set(
-          (Array.isArray(existingRows) ? existingRows : []).map(r => ytId(r.url)).filter(Boolean)
-        );
-
         // playlistPubマップ: videoId → playlistItemのpublishedAt（詳細未取得時の公開日フォールバック用）
         const playlistPubMap = {};
         for (const item of newItems) {
@@ -270,6 +275,7 @@ exports.handler = async (event) => {
 
           if (!detail) {
             // details未取得（削除/非公開/プレミア処理中等）
+            if (existingVideoIds.has(videoId)) { existingCount++; continue; } // 既存はカーソル保護不要
             if (playlistPub) missingPubs.push(playlistPub);
             continue;
           }
