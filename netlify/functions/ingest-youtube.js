@@ -8,8 +8,10 @@
 // ── キーワード定数辞書 ──
 const SHORTS_KEYWORDS = ['#shorts'];
 const LIVE_KEYWORDS = [
-  'ワンマン', 'ライブ映像', 'LIVE', '不可解', '現象', '狂想'
+  'ワンマン', 'ライブ映像', '不可解', '現象', '狂想'
 ];
+// 英語 "live" は部分一致だと "deliver"/"believe" 等を誤爆するため単語境界で判定
+const LIVE_WORD_RE = /\blive\b/i;
 const ANNOUNCEMENT_KEYWORDS = [
   '告知', 'トレーラー', 'Teaser', 'XFD', 'クロスフェード', '予告',
   '開催決定', '発売決定', '情報解禁'
@@ -54,9 +56,11 @@ function classifyContentType(title, description, durationSec, hasLiveDetails) {
   }
 
   // live: liveStreamingDetailsあり OR タイトルにライブ系キーワード
+  // 英語 "live" のみ単語境界一致（誤爆防止）、日本語キーワードは部分一致
   if (
     hasLiveDetails ||
-    LIVE_KEYWORDS.some(k => titleLower.includes(k.toLowerCase()))
+    LIVE_KEYWORDS.some(k => titleLower.includes(k.toLowerCase())) ||
+    LIVE_WORD_RE.test(title)
   ) {
     return 'live';
   }
@@ -118,13 +122,10 @@ exports.handler = async (event) => {
   }
 
   // ── 手動起動ガード ──
-  // Netlifyスケジュール実行: event.httpMethod が undefined または 'POST' で
-  // event.body に {"next_run":...} が含まれる。
-  // それ以外（HTTP直叩き）の場合は ADMIN_PASSWORD トークンを要求する。
-  const isScheduled = (
-    !event.httpMethod ||
-    (event.httpMethod === 'POST' && event.body && event.body.includes('next_run'))
-  );
+  // Netlifyスケジューラ起動のみ httpMethod が存在しない。
+  // HTTP経由（httpMethodあり）の呼び出しはすべて ADMIN_PASSWORD トークン必須。
+  // 本文スニッフィング（next_run等）による判定はバイパス可能なため行わない。
+  const isScheduled = !event.httpMethod;
 
   if (!isScheduled) {
     const authHeader = event.headers?.authorization || event.headers?.Authorization || '';
