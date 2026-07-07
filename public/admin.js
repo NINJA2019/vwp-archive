@@ -490,11 +490,12 @@ MU.Tabs.register('songs', {
     try {
       // Fetch data
       var results = await Promise.all([
-        MU.DB.query('videos', { select: 'id', limit: '9999' }),
-        MU.DB.query('videos', { select: 'id', filter: 'album_id=is.null', limit: '9999' }),
+        MU.DB.query('videos', { select: 'id', filter: 'status=eq.published', limit: '9999' }),
+        MU.DB.query('videos', { select: 'id', filter: 'album_id=is.null&status=eq.published', limit: '9999' }),
         MU.DB.query('albums', { select: 'id,name', limit: '999' }),
         MU.DB.query('videos', {
           select: 'id,title,member,date,url,tags,note,spotify_url,album_id',
+          filter: 'status=eq.published',
           order: 'date.desc.nullslast', limit: '9999'
         })
       ]);
@@ -871,7 +872,7 @@ MU.Tabs.register('ol', {
           select: 'id,status,video_id,matched_with,fallback_video_id,created_at,client_hash,message',
           order: 'created_at.desc', limit: '50'
         }),
-        MU.DB.query('videos', { select: 'id,title,member', limit: '9999' })
+        MU.DB.query('videos', { select: 'id,title,member', filter: 'status=eq.published', limit: '9999' })
       ]);
       var allBottles = results[0];
       var recentBottles = results[1];
