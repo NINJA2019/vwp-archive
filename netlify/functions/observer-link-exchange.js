@@ -31,6 +31,22 @@ async function sbFetch(url, options) {
   return res.json();
 }
 
+// videos取得専用: migration未適用で status 列が存在しない場合（PostgREST 42703）は
+// status=eq.published フィルタなしで1回だけ再試行する。
+// migration適用前は status 列が存在しない = pending 行も存在し得ないため、
+// フィルタなしは従来挙動そのもので安全。
+async function sbFetchVideos(url, options) {
+  const res = await fetch(url, options);
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    if (text.includes('42703') && url.includes('&status=eq.published')) {
+      return sbFetch(url.replace('&status=eq.published', ''), options);
+    }
+    throw new Error(`Supabase ${res.status}: ${text.slice(0, 200)}`);
+  }
+  return res.json();
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -89,7 +105,7 @@ exports.handler = async (event) => {
     }
 
     // Validate video_id exists in videos table
-    const videoData = await sbFetch(
+    const videoData = await sbFetchVideos(
       `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${numericVideoId}&status=eq.published`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` } }
     );
@@ -153,7 +169,7 @@ exports.handler = async (event) => {
         );
 
         // Get matched video info
-        const matchedVideoData = await sbFetch(
+        const matchedVideoData = await sbFetchVideos(
           `${url}/rest/v1/videos?select=id,title,member,date,url&id=eq.${matched.video_id}&status=eq.published`,
           { headers: { apikey: key, Authorization: `Bearer ${key}` } }
         );
@@ -191,7 +207,7 @@ exports.handler = async (event) => {
     }
 
     // Fallback: no match available — recommend a random song
-    const fallbackData = await sbFetch(
+    const fallbackData = await sbFetchVideos(
       `${url}/rest/v1/videos?select=id,title,member,date,url&status=eq.published&limit=50`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` } }
     );
