@@ -226,6 +226,262 @@ MU.Modal = {
 };
 
 /* ═══════════════════════════════════════
+ *   TAB: INCOMING TRANSMISSION
+ * ═══════════════════════════════════════ */
+MU.Tabs.register('incoming', {
+  label: 'INCOMING TRANSMISSION', order: 5,
+  render: async function(el) {
+    var U = MU.UI;
+    var CONTENT_TYPES = ['all', 'song', 'live', 'shorts', 'announcement'];
+    try {
+      var pending = await MU.DB.query('videos', {
+        select: 'id,title,member,date,url,tags,content_type,status,ingested_at,source',
+        filter: 'status=eq.pending',
+        order: 'ingested_at.desc.nullslast',
+        limit: '9999'
+      });
+
+      // タブボタンのバッジを件数で更新
+      var tabBtn = document.querySelector('.tab-btn[data-tab="incoming"]');
+      if (tabBtn) {
+        tabBtn.textContent = 'INCOMING TRANSMISSION' + (pending.length > 0 ? ' [' + pending.length + ']' : '');
+      }
+
+      var state = { videos: pending, activeType: 'all', selected: new Set() };
+
+      function getFiltered() {
+        if (state.activeType === 'all') return state.videos.slice();
+        return state.videos.filter(function(v) { return v.content_type === state.activeType; });
+      }
+
+      function countByType(type) {
+        if (type === 'all') return state.videos.length;
+        return state.videos.filter(function(v) { return v.content_type === type; }).length;
+      }
+
+      function renderSubTabs() {
+        return '<div class="ic-subtabs">' +
+          CONTENT_TYPES.map(function(t) {
+            var cnt = countByType(t);
+            var cls = 'ic-subtab' + (state.activeType === t ? ' active' : '');
+            return '<button class="' + cls + '" data-type="' + t + '">' +
+              t.toUpperCase() +
+              (cnt > 0 ? ' <span class="n-badge">' + cnt + '</span>' : '') +
+              '</button>';
+          }).join('') +
+          '</div>';
+      }
+
+      function renderTable() {
+        var filtered = getFiltered();
+        if (filtered.length === 0) {
+          return '<div class="n-note" style="margin-top:16px">QUEUE EMPTY — NO PENDING RECORDS</div>';
+        }
+        var allChecked = filtered.length > 0 && filtered.every(function(v) { return state.selected.has(v.id); });
+        var html =
+          '<div class="ic-bulk-bar">' +
+          '<label class="ic-check-label"><input type="checkbox" id="ic-select-all"' + (allChecked ? ' checked' : '') + '> SELECT ALL (' + filtered.length + ')</label>' +
+          '<div class="n-btn-group">' +
+          '<button class="n-btn ic-bulk-publish" ' + (state.selected.size === 0 ? 'disabled' : '') + '>PUBLISH SELECTED (' + state.selected.size + ')</button>' +
+          '<button class="n-btn n-btn-red ic-bulk-reject" ' + (state.selected.size === 0 ? 'disabled' : '') + '>REJECT SELECTED</button>' +
+          '</div></div>' +
+          '<table class="n-table ic-table"><thead><tr>' +
+          '<th></th><th>THUMB</th><th>TITLE</th><th>MEMBER</th><th>DATE</th><th>TYPE</th><th>TAGS</th><th></th>' +
+          '</tr></thead><tbody>' +
+          filtered.map(function(v) {
+            var ytId = (v.url || '').match(/(?:v=|youtu\.be\/)([^&?#]+)/);
+            ytId = ytId ? ytId[1] : '';
+            var thumb = ytId ? 'https://img.youtube.com/vi/' + ytId + '/default.jpg' : '';
+            var mc = memberColor(v.member);
+            var chk = state.selected.has(v.id) ? ' checked' : '';
+            return '<tr data-id="' + v.id + '">' +
+              '<td><input type="checkbox" class="ic-row-chk"' + chk + ' data-id="' + v.id + '"></td>' +
+              '<td class="ic-thumb-cell">' + (thumb ? '<img src="' + esc(thumb) + '" alt="" class="ic-thumb" loading="lazy">' : '—') + '</td>' +
+              '<td class="title-col ic-title">' + esc(v.title || '—') + '</td>' +
+              '<td>' +
+                '<input class="n-input n-input-sm ic-edit-member" data-id="' + v.id + '" value="' + esc(v.member || '') + '" title="MEMBER">' +
+              '</td>' +
+              '<td class="mono">' + fmtDate(v.date) + '</td>' +
+              '<td>' +
+                '<select class="n-select ic-edit-type" data-id="' + v.id + '">' +
+                ['song', 'live', 'shorts', 'announcement'].map(function(t) {
+                  return '<option value="' + t + '"' + (v.content_type === t ? ' selected' : '') + '>' + t.toUpperCase() + '</option>';
+                }).join('') +
+                '</select>' +
+              '</td>' +
+              '<td>' +
+                '<input class="n-input n-input-sm ic-edit-tags" data-id="' + v.id + '" value="' + esc(v.tags || '') + '" title="TAGS">' +
+              '</td>' +
+              '<td class="r"><div class="n-btn-group">' +
+                '<button class="n-btn n-btn-sm ic-save" data-id="' + v.id + '">SAVE</button>' +
+                '<button class="n-btn n-btn-sm ic-publish" data-id="' + v.id + '">PUBLISH</button>' +
+                '<button class="n-btn n-btn-sm n-btn-red ic-reject" data-id="' + v.id + '">REJECT</button>' +
+              '</div></td></tr>';
+          }).join('') +
+          '</tbody></table>';
+        return html;
+      }
+
+      function fullRender() {
+        el.innerHTML =
+          '<div class="n-section">' + U.section('INCOMING TRANSMISSION', U.badge(pending.length + ' PENDING', pending.length > 0 ? 'warn' : '')) +
+          renderSubTabs() +
+          '<div id="ic-table-wrap">' + renderTable() + '</div>' +
+          '</div>';
+        MU.Decode.decodeAll(el);
+        bindEvents();
+      }
+
+      function bindEvents() {
+        // サブタブ切替
+        el.querySelectorAll('.ic-subtab').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            state.activeType = btn.dataset.type;
+            state.selected.clear();
+            document.getElementById('ic-table-wrap').innerHTML = renderTable();
+            el.querySelectorAll('.ic-subtab').forEach(function(b) {
+              b.classList.toggle('active', b.dataset.type === state.activeType);
+            });
+            rebindTableEvents();
+          });
+        });
+        rebindTableEvents();
+      }
+
+      function rebindTableEvents() {
+        // SELECT ALL
+        var selectAll = document.getElementById('ic-select-all');
+        if (selectAll) {
+          selectAll.addEventListener('change', function() {
+            var filtered = getFiltered();
+            if (selectAll.checked) { filtered.forEach(function(v) { state.selected.add(v.id); }); }
+            else { state.selected.clear(); }
+            document.getElementById('ic-table-wrap').innerHTML = renderTable();
+            rebindTableEvents();
+          });
+        }
+
+        // 行チェックボックス
+        el.querySelectorAll('.ic-row-chk').forEach(function(chk) {
+          chk.addEventListener('change', function() {
+            var id = parseInt(chk.dataset.id, 10);
+            if (chk.checked) state.selected.add(id);
+            else state.selected.delete(id);
+            // バルクバーの件数だけ更新
+            var bulkPublish = document.querySelector('.ic-bulk-publish');
+            var bulkReject = document.querySelector('.ic-bulk-reject');
+            if (bulkPublish) {
+              bulkPublish.textContent = 'PUBLISH SELECTED (' + state.selected.size + ')';
+              bulkPublish.disabled = state.selected.size === 0;
+            }
+            if (bulkReject) bulkReject.disabled = state.selected.size === 0;
+          });
+        });
+
+        // SAVE（member + tags + content_type の一括保存）
+        el.querySelectorAll('.ic-save').forEach(function(btn) {
+          btn.addEventListener('click', async function() {
+            var id = btn.dataset.id;
+            var row = btn.closest('tr');
+            var memberVal = row.querySelector('.ic-edit-member').value.trim();
+            var tagsVal = row.querySelector('.ic-edit-tags').value.trim();
+            var typeVal = row.querySelector('.ic-edit-type').value;
+            try {
+              await MU.DB.update('videos', id, { member: memberVal, tags: tagsVal, content_type: typeVal });
+              // ローカル状態も更新
+              var v = state.videos.find(function(x) { return String(x.id) === String(id); });
+              if (v) { v.member = memberVal; v.tags = tagsVal; v.content_type = typeVal; }
+              btn.textContent = 'SAVED'; btn.disabled = true;
+              setTimeout(function() { btn.textContent = 'SAVE'; btn.disabled = false; }, 1500);
+            } catch (e) { alert('SAVE FAILED: ' + e.message); }
+          });
+        });
+
+        // PUBLISH 単体
+        el.querySelectorAll('.ic-publish').forEach(function(btn) {
+          btn.addEventListener('click', async function() {
+            var id = btn.dataset.id;
+            if (!confirm('PUBLISH RECORD #' + id + '?')) return;
+            try {
+              await MU.DB.update('videos', id, { status: 'published' });
+              state.videos = state.videos.filter(function(v) { return String(v.id) !== String(id); });
+              state.selected.delete(parseInt(id, 10));
+              document.getElementById('ic-table-wrap').innerHTML = renderTable();
+              rebindTableEvents();
+              updateBadge();
+            } catch (e) { alert('PUBLISH FAILED: ' + e.message); }
+          });
+        });
+
+        // REJECT 単体
+        el.querySelectorAll('.ic-reject').forEach(function(btn) {
+          btn.addEventListener('click', async function() {
+            var id = btn.dataset.id;
+            if (!confirm('REJECT RECORD #' + id + '?')) return;
+            try {
+              await MU.DB.update('videos', id, { status: 'rejected' });
+              state.videos = state.videos.filter(function(v) { return String(v.id) !== String(id); });
+              state.selected.delete(parseInt(id, 10));
+              document.getElementById('ic-table-wrap').innerHTML = renderTable();
+              rebindTableEvents();
+              updateBadge();
+            } catch (e) { alert('REJECT FAILED: ' + e.message); }
+          });
+        });
+
+        // PUBLISH 一括
+        var bulkPublishBtn = el.querySelector('.ic-bulk-publish');
+        if (bulkPublishBtn) {
+          bulkPublishBtn.addEventListener('click', async function() {
+            var ids = Array.from(state.selected);
+            if (ids.length === 0) return;
+            if (!confirm('PUBLISH ' + ids.length + ' RECORDS?')) return;
+            try {
+              await Promise.all(ids.map(function(id) { return MU.DB.update('videos', id, { status: 'published' }); }));
+              state.videos = state.videos.filter(function(v) { return !state.selected.has(v.id); });
+              state.selected.clear();
+              document.getElementById('ic-table-wrap').innerHTML = renderTable();
+              rebindTableEvents();
+              updateBadge();
+            } catch (e) { alert('BULK PUBLISH FAILED: ' + e.message); }
+          });
+        }
+
+        // REJECT 一括
+        var bulkRejectBtn = el.querySelector('.ic-bulk-reject');
+        if (bulkRejectBtn) {
+          bulkRejectBtn.addEventListener('click', async function() {
+            var ids = Array.from(state.selected);
+            if (ids.length === 0) return;
+            if (!confirm('REJECT ' + ids.length + ' RECORDS?')) return;
+            try {
+              await Promise.all(ids.map(function(id) { return MU.DB.update('videos', id, { status: 'rejected' }); }));
+              state.videos = state.videos.filter(function(v) { return !state.selected.has(v.id); });
+              state.selected.clear();
+              document.getElementById('ic-table-wrap').innerHTML = renderTable();
+              rebindTableEvents();
+              updateBadge();
+            } catch (e) { alert('BULK REJECT FAILED: ' + e.message); }
+          });
+        }
+      }
+
+      function updateBadge() {
+        var tabBtn = document.querySelector('.tab-btn[data-tab="incoming"]');
+        if (tabBtn) {
+          tabBtn.textContent = 'INCOMING TRANSMISSION' + (state.videos.length > 0 ? ' [' + state.videos.length + ']' : '');
+        }
+      }
+
+      fullRender();
+
+    } catch (e) {
+      el.innerHTML = U.alert('SYSTEM ERROR: ' + esc(e.message));
+    }
+  }
+});
+
+/* ═══════════════════════════════════════
  *   TAB: SONGS DATABASE
  * ═══════════════════════════════════════ */
 MU.Tabs.register('songs', {
