@@ -103,7 +103,7 @@ export function storePw(pw){try{sessionStorage.setItem(PW_SK,pw);}catch{}}
 export async function loadAlbums(force = false){
   const now = Date.now();
   if(!force && albums.length > 0 && now - _albumsCacheTime < ALBUMS_CACHE_TTL) return;
-  try{ const d = await loadAlbumsApi(); albums=d; _albumsCacheTime=Date.now(); }catch(e){console.error(e);showFetchError('アルバムデータの取得に失敗しました');}
+  try{ const d = await loadAlbumsApi(); if(Array.isArray(d)){ albums=d; _albumsCacheTime=Date.now(); } }catch(e){console.error(e);showFetchError('アルバムデータの取得に失敗しました');}
 }
 export async function addAlbumApiFn(payload){
   return addAlbumApi(payload, getStoredPw);
@@ -125,7 +125,7 @@ export function albumThumb(album){
 export async function loadVideos(force = false){
   const now = Date.now();
   if(!force && videos.length > 0 && now - _videosCacheTime < VIDEOS_CACHE_TTL) return;
-  try{ const d = await loadVideosApi(); videos=d; _videosCacheTime=Date.now(); }catch(e){console.error(e);showFetchError('動画データの取得に失敗しました');}
+  try{ const d = await loadVideosApi(); if(Array.isArray(d)){ videos=d; _videosCacheTime=Date.now(); } }catch(e){console.error(e);showFetchError('動画データの取得に失敗しました');}
 }
 export async function addVideoApiFn(payload){
   return addVideoApi(payload, getStoredPw);
@@ -703,6 +703,7 @@ export function refreshImportAlbumSelect(){
   if(!isel) return;
   const member=document.getElementById('importMember')?.value||'';
   isel.innerHTML='<option value="">アルバムに紐付けない</option>';
+  const VWP_MEMBERS=['kafu','rime','harusar','isekai','koko','vwp']; // 旧app.js L837 と同内容（未使用だが純粋移動のため維持）
   albums
     .filter(al=>{
       if(!member) return true;

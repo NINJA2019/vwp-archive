@@ -161,9 +161,8 @@ Object.assign(window, {
   buildSidebar,        // [C]
   buildMobFilters,     // [C]
   showMb,              // [C]
-  renderGrid: undefined,   // [C] app.jsではdead code（呼び出しゼロ）、型互換のためundefined
-  renderList: undefined,   // [C] 同上
-  renderTimeline: undefined, // [C] 同上
+  // renderGrid / renderList / renderTimeline はB1で削除済み。
+  // 現行mainのwindowに存在しないキーのためObject.assignで追加しない（憲法8: 拡張のdefinePropertyを誤発火させない）
   setupObserver,       // [C]
   loadMoreItems,       // [C]
   updateNewBadgeIds,   // [C]

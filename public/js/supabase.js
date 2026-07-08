@@ -5,17 +5,13 @@
 export async function loadAlbumsApi(){
   const res = await fetch('/api/albums-get');
   if(!res.ok) throw new Error('HTTP '+res.status);
-  const d = await res.json();
-  if(!Array.isArray(d)) throw new Error('invalid response');
-  return d;
+  return res.json(); // 配列かどうかの判定はcore.js側で行う（旧app.jsと同じ分岐構造）
 }
 
 export async function loadVideosApi(){
   const res = await fetch('/api/videos-get');
   if(!res.ok) throw new Error('HTTP '+res.status);
-  const d = await res.json();
-  if(!Array.isArray(d)) throw new Error('invalid response');
-  return d;
+  return res.json(); // 配列かどうかの判定はcore.js側で行う（旧app.jsと同じ分岐構造）
 }
 
 export async function addAlbumApi(payload, getStoredPw){
