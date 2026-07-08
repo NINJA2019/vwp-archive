@@ -841,7 +841,7 @@ MU.Tabs.register('songs', {
             try {
               var result = await MU.DB.playlistImport(plId, member, tags, albumId);
               document.getElementById('import-result').innerHTML =
-                MU.UI.alert('COMPLETE — TOTAL: ' + result.total + ' / INSERTED: ' + result.inserted + ' / SKIPPED: ' + result.skipped, 'ok');
+                MU.UI.alert('COMPLETE — TOTAL: ' + result.total + ' / INSERTED: ' + result.inserted + ' / SKIPPED: ' + result.skipped + ' / LINKED: ' + (result.linked || 0), 'ok');
               // Disable OK button to prevent double import
               var okBtn = document.getElementById('modal-ok');
               if (okBtn) { okBtn.disabled = true; okBtn.textContent = 'DONE'; }
