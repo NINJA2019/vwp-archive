@@ -44,6 +44,7 @@ exports.handler = async (event) => {
 
   const toInsert = [];
   const toLink = []; // 既存曲でアルバムに紐付けるもの
+  const seen = new Set(); // 同一プレイリスト内の重複videoIdによる二重INSERT防止
 
   for (const item of allItems) {
     const videoId = item.snippet.resourceId.videoId;
@@ -54,6 +55,8 @@ exports.handler = async (event) => {
       if (album_id) toLink.push(existingMap.get(videoId));
       continue;
     }
+    if (seen.has(videoId)) continue; // バッチ内重複を弾く（公開重複カード防止）
+    seen.add(videoId);
     toInsert.push({
       member, title: item.snippet.title, url,
       date: item.snippet.publishedAt ? item.snippet.publishedAt.slice(0, 10) : '',
