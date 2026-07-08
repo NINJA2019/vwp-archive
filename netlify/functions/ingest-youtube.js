@@ -40,6 +40,11 @@ function parseDuration(iso) {
 }
 
 /**
+ * YouTube URL から videoId を抽出（null安全）
+ */
+function ytId(url){ if(!url) return null; const m=String(url).match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/); return m?m[1]:null; }
+
+/**
  * タイトル + description からcontent_typeを判定
  * 優先順: shorts → live → announcement → song
  */
@@ -157,6 +162,21 @@ exports.handler = async (event) => {
       return { statusCode: 200, body: JSON.stringify({ message: '有効なチャンネルがありません', results }) };
     }
 
+    // (e) Supabase で既存videoId突合（チャンネル横断・ループ外で1回だけfetch）
+    // pending含む全件 — status不問でないと重複取りこぼし
+    // 憲法5: 1,000件超は limit=10000&offset=0 を明示（デフォルトLIMIT 1000でsilent drop）
+    const existingRows = await sbFetch(
+      `${SUPABASE_URL}/rest/v1/videos?select=url&limit=10000&offset=0`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    );
+    if (Array.isArray(existingRows) && existingRows.length >= 10000) {
+      console.error('videos件数が全件fetch上限(10000)に到達。dedup不完全のため取り込み中止。ページング実装が必要。');
+      return { statusCode: 500, body: JSON.stringify({ error: 'videos件数が上限に到達。ページング未実装のため安全のため中止。', count: existingRows.length }) };
+    }
+    const existingVideoIds = new Set(
+      (Array.isArray(existingRows) ? existingRows : []).map(r => ytId(r.url)).filter(Boolean)
+    );
+
     for (const channel of channels) {
       try {
         let uploadsPlaylistId = channel.uploads_playlist_id;
@@ -231,28 +251,34 @@ exports.handler = async (event) => {
         const videoDetails = {};
         (vtData.items || []).forEach(v => { videoDetails[v.id] = v; });
 
-        // (e) Supabase で既存URL突合（全件fetch禁止 — urlリストで絞り込み）
-        // 生成するURLは https://www.youtube.com/watch?v=VIDEOID 形式で & を含まないため安全
-        const candidateUrls = videoIds.map(id => `https://www.youtube.com/watch?v=${id}`);
-        const inFilter = candidateUrls.map(u => `"${u}"`).join(',');
-        const existingRes = await sbFetch(
-          `${SUPABASE_URL}/rest/v1/videos?select=url&url=in.(${inFilter})`,
-          { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
-        );
-        const existingUrls = new Set(
-          Array.isArray(existingRes) ? existingRes.map(v => v.url) : []
-        );
+        // playlistPubマップ: videoId → playlistItemのpublishedAt（詳細未取得時の公開日フォールバック用）
+        const playlistPubMap = {};
+        for (const item of newItems) {
+          const vid = item.snippet?.resourceId?.videoId;
+          const pub = item.snippet?.publishedAt;
+          if (vid && pub) playlistPubMap[vid] = pub;
+        }
 
         // (f) content_type分類 + member確定 + カバー検出
         const toInsert = [];
-        let latestPublishedAt = cursor;
+        const resolvedPubs = [];    // カーソル計算用（既存・新規問わず詳細取得済み）
+        const missingPubs = [];     // details未取得動画のpublishedAt（playlistItem側）
+        const seenInBatch = new Set(); // バッチ内重複videoId防止
+        let existingCount = 0;
 
         for (const videoId of videoIds) {
-          const url = `https://www.youtube.com/watch?v=${videoId}`;
-          if (existingUrls.has(url)) continue;
+          if (seenInBatch.has(videoId)) continue;
+          seenInBatch.add(videoId);
 
+          const playlistPub = playlistPubMap[videoId] || null;
           const detail = videoDetails[videoId];
-          if (!detail) continue;
+
+          if (!detail) {
+            // details未取得（削除/非公開/プレミア処理中等）
+            if (existingVideoIds.has(videoId)) { existingCount++; continue; } // 既存はカーソル保護不要
+            if (playlistPub) missingPubs.push(playlistPub);
+            continue;
+          }
 
           const snippet = detail.snippet || {};
           const contentDetails = detail.contentDetails || {};
@@ -260,9 +286,16 @@ exports.handler = async (event) => {
 
           const title = snippet.title || '';
           const description = snippet.description || '';
-          const publishedAt = snippet.publishedAt || null;
+          const publishedAt = snippet.publishedAt || playlistPub || null;
           const durationSec = parseDuration(contentDetails.duration);
           const hasLiveDetails = !!liveDetails;
+
+          if (existingVideoIds.has(videoId)) {
+            // 既存動画（pending含む）—— INSERTしないがカーソルには寄与
+            if (publishedAt) resolvedPubs.push(publishedAt);
+            existingCount++;
+            continue;
+          }
 
           const contentType = classifyContentType(title, description, durationSec, hasLiveDetails);
           const member = resolveMember(channel.member_id, title);
@@ -274,7 +307,7 @@ exports.handler = async (event) => {
           const date = publishedAt ? publishedAt.slice(0, 10) : null;
 
           toInsert.push({
-            url,
+            url: `https://www.youtube.com/watch?v=${videoId}`,
             title,
             date,
             member,
@@ -288,13 +321,7 @@ exports.handler = async (event) => {
             ingested_at: new Date().toISOString()
           });
 
-          // カーソル更新候補
-          if (publishedAt) {
-            const pubDate = new Date(publishedAt);
-            if (!latestPublishedAt || pubDate > latestPublishedAt) {
-              latestPublishedAt = pubDate;
-            }
-          }
+          if (publishedAt) resolvedPubs.push(publishedAt);
         }
 
         // (g) INSERT（status='pending', source='youtube_auto', ingested_at=now()）
@@ -316,12 +343,27 @@ exports.handler = async (event) => {
           }
         }
 
-        // (h) カーソル更新（last_checked_at + last_video_published_at）
+        // (h) M3 カーソルクランプ（7日ガード込み）
+        // 7日以内のmissing（プレミア処理中等）のみクランプ対象。7日超は削除/非公開の居座りとみなし通過許可
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+        const recentMissingPubs = missingPubs.filter(p => new Date(p) > sevenDaysAgo);
+        const minMissing = recentMissingPubs.length > 0
+          ? recentMissingPubs.reduce((min, p) => p < min ? p : min)
+          : null;
+
+        let newCursor = cursor;
+        for (const p of resolvedPubs) {
+          const d = new Date(p);
+          if (minMissing && d >= new Date(minMissing)) continue; // 未取得動画を追い越さない
+          if (!newCursor || d > newCursor) newCursor = d;
+        }
+
+        // カーソル更新（last_checked_at + last_video_published_at）
         const cursorUpdate = { last_checked_at: new Date().toISOString() };
-        if (latestPublishedAt) {
-          cursorUpdate.last_video_published_at = latestPublishedAt instanceof Date
-            ? latestPublishedAt.toISOString()
-            : latestPublishedAt;
+        if (newCursor) {
+          cursorUpdate.last_video_published_at = newCursor instanceof Date
+            ? newCursor.toISOString()
+            : newCursor;
         }
         await fetch(
           `${SUPABASE_URL}/rest/v1/ingest_channels?id=eq.${channel.id}`,
@@ -337,7 +379,8 @@ exports.handler = async (event) => {
           member_id: channel.member_id,
           new_items: newItems.length,
           inserted,
-          skipped: newItems.length - toInsert.length - (toInsert.length - inserted)
+          existing: existingCount,
+          no_detail_skipped: missingPubs.length
         });
 
       } catch (channelErr) {
