@@ -9,6 +9,9 @@
 //   { action:"youtube", videoId }                          — YouTube metadata
 //   { action:"playlist-import", playlistId, member, tags, album_id } — Bulk import
 
+// URLからYouTube videoId（11文字）を抽出（playlist-import.js / ingest-youtube.jsと同一）
+function ytId(url){ if(!url) return null; const m=String(url).match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/); return m?m[1]:null; }
+
 const crypto = require('crypto');
 
 exports.handler = async (event) => {
@@ -109,48 +112,77 @@ exports.handler = async (event) => {
       const YT_KEY = process.env.YOUTUBE_API_KEY;
       if (!YT_KEY) return resp(500, { error: 'YOUTUBE_API_KEY not configured' });
 
-      // Fetch all playlist items
-      let items = [], nextPage = '';
-      do {
+      // YouTubeプレイリスト全件取得（最大200件）
+      let allItems = [], pageToken = '';
+      while (true) {
         const pUrl = 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId='
-          + playlistId + '&key=' + YT_KEY + (nextPage ? '&pageToken=' + nextPage : '');
+          + encodeURIComponent(playlistId) + '&key=' + YT_KEY + (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
         const pRes = await fetch(pUrl);
         const pData = await pRes.json();
         if (pData.error) return resp(400, { error: 'YouTube API: ' + (pData.error.message || 'Unknown') });
-        (pData.items || []).forEach(i => {
-          const s = i.snippet;
-          if (s.title === 'Deleted video' || s.title === 'Private video') return;
-          items.push({
-            url: 'https://www.youtube.com/watch?v=' + s.resourceId.videoId,
-            title: s.title,
-            date: (s.publishedAt || '').slice(0, 10),
-            member: member,
-            tags: tags || '',
-            note: '',
-            spotify_url: null,
-            album_id: album_id || null
-          });
+        const pageItems = (pData.items || []).filter(i => i.snippet.resourceId.kind === 'youtube#video');
+        allItems = allItems.concat(pageItems);
+        if (pData.nextPageToken && allItems.length < 200) { pageToken = pData.nextPageToken; } else break;
+      }
+
+      // 既存動画を全件取得（url と id を取得）
+      // 憲法5: PostgRESTデフォルトLIMIT1000のsilent dropを防ぐためlimit/offset明示
+      const exRes = await fetch(SUPABASE_URL + '/rest/v1/videos?select=id,url&limit=10000&offset=0', { headers: sbHeaders });
+      const existData = await exRes.json();
+      // 上限到達時は突合不完全＝重複公開の恐れがあるため中止
+      if (Array.isArray(existData) && existData.length >= 10000) {
+        return resp(500, { error: 'videos件数が全件fetch上限(10000)に到達。ページング未実装のため安全のため中止。', count: existData.length });
+      }
+      const existingMap = new Map();
+      (Array.isArray(existData) ? existData : []).forEach(v => { const vid = ytId(v.url); if (vid) existingMap.set(vid, v.id); });
+
+      const toInsert = [];
+      const toLink = []; // 既存曲でアルバムに紐付けるもの
+      const seen = new Set(); // 同一プレイリスト内の重複videoIdによる二重INSERT防止
+
+      for (const item of allItems) {
+        const videoId = item.snippet.resourceId.videoId;
+        const url = 'https://www.youtube.com/watch?v=' + videoId;
+        // 突合はvideoIdベース（既存データのURL形式混在に対応）
+        if (existingMap.has(videoId)) {
+          if (album_id) toLink.push(existingMap.get(videoId));
+          continue;
+        }
+        if (seen.has(videoId)) continue; // バッチ内重複を弾く（公開重複カード防止）
+        seen.add(videoId);
+        toInsert.push({
+          url, title: item.snippet.title,
+          date: item.snippet.publishedAt ? item.snippet.publishedAt.slice(0, 10) : '',
+          member: member, tags: tags || '', note: '', album_id: album_id || null
         });
-        nextPage = pData.nextPageToken || '';
-      } while (nextPage);
+      }
 
-      // Get existing URLs
-      const exRes = await fetch(SUPABASE_URL + '/rest/v1/videos?select=url', { headers: sbHeaders });
-      const existing = await exRes.json();
-      const existingUrls = new Set((Array.isArray(existing) ? existing : []).map(v => v.url));
+      // 既存曲をアルバムに紐付け（PATCH）
+      let linked = 0;
+      if (album_id && toLink.length > 0) {
+        for (const id of toLink) {
+          await fetch(SUPABASE_URL + '/rest/v1/videos?id=eq.' + id, {
+            method: 'PATCH',
+            headers: { ...sbHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+            body: JSON.stringify({ album_id })
+          });
+          linked++;
+        }
+      }
 
-      const newItems = items.filter(i => !existingUrls.has(i.url));
       let inserted = 0;
-      if (newItems.length > 0) {
+      if (toInsert.length > 0) {
         const insRes = await fetch(SUPABASE_URL + '/rest/v1/videos', {
           method: 'POST',
           headers: { ...sbHeaders, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-          body: JSON.stringify(newItems)
+          body: JSON.stringify(toInsert)
         });
-        if (insRes.ok) inserted = newItems.length;
+        if (insRes.ok) inserted = toInsert.length;
+        else { const errText = await insRes.text(); return resp(500, { error: errText }); }
       }
 
-      return resp(200, { total: items.length, skipped: items.length - newItems.length, inserted });
+      const total = allItems.length;
+      return resp(200, { total, inserted, skipped: total - inserted - linked, linked });
     }
 
     return resp(400, { error: 'Unknown action: ' + action });
