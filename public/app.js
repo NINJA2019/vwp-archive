@@ -543,43 +543,6 @@ function edit(id,e){
 
 function showMb(v){return curMember==='all'?parseMembers(v).map(m=>mbPill(m)).join(''):'';}
 
-function renderGrid(list){
-  if(!list.length)return `<div class="empty"><div class="empty-i">🌙</div><h3>${t('notFound')}</h3></div>`;
-  return `<div class="vgrid">`+list.map((v,i)=>`
-    <div class="vcard" style="animation-delay:${i*.022}s" onclick="trackSongClick(${v.id},'${safeUrl(v.url)}')">
-      <div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div>
-      <div class="cbody">
-        <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div>
-        <div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div>
-        <div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${typeof olQuickSendHtml==="function"?olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div>
-      </div>
-    </div>`).join('')+`</div>`;
-}
-function renderList(list){
-  if(!list.length)return `<div class="empty"><div class="empty-i">🌙</div><h3>${t('notFound')}</h3></div>`;
-  return `<div class="vlist">`+list.map((v,i)=>`
-    <a class="litem" style="animation-delay:${i*.022}s" href="${safeUrl(v.url)}" target="_blank" rel="noopener">
-      <div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div>
-      <div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>
-      ${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${typeof olQuickSendHtml==="function"?olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
-    </a>`).join('')+`</div>`;
-}
-function renderTimeline(list){
-  if(!list.length)return `<div class="empty"><div class="empty-i">🌙</div><h3>${t('notFound')}</h3></div>`;
-  let html=`<div class="tl"><div class="tl-line"></div>`,yr='';
-  list.forEach((v,i)=>{
-    const y=v.date?v.date.slice(0,4):'?';
-    if(y!==yr){yr=y;html+=`<div class="tl-yr">${y}</div>`;}
-    html+=`<div class="tl-row" style="animation-delay:${i*.022}s" onclick="trackSongClick(${v.id},'${safeUrl(v.url)}')">
-      <div class="tl-dot"></div>
-      <div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div>
-      <div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div>
-      <div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>
-      ${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${typeof olQuickSendHtml==="function"?olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}
-    </div>`;
-  });
-  return html+'</div>';
-}
 function setupObserver(){
   if(ioObserver) ioObserver.disconnect();
   const sentinel=document.getElementById('io-sentinel');
@@ -2384,7 +2347,7 @@ window.toggleShelfPin = function(id, e){
   if(overlay && overlay.style.display !== 'none') buildShelfUI();
 };
 
-// Generate pin button HTML (called from renderGrid/loadMoreItems)
+// Generate pin button HTML (called from loadMoreItems / mobile card view)
 window.shelfPinHtml = function(id){
   const on = isOnShelf(id);
   const full = getShelf().length >= SHELF_MAX && !on;
