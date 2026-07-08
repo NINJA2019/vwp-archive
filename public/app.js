@@ -63,6 +63,7 @@ function showFetchError(msg){
 let videos=[],curMember='all',selectedMembers=[],curTag='all',curSort='new',curView='grid',searchQ='',isAdmin=false,editId=null;
 let filteredCache=[],curPage=0;
 const PAGE_SIZE=30;
+const CARD_ANIM_DELAY_STEP=0.022;
 let ioObserver=null;
 const PW_SK='vwp_admin_pw';
 
@@ -564,7 +565,7 @@ function loadMoreItems(){
     const wrap=c.querySelector('.vgrid')||(() => {const d=document.createElement('div');d.className='vgrid';if(sentinel) c.insertBefore(d,sentinel);else c.appendChild(d);return d;})();
     chunk.forEach((v,i)=>{
       const div=document.createElement('div');
-      div.className='vcard';div.style.animationDelay=((start+i)*.022)+'s';
+      div.className='vcard';div.style.animationDelay=((start+i)*CARD_ANIM_DELAY_STEP)+'s';
       div.onclick=()=>trackSongClick(v.id,safeUrl(v.url));
       div.innerHTML=`<div class="tw"><img src="${thumb(v)}" alt="" loading="lazy"><div class="tov"><div class="pico">▶</div></div></div><div class="cbody"><div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:.38rem">${tagPills(v)}${showMb(v)}</div><div class="ctitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="cmeta"><span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${typeof olQuickSendHtml==="function"?olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}</div></div>`;
       wrap.appendChild(div);
@@ -573,7 +574,7 @@ function loadMoreItems(){
     const wrap=c.querySelector('.vlist')||(() => {const d=document.createElement('div');d.className='vlist';if(sentinel) c.insertBefore(d,sentinel);else c.appendChild(d);return d;})();
     chunk.forEach((v,i)=>{
       const a=document.createElement('a');
-      a.className='litem';a.style.animationDelay=((start+i)*.022)+'s';
+      a.className='litem';a.style.animationDelay=((start+i)*CARD_ANIM_DELAY_STEP)+'s';
       a.href=safeUrl(v.url);a.target='_blank';a.rel='noopener';
       a.addEventListener('click',()=>_gtag('event','song_click',{song_title:v.title||'',member_name:v.member||'',video_date:v.date||'',album_id:v.album_id?String(v.album_id):''}));
       a.innerHTML=`<div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div><div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${typeof olQuickSendHtml==="function"?olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
@@ -595,7 +596,7 @@ function loadMoreItems(){
         const yrDiv=document.createElement('div');yrDiv.className='tl-yr';yrDiv.textContent=y;tl.appendChild(yrDiv);
       }
       const row=document.createElement('div');
-      row.className='tl-row';row.style.animationDelay=((start+i)*.022)+'s';
+      row.className='tl-row';row.style.animationDelay=((start+i)*CARD_ANIM_DELAY_STEP)+'s';
       row.onclick=()=>trackSongClick(v.id,safeUrl(v.url));
       row.innerHTML=`<div class="tl-dot"></div><div class="tl-th"><img src="${thumb(v)}" alt="" loading="lazy"></div><div style="flex:1;min-width:0"><div class="tl-dt">${fmtDate(v.date)}</div><div class="tl-ti">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div style="margin-top:5px;display:flex;gap:4px;flex-wrap:wrap">${tagPills(v)}${showMb(v)}${spotifyBtn(v)}${v.note?`<span style="font-size:.62rem;color:var(--dim)">${esc(v.note)}</span>`:''}</div></div>${typeof shelfPinHtml==="function"?shelfPinHtml(v.id):""}${typeof olQuickSendHtml==="function"?olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
       tl.appendChild(row);
@@ -1093,13 +1094,14 @@ document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='En
 document.getElementById('pageMover').addEventListener('click',function(e){if(e.target===this)closePage();});
 
 // テーマ切替
+const THEME_SK = 'vwp_theme';
 const themeBtn = document.getElementById('themeBtn');
-const savedTheme = localStorage.getItem('vwp_theme');
+const savedTheme = localStorage.getItem(THEME_SK);
 if(savedTheme === 'light'){ document.body.classList.add('light'); themeBtn.textContent='☀️'; }
 themeBtn.addEventListener('click', ()=>{
   const isLight = document.body.classList.toggle('light');
   themeBtn.textContent = isLight ? '☀️' : '🌙';
-  localStorage.setItem('vwp_theme', isLight ? 'light' : 'dark');
+  localStorage.setItem(THEME_SK, isLight ? 'light' : 'dark');
 });
 
 // プレイリストインポート
@@ -1598,6 +1600,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
     const mcProgress = document.getElementById('mcProgress');
     const mcSearch   = document.getElementById('mcSearchInput');
     const mcShelfBtn = document.getElementById('mcShelfBtn');
+    const MC_SWIPE_THRESHOLD = 70;
 
     // Tag list extracted from videos at runtime
     function mcGetTags(){
@@ -1774,7 +1777,7 @@ document.getElementById('importSubmit').addEventListener('click', async ()=>{
       el.style.willChange = '';
       const dy = mcTouchCurY - mcTouchStartY;
       el.style.transition = '';
-      if(Math.abs(dy) > 70){
+      if(Math.abs(dy) > MC_SWIPE_THRESHOLD){
         const dir = dy < 0 ? 'up' : 'down';
         el.classList.add(dy < 0 ? 'mc-out-up' : 'mc-out-down');
         _gtag('event','mob_card_swipe',{direction:dir,song_title:mcFiltered[mcIdx%mcFiltered.length]?.title||''});
@@ -2054,10 +2057,11 @@ function drawVinylDisc(canvas, memberColor, size){
   ctx.clearRect(0, 0, size, size);
 
   // Base: member color
+  const VINYL_BASE_ALPHA = 0.55;
   ctx.beginPath();
   ctx.arc(c, c, c - 1, 0, Math.PI * 2);
   ctx.fillStyle = memberColor;
-  ctx.globalAlpha = 0.55;
+  ctx.globalAlpha = VINYL_BASE_ALPHA;
   ctx.fill();
   ctx.globalAlpha = 1;
 
@@ -2382,7 +2386,7 @@ updateShelfNavCnt();
 
 // === RECEIVED RECORDS (Observer-Link) ===
 function getReceivedRecords(){
-  try{ return JSON.parse(localStorage.getItem('vwp_received') || '[]'); }catch{ return []; }
+  try{ return JSON.parse(localStorage.getItem(OL_RECEIVED_KEY) || '[]'); }catch{ return []; }
 }
 
 function buildReceivedShelfUI(){
