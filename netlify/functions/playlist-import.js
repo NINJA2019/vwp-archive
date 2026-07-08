@@ -1,3 +1,6 @@
+// URLからYouTube videoId（11文字）を抽出（ingest-youtube.jsと同一）
+function ytId(url){ if(!url) return null; const m=String(url).match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/); return m?m[1]:null; }
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method Not Allowed' };
   let body;
@@ -27,11 +30,17 @@ exports.handler = async (event) => {
   }
 
   // 既存動画を全件取得（url と id を取得）
-  const existRes = await fetch(`${supaUrl}/rest/v1/videos?select=id,url`, {
+  // 憲法5: PostgRESTデフォルトLIMIT1000のsilent dropを防ぐためlimit/offset明示
+  const existRes = await fetch(`${supaUrl}/rest/v1/videos?select=id,url&limit=10000&offset=0`, {
     headers: { apikey: supaKey, Authorization: `Bearer ${supaKey}` }
   });
   const existData = await existRes.json();
-  const existingMap = new Map((existData || []).map(v => [v.url, v.id]));
+  // 上限到達時は突合不完全＝重複公開の恐れがあるため中止
+  if (Array.isArray(existData) && existData.length >= 10000) {
+    return { statusCode: 500, body: JSON.stringify({ error: 'videos件数が全件fetch上限(10000)に到達。ページング未実装のため安全のため中止。', count: existData.length }) };
+  }
+  const existingMap = new Map();
+  (existData || []).forEach(v => { const vid = ytId(v.url); if (vid) existingMap.set(vid, v.id); });
 
   const toInsert = [];
   const toLink = []; // 既存曲でアルバムに紐付けるもの
@@ -39,9 +48,10 @@ exports.handler = async (event) => {
   for (const item of allItems) {
     const videoId = item.snippet.resourceId.videoId;
     const url = `https://www.youtube.com/watch?v=${videoId}`;
-    if (existingMap.has(url)) {
+    // 突合はvideoIdベース（既存データのURL形式混在に対応）
+    if (existingMap.has(videoId)) {
       // 既存曲：album_idが指定されていれば紐付け対象に
-      if (album_id) toLink.push(existingMap.get(url));
+      if (album_id) toLink.push(existingMap.get(videoId));
       continue;
     }
     toInsert.push({
