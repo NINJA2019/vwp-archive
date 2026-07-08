@@ -42,7 +42,7 @@
 
 ## 2. app.js 機能ブロックマップ
 
-全3,484行。トップレベル（L1–1185）+ 大型IIFE 2つ（イントロ演出 L1186–1994 / MY SHELF + OL L1996–3484）で構成。**モバイルUIはイントロIIFEの内側にネストし、OLはSHELF IIFEの内側にネストしている**点がモジュール分割の最大の構造的制約。
+全3,484行。トップレベル（L1–1185）+ 大型IIFE 2つ（イントロ演出 L1187–1994 / MY SHELF + OL L1999–3484）で構成。**モバイルUIはイントロIIFEの内側にネストし、OLはSHELF IIFEの内側にネストしている**点がモジュール分割の最大の構造的制約。
 
 ### i18n（多言語）
 
@@ -94,7 +94,7 @@
 
 メンバーカラー定義自体は shelf ブロック内（L2069–2079）にある。
 
-### intro（ターンテーブル・イントロ演出）— IIFE L1186–1994
+### intro（ターンテーブル・イントロ演出）— IIFE L1187–1994
 
 | 行範囲 | 内容 | 主要関数・変数 |
 |---|---|---|
@@ -122,7 +122,7 @@
 
 依存: core（`videos`, `parseTags`, `parseMembers`, `ytId`, `fmtDate`, `esc`, `safeUrl`, `getDailyPicks`）、shelf（`window.getMemberColor`, `window.drawVinylDisc`, `window.isOnShelf`, `window.addToShelf`, `window.removeFromShelf`, `window.getShelf`）、OL（`window.olQuickSend`, `openObserverLink`）。**window.* 経由でしか shelf/OL に触れない**（IIFE分断のため）。
 
-### shelf（MY SHELF）— IIFE L1996–2495
+### shelf（MY SHELF）— IIFE L1999–3484 の前半 L1999–2495（OLを内包、OLは後述）
 
 | 行範囲 | 内容 | 主要関数・変数 |
 |---|---|---|
@@ -566,9 +566,9 @@ song_bottles自体はstatus不問で読むが、videos情報は必ずpublished�
 | `js/i18n.js` | i18nブロック | L15–24, 150 | `lang`, `t()`, `mbr()`, `tTag()`, `applyI18n()` |
 | `js/vinyl.js` | shelf Canvas描画 | L2082–2166 | `drawVinylDisc()` — window露出維持必須（mobile IIFEがwindow経由で呼ぶ） |
 | `js/core.js` | core全体 | L26–1185（constants/supabase/i18nから移転した部分を除く） | `render()`, `buildSidebar()`, `loadMoreItems()`, フィルタ系、モーダル群、管理者認証、デイリーピック、ブートストラップ |
-| `js/intro.js` | IIFE L1186–1421 | L1186–1421 | ターンテーブル演出、LP配置・選択、入場処理（モバイルIIFEを内包しているため単純な行切り出しでは分割不可能：詳細は9-3参照） |
+| `js/intro.js` | IIFE L1187–1421 | L1187–1421 | ターンテーブル演出、LP配置・選択、入場処理（モバイルIIFEを内包しているため単純な行切り出しでは分割不可能：詳細は9-3参照） |
 | `js/mobile.js` | ネストIIFE L1422–1992 | L1422–1992 | S字ホイール（mw*）、モバイルカードビュー（mc*）、モバイル棚（ms*） — intro IIFEの**内側**にネストしているため、intro.jsからの分離には構造的なリファクタが必要 |
-| `js/shelf.js` | MY SHELF IIFE L1996–2495 | L1996–2495 | 棚localStorage、Chrome拡張postMessage、UI構築、詳細パネル、受信レコード棚、window露出群（L2490–2495） |
+| `js/shelf.js` | MY SHELF IIFE L1999–3484 の前半 L1999–2495 | L1999–2495 | 棚localStorage、Chrome拡張postMessage、UI構築、詳細パネル、受信レコード棚、window露出群（L2490–2495） |
 | `js/observer-link.js` | OL部分 L2497–3482 | L2497–3482 | OL全体 — shelf IIFEの**内側**にネストしているため、shelf.jsからの分離には構造的なリファクタが必要（詳細は9-3参照） |
 | `js/ingest-queue.js` | （PR-A1で追加予定） | — | Admin「INCOMING TRANSMISSION」キュー（柱A完了後に整理対象） |
 | `js/main.js` | エントリポイント | — | 各モジュールimport、DOMContentLoaded起点 |
@@ -589,13 +589,13 @@ CSS分割（物理移動のみ、セレクタ・宣言は1文字も変えない�
 
 **発見1: mobile は intro IIFE の内側にネストしている**
 
-app.js L1422–1992 の mobile コードは、intro IIFE（L1186–1994）の内側に存在するネストIIFEである。行範囲を単純に切り出して `mobile.js` を作るだけでは分割できない。intro IIFE の閉じる `})()` が L1994 にあるため、mobile を独立させるには intro IIFE を解体（通常の関数化）する必要がある。
+app.js L1422–1992 の mobile コードは、intro IIFE（L1187–1994）の内側に存在するネストIIFEである。行範囲を単純に切り出して `mobile.js` を作るだけでは分割できない。intro IIFE の閉じる `})()` が L1994 にあるため、mobile を独立させるには intro IIFE を解体（通常の関数化）する必要がある。
 
 実装方針: Phase 2では intro IIFE を通常の async function / モジュール関数に書き換え、mobile の初期化を intro 初期化後に呼び出す形に変換する。
 
 **発見2: observer-link（OL）は shelf IIFE の内側にネストしている**
 
-app.js L2497–3482 の OL コードは、MY SHELF IIFE（L1996–3484）の内側に存在する。OL は shelf の `getShelf()` / `getMemberColor()` を直接参照しており（同一IIFE内のため window 経由不要）、分割後は `import { getShelf, getMemberColor } from './shelf.js'` による明示インポートへの切替が必要。
+app.js L2497–3482 の OL コードは、MY SHELF IIFE（L1999–3484）の内側に存在する。OL は shelf の `getShelf()` / `getMemberColor()` を直接参照しており（同一IIFE内のため window 経由不要）、分割後は `import { getShelf, getMemberColor } from './shelf.js'` による明示インポートへの切替が必要。
 
 **発見3: IIFE間通信が window 経由（8関数）— モジュール化後も維持必須**
 
@@ -639,7 +639,7 @@ L1 に基本スタイルの大半が連結されているため、CSS ファイ�
 | リスク | 詳細 | 深刻度 | 緩和策 |
 |---|---|---|---|
 | window露出消失でChrome拡張が静かに死ぬ | 明示露出24件 + 暗黙グローバル55件（要確認）がES Modules化で露出消失する可能性 | 最高 | Section 4の一覧で全件照合、window.xxx = xxx を明示維持（Section 11-(b)参照） |
-| intro IIFE解体時の演出タイミング崩壊 | L1186–1994のIIFE解体でクロージャ変数・実行タイミングが変わる可能性 | 高 | デスクトップ・モバイル両方でイントロ演出を目視確認 |
+| intro IIFE解体時の演出タイミング崩壊 | L1187–1994のIIFE解体でクロージャ変数・実行タイミングが変わる可能性 | 高 | デスクトップ・モバイル両方でイントロ演出を目視確認 |
 | OL → shelf 依存の切替ミス | 現在は同一IIFEで直接参照しているものをimport経由に切替 | 高 | `getShelf/getMemberColor` の呼び出し箇所を全件grep確認 |
 | style.css L1 展開で計算値崩壊 | 展開整形でセレクタ・値の転記ミスが起きうる | 中 | 展開前後で `computed style` の完全一致サンプリング（最低20要素） |
 | `!important` 多用のカスケード依存破壊 | style.css L40–218のMOBILE OPTIMIZATIONが読み込み順に依存 | 中 | CSS分割後も現行の読み込み順を厳守、devtoolsで上書き確認 |
