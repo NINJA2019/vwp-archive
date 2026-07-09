@@ -57,7 +57,7 @@ function applyEnv(overrides = {}) {
 }
 
 // ── fetchスタブ ──
-// route: { method?: 'GET'|'POST'|..., match: string | (url, opts) => bool, status?: number, body: any | (url, opts) => any, networkError?: string }
+// route: { method?: 'GET'|'POST'|..., match: string | (url, opts) => bool, status?: number, body: any | (url, opts) => any, networkError?: string, resHeaders?: {lowercase-name: value} }
 function makeFetchStub(routes, calls) {
   return async (url, opts = {}) => {
     const u = String(url);
@@ -79,6 +79,7 @@ function makeFetchStub(routes, calls) {
       return {
         ok: status >= 200 && status < 300,
         status,
+        headers: { get: (name) => (r.resHeaders || {})[String(name).toLowerCase()] ?? null },
         text: async () => bodyText,
         json: async () => JSON.parse(bodyText),
       };
