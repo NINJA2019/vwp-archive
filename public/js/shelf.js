@@ -87,6 +87,8 @@ export function buildShelfUI(){
   const labelEl = document.getElementById('shelf-label');
   if(labelEl) labelEl.textContent = 'MY SHELF — ' + shelfSongs.length + ' ' + t('shelfSongs');
 
+  updatePlayAllBtn('shelf-play-all', shelfSongs);
+
   const container = document.getElementById('shelf-rows-container');
   if(!container) return;
   container.innerHTML = '';
@@ -239,6 +241,34 @@ function shelfPlaySong(song){
   window.open(safeUrl(song.url), '_blank', 'noopener,noreferrer');
 }
 
+// --- Play all（通しで聴く: YouTube一時プレイリスト） ---
+function buildWatchVideosUrl(songs){
+  const ids = songs.map(function(s){ return ytId(s.url); }).filter(Boolean);
+  if(ids.length < 2) return null;
+  return 'https://www.youtube.com/watch_videos?video_ids=' + ids.join(',');
+}
+
+function updatePlayAllBtn(btnId, songs){
+  const btn = document.getElementById(btnId);
+  if(!btn) return;
+  const playable = songs.filter(function(s){ return ytId(s.url); }).length;
+  btn.style.display = playable >= 2 ? '' : 'none';
+}
+
+function shelfPlayAll(shelfType){
+  // クリック時点で再計算（stale防止）
+  const videos = getVideos();
+  const ids = shelfType === 'received' ? getReceivedRecords() : getShelf();
+  const songs = ids.map(function(id){ return videos.find(function(v){ return v.id === id; }); }).filter(Boolean);
+  const url = buildWatchVideosUrl(songs);
+  if(!url) return;
+  _gtag('event','shelf_play_all',{
+    shelf_type: shelfType,
+    song_count: songs.filter(function(s){ return ytId(s.url); }).length
+  });
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 // --- Overlay open/close ---
 export function openShelf(){
   buildShelfUI();
@@ -266,6 +296,10 @@ function updateShelfI18n(){
   if(closeBtn) closeBtn.setAttribute('aria-label', t('shelfClose'));
   const panelClose = document.querySelector('.dp-btn-close');
   if(panelClose) panelClose.setAttribute('aria-label', t('shelfPanelClose'));
+  const playAll = document.getElementById('shelf-play-all');
+  if(playAll) playAll.textContent = t('shelfPlayAll');
+  const rcvPlayAll = document.getElementById('shelf-rcv-play-all');
+  if(rcvPlayAll) rcvPlayAll.textContent = t('shelfPlayAll');
 }
 
 function closeShelfOverlay(){
@@ -315,6 +349,8 @@ export function buildReceivedShelfUI(){
 
   const receivedIds = getReceivedRecords();
   const rcvSongs = receivedIds.map(id => videos.find(v => v.id === id)).filter(Boolean);
+
+  updatePlayAllBtn('shelf-rcv-play-all', rcvSongs);
 
   if(rcvSongs.length === 0){
     if(header) header.style.display = 'none';
@@ -388,5 +424,7 @@ export function initShelf(){
     }
   });
   document.querySelector('.dp-btn-close')?.addEventListener('click', shelfClosePanel);
+  document.getElementById('shelf-play-all')?.addEventListener('click', function(){ shelfPlayAll('my'); });
+  document.getElementById('shelf-rcv-play-all')?.addEventListener('click', function(){ shelfPlayAll('received'); });
   updateShelfNavCnt();
 }
