@@ -1,3 +1,5 @@
+const { serviceKey } = require('./_shared/supabase');
+
 // videos取得専用: migration未適用で status 列が存在しない場合（PostgREST 42703）は
 // status=eq.published フィルタなしで1回だけ再試行する。
 // migration適用前は status 列が存在しない = pending 行も存在し得ないため、
@@ -21,7 +23,7 @@ exports.handler = async (event) => {
   }
 
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+  const key = serviceKey();
   const sbHeaders = { apikey: key, Authorization: `Bearer ${key}` };
 
   const id = event.queryStringParameters?.id;
