@@ -46,6 +46,8 @@ exports.handler = async (event) => {
       let url = SUPABASE_URL + '/rest/v1/' + body.table + '?select=' + encodeURIComponent(body.select || '*');
       if (body.filter) url += '&' + body.filter;
       if (body.order) url += '&order=' + body.order;
+      // 憲法5: limit未指定時はPostgRESTデフォルトLIMIT 1000でsilent dropするため、サーバ側で明示（playlist-importと同型）
+      if (!body.limit) { body.limit = '10000'; if (!body.offset) body.offset = '0'; }
       if (body.limit) url += '&limit=' + body.limit;
       if (body.offset) url += '&offset=' + body.offset;
       const res = await fetch(url, { headers: sbHeaders });
