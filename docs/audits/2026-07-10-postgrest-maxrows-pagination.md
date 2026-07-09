@@ -108,3 +108,13 @@ ingest-youtube.js:160-163 / playlist-import.js:31-33 / admin-query.js:126-128 �
 3. **MAX_ROWS=50,000 の妥当性**（本番1,552件に対し余裕十分）
 4. 憲法5改訂文言（§7案）の承認
 5. `fix/fetchallvideorows-pagination` / 308505f の破棄承認
+
+## 12. Yuki承認記録（2026-07-10）
+
+1. admin-query.js 汎用query action のページング化 → **本PRに含める**（承認）
+2. overflowエラー文言「10000」→「50,000」修正 → **含める**（承認）
+3. MAX_ROWS=50,000 → **承認**
+4. 憲法5改訂文言（§7案）→ **承認**
+5. `fix/fetchallvideorows-pagination` / 308505f 破棄 → **承認**
+
+→ 実装体制: mainから `fix/postgrest-maxrows-pagination`（本レポートを含む）で C1〜C5 を逐次コミット。admin汎用ページングは汎用ヘルパー `fetchAllRows(supaUrl, key, path, opts)` を新設し、`limit` 明示かつ<1000なら単発・未指定/≥1000ならページング（order未指定時は id.asc 補完）。
