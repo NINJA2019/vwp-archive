@@ -587,6 +587,43 @@ export function updateNewBadgeIds(){
   });
 }
 
+// ===== アルバム棚ストリップ（メンバー1人選択時のみ・exportしない） =====
+function shelfAlbums(){
+  if(curAlbum!==null||curTag!=='all'||searchQ||curSort==='daily'||selectedMembers.length!==1) return [];
+  return albums.filter(al=>al.member===selectedMembers[0]);
+}
+function buildAlbumShelf(list){
+  const shelf=document.createElement('div');
+  shelf.id='albumShelf';
+  const title=document.createElement('div');
+  title.className='al-shelf-title';
+  title.textContent=`📀 ${t('albumShelfTitle')} (${list.length})`;
+  shelf.appendChild(title);
+  const row=document.createElement('div');
+  row.className='al-shelf-row';
+  list.forEach(al=>{
+    const card=document.createElement('button');
+    card.type='button';
+    card.className='al-card';
+    card.style.setProperty('--al-mc', getMemberColor(al.member));
+    const th=albumThumb(al);
+    const cnt=videos.filter(v=>v.album_id===al.id).length;
+    const soldBadge=al.is_sold_out?'<span class="al-status-badge sold-out">SOLD OUT</span>':'';
+    card.innerHTML=`<span class="al-card-disc" aria-hidden="true"></span>`
+      +`<span class="al-card-jacket${th?'':' al-noimg'}">${th?`<img src="${esc(th)}" alt="" loading="lazy">`:'<span class="al-noimg-icon">📀</span>'}</span>`
+      +`<span class="al-card-name">${esc(al.name)}</span>`
+      +`<span class="al-card-meta"><span>${cnt} ${esc(t('shelfSongs'))}</span>${soldBadge}</span>`;
+    card.addEventListener('click',()=>{
+      curAlbum=al.id;
+      _gtag('event','album_open',{album_title:al.name,member_name:al.member});
+      buildSidebar();updateCounts();render();
+    });
+    row.appendChild(card);
+  });
+  shelf.appendChild(row);
+  return shelf;
+}
+
 export function render(){
   updateNewBadgeIds();
   const ah=document.getElementById('albumHeader');
@@ -643,11 +680,13 @@ export function render(){
   curPage=0;
   document.getElementById('rcnt').textContent=filteredCache.length+' 件';
   const c=document.getElementById('vc');
-  if(!filteredCache.length){
+  const shelfList=shelfAlbums();
+  if(!filteredCache.length && !shelfList.length){
     c.innerHTML=`<div class="empty"><div class="empty-i">🌙</div><h3>${t('notFound')}</h3></div><div id="io-sentinel" style="height:1px"></div>`;
     return;
   }
   c.innerHTML=`<div id="io-sentinel" style="height:1px"></div>`;
+  if(shelfList.length) c.insertBefore(buildAlbumShelf(shelfList), c.firstChild);
   loadMoreItems();
   setupObserver();
 }
