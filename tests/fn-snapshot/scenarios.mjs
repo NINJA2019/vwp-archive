@@ -43,14 +43,28 @@ const ytDetail = (id, title, publishedAt, duration, opts = {}) => ({
   contentDetails: { duration },
   ...(opts.live ? { liveStreamingDetails: { actualStartTime: publishedAt } } : {}),
 });
-// videos全件fetch上限（10000件）到達fixture
-const bigRows = (n) => Array.from({ length: n }, (_, i) => ({
-  id: i + 1,
-  url: `https://www.youtube.com/watch?v=${String(i).padStart(11, 'Z')}`,
-}));
+// videos-get のページング用（title/member/status を持つ公開行）。
 const pageRows = (n, offset = 0) => Array.from({ length: n }, (_, i) => ({
   id: offset + i + 1, title: 't' + (offset + i + 1), member: 'kafu', status: 'published',
 }));
+// videos全件fetchのページング（limit=1000&offset=N）で、各offsetにちょうど1,000行の満杯ページを
+// 返し続けるfixture。fetchAllRowsは戻りが1,000未満になるまでページングするため、満杯ページを
+// 返し続けると安全上限 MAX_ROWS(=50,000=50ページ) に達し overflow=true で打ち切る。
+// idはoffsetベースで一意、urlは11文字ダミー。withId で {id,url} / {url} を切替。
+const offsetOf = (u) => { const m = /offset=(\d+)/.exec(String(u)); return m ? parseInt(m[1], 10) : 0; };
+const fullVideoPage = (u, withId) => {
+  const offset = offsetOf(u);
+  return Array.from({ length: 1000 }, (_, i) => {
+    const id = offset + i + 1;
+    const url = `https://www.youtube.com/watch?v=${String(offset + i).padStart(11, 'Z')}`;
+    return withId ? { id, url } : { url };
+  });
+};
+// videos全件fetch突合クエリのマッチャ。旧実装（単発 limit=10000&offset=0）と
+// 新実装（ページング limit=1000&offset=N&order=id.asc）の**両URL形状**にヒットさせる。
+// これにより before/after スナップショット比較で両版とも fixture を引け、差分が
+// 「threw vs success」のノイズではなく純粋な calls（URL形状・ページ数）の差になる。
+const videoFetchMatch = (select) => (u) => u.includes(`videos?select=${select}`) && u.includes('offset=');
 
 export const scenarios = [];
 
@@ -256,7 +270,7 @@ scenarios.push(
     event: post({ password: PW, playlistId: PL_ID, member: 'kafu', tags: 'MV', album_id: 55 }),
     routes: [
       ...plRoutesTwoPages,
-      { method: 'GET', match: 'videos?select=id,url&limit=10000&offset=0', body: existingC },
+      { method: 'GET', match: videoFetchMatch('id,url'), body: existingC },
       { method: 'PATCH', match: 'videos?id=eq.300', status: 204, body: '' },
       { method: 'POST', match: '/rest/v1/videos', status: 201, body: '' },
     ],
@@ -266,7 +280,7 @@ scenarios.push(
     event: post({ password: PW, playlistId: PL_ID, member: 'kafu' }),
     routes: [
       ...plRoutesTwoPages,
-      { method: 'GET', match: 'videos?select=id,url&limit=10000&offset=0', body: existingC },
+      { method: 'GET', match: videoFetchMatch('id,url'), body: existingC },
       { method: 'POST', match: '/rest/v1/videos', status: 201, body: '' },
     ],
   },
@@ -275,16 +289,32 @@ scenarios.push(
     event: post({ password: PW, playlistId: PL_ID, member: 'kafu', album_id: 55 }),
     routes: [
       { match: 'playlistItems', body: { items: [plVid('CCCCCCCCCCC', '既存C', '2026-01-01T00:00:00Z')] } },
-      { method: 'GET', match: 'videos?select=id,url&limit=10000&offset=0', body: existingC },
+      { method: 'GET', match: videoFetchMatch('id,url'), body: existingC },
       { method: 'PATCH', match: 'videos?id=eq.300', status: 204, body: '' },
     ],
   },
   {
-    name: 'playlist-import/overflow-guard', fn: 'playlist-import',
+    // 1,000件超の2ページ全件fetch: 既存Cは2ページ目（offset=1000）にのみ存在。
+    // ページングが効いていないと dedup が既存Cを見逃し重複INSERTする（＝真因の再現テスト）。
+    // 新実装は offset=0(満杯1000件・Cなし) → offset=1000(部分ページ・C含む) を辿ってCを検出しPATCH。
+    // ※main版(単発)はoffset=0の満杯1000件しか見ずCを取りこぼす → before/after diff対象外（監査§6）。
+    name: 'playlist-import/two-page-dedup', fn: 'playlist-import', pagingOnly: true,
+    event: post({ password: PW, playlistId: PL_ID, member: 'kafu', album_id: 55 }),
+    routes: [
+      { match: 'playlistItems', body: { items: [plVid('CCCCCCCCCCC', '既存C', '2026-01-01T00:00:00Z')] } },
+      {
+        method: 'GET', match: videoFetchMatch('id,url'),
+        body: (u) => offsetOf(u) === 0 ? fullVideoPage(u, true) : existingC,
+      },
+      { method: 'PATCH', match: 'videos?id=eq.300', status: 204, body: '' },
+    ],
+  },
+  {
+    name: 'playlist-import/overflow-guard', fn: 'playlist-import', pagingOnly: true,
     event: post({ password: PW, playlistId: PL_ID, member: 'kafu' }),
     routes: [
       { match: 'playlistItems', body: { items: [plVid('AAAAAAAAAAA', '新曲A', '2026-01-02T00:00:00Z')] } },
-      { method: 'GET', match: 'videos?select=id,url&limit=10000&offset=0', body: () => bigRows(10000) },
+      { method: 'GET', match: (u) => u.includes('videos?select=id,url&order=id.asc&limit=1000&offset='), body: (u) => fullVideoPage(u, true) },
     ],
   },
   {
@@ -292,7 +322,7 @@ scenarios.push(
     event: post({ password: PW, playlistId: PL_ID, member: 'kafu' }),
     routes: [
       { match: 'playlistItems', body: { items: [plVid('AAAAAAAAAAA', '新曲A', '2026-01-02T00:00:00Z')] } },
-      { method: 'GET', match: 'videos?select=id,url&limit=10000&offset=0', body: [] },
+      { method: 'GET', match: videoFetchMatch('id,url'), body: [] },
       { method: 'POST', match: '/rest/v1/videos', status: 500, body: 'insert exploded' },
     ],
   },
@@ -322,7 +352,8 @@ scenarios.push(
   { name: 'admin-query/invalid-json', fn: 'admin-query', event: post('{{{', AQ), routes: [] },
   { name: 'admin-query/query-no-table', fn: 'admin-query', event: post({}, AQ), routes: [] },
   {
-    // 憲法5ガード: limit未指定 → limit=10000&offset=0 が外向きURLに付くこと（callsで比較）
+    // 憲法5ガード: limit未指定 → ページング（order=id.asc補完・limit=1000&offset=N）で
+    // 外向きURLが組まれること（callsで比較）。2件<1000なので1ページで完了。
     name: 'admin-query/query-default-limit', fn: 'admin-query',
     event: post({ table: 'videos', select: 'id,title' }, AQ),
     routes: [{ method: 'GET', match: (u) => u.includes('/rest/v1/videos?select='), body: [VIDEO5, VIDEO9] }],
@@ -331,6 +362,34 @@ scenarios.push(
     name: 'admin-query/query-full-params', fn: 'admin-query',
     event: post({ table: 'videos', select: '*', filter: 'member=eq.kafu', order: 'date.desc', limit: '5', offset: '2' }, AQ),
     routes: [{ method: 'GET', match: (u) => u.includes('/rest/v1/videos?select='), body: [VIDEO5] }],
+  },
+  {
+    // 明示limit<1000は意図的少件として単発fetch（ページングしない）。orderも補完しない。
+    name: 'admin-query/query-explicit-small-limit', fn: 'admin-query',
+    event: post({ table: 'videos', select: 'id,title', limit: '50' }, AQ),
+    routes: [{ method: 'GET', match: (u) => u.includes('/rest/v1/videos?select='), body: [VIDEO5, VIDEO9] }],
+  },
+  {
+    // admin.js LIBRARY相当（limit:'9999'）: #119ガード実効化の核心。9999>=1000でページング化。
+    // 2ページ（offset=0満杯1000件 → offset=1000部分ページ）を辿り全件返す。order未指定→id.asc補完。
+    // ※main版は単発 limit=9999&offset=0 でMax Rowsにより1000件しか返らない → before/after diff対象外（監査§6）。
+    name: 'admin-query/query-paging-two-page', fn: 'admin-query', pagingOnly: true,
+    event: post({ table: 'videos', select: 'id,url', limit: '9999' }, AQ),
+    routes: [{
+      method: 'GET', match: (u) => u.includes('/rest/v1/videos?select='),
+      body: (u) => offsetOf(u) === 0 ? fullVideoPage(u, true) : [{ id: 1001, url: 'https://youtu.be/last1001xyz' }],
+    }],
+  },
+  {
+    // 汎用queryのoverflowガード（table膨張時の安全上限500）: 満杯ページを返し続け MAX_ROWS 到達。
+    // 非配列ではなく配列を返し続けるため overflow で打ち切り、fetchAllRowsが accumulate した rows を200で返す。
+    // ※main版は単発1000件で完了 → 構造的不一致で before/after diff対象外（監査§6）。after単独で 50ページGETを確認。
+    name: 'admin-query/query-paging-overflow', fn: 'admin-query', pagingOnly: true,
+    event: post({ table: 'videos', select: 'id,url', limit: '9999' }, AQ),
+    routes: [{
+      method: 'GET', match: (u) => u.includes('/rest/v1/videos?select='),
+      body: (u) => fullVideoPage(u, true),
+    }],
   },
   {
     name: 'admin-query/query-sb-error', fn: 'admin-query',
@@ -397,17 +456,17 @@ scenarios.push(
     event: post({ action: 'playlist-import', playlistId: PL_ID, member: 'kafu', tags: 'MV', album_id: 55 }, AQ),
     routes: [
       ...plRoutesTwoPages,
-      { method: 'GET', match: 'videos?select=id,url&limit=10000&offset=0', body: existingC },
+      { method: 'GET', match: videoFetchMatch('id,url'), body: existingC },
       { method: 'PATCH', match: 'videos?id=eq.300', status: 204, body: '' },
       { method: 'POST', match: '/rest/v1/videos', status: 201, body: '' },
     ],
   },
   {
-    name: 'admin-query/pl-overflow-guard', fn: 'admin-query',
+    name: 'admin-query/pl-overflow-guard', fn: 'admin-query', pagingOnly: true,
     event: post({ action: 'playlist-import', playlistId: PL_ID, member: 'kafu' }, AQ),
     routes: [
       { match: 'playlistItems', body: { items: [plVid('AAAAAAAAAAA', '新曲A', '2026-01-02T00:00:00Z')] } },
-      { method: 'GET', match: 'videos?select=id,url&limit=10000&offset=0', body: () => bigRows(10000) },
+      { method: 'GET', match: (u) => u.includes('videos?select=id,url&order=id.asc&limit=1000&offset='), body: (u) => fullVideoPage(u, true) },
     ],
   },
   {
@@ -415,7 +474,7 @@ scenarios.push(
     event: post({ action: 'playlist-import', playlistId: PL_ID, member: 'kafu' }, AQ),
     routes: [
       { match: 'playlistItems', body: { items: [plVid('AAAAAAAAAAA', '新曲A', '2026-01-02T00:00:00Z')] } },
-      { method: 'GET', match: 'videos?select=id,url&limit=10000&offset=0', body: [] },
+      { method: 'GET', match: videoFetchMatch('id,url'), body: [] },
       { method: 'POST', match: '/rest/v1/videos', status: 500, body: 'insert exploded' },
     ],
   },
@@ -456,7 +515,13 @@ const ingestChannelsRoute = (channels) => ({
   method: 'GET', match: 'ingest_channels?select=*&enabled=eq.true', body: channels,
 });
 const ingestExistingRoute = (rows) => ({
-  method: 'GET', match: 'videos?select=url&limit=10000&offset=0', body: rows,
+  method: 'GET', match: videoFetchMatch('url'), body: rows,
+});
+// ingestのdedup用 videos全件fetch（select=url）を満杯ページで応答し続け、安全上限overflowを再現する
+const ingestOverflowRoute = () => ({
+  method: 'GET',
+  match: (u) => u.includes('videos?select=url&order=id.asc&limit=1000&offset='),
+  body: (u) => fullVideoPage(u, false),
 });
 
 scenarios.push(
@@ -493,10 +558,10 @@ scenarios.push(
     ],
   },
   {
-    name: 'ingest-youtube/overflow-guard', fn: 'ingest-youtube', event: {},
+    name: 'ingest-youtube/overflow-guard', fn: 'ingest-youtube', pagingOnly: true, event: {},
     routes: [
       ingestChannelsRoute([CHANNEL]),
-      ingestExistingRoute(bigRows(10000)),
+      ingestOverflowRoute(),
     ],
   },
   {
