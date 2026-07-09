@@ -9,10 +9,10 @@
 //   { action:"youtube", videoId }                          — YouTube metadata
 //   { action:"playlist-import", playlistId, member, tags, album_id } — Bulk import
 
-// URLからYouTube videoId（11文字）を抽出（playlist-import.js / ingest-youtube.jsと同一）
-function ytId(url){ if(!url) return null; const m=String(url).match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/); return m?m[1]:null; }
-
-const crypto = require('crypto');
+const { getSupabaseUrl, secretKey, sbHeaders: buildSbHeaders, fetchAllVideoRows } = require('./_shared/supabase');
+const { sha256Hex } = require('./_shared/client-hash');
+// URLからYouTube videoId（11文字）を抽出 / プレイリスト全件取得（playlist-import.js / ingest-youtube.jsと共通）
+const { ytId, fetchAllPlaylistItems } = require('./_shared/yt');
 
 exports.handler = async (event) => {
   const CORS = {
@@ -27,14 +27,14 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return resp(405, { error: 'Method not allowed' });
 
   const auth = (event.headers.authorization || '').replace(/^Bearer\s+/i, '');
-  const expected = crypto.createHash('sha256').update(process.env.ADMIN_PASSWORD || '').digest('hex');
+  const expected = sha256Hex(process.env.ADMIN_PASSWORD || '');
   if (!auth || auth !== expected) return resp(401, { error: 'Unauthorized' });
 
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY;
+  const SUPABASE_URL = getSupabaseUrl();
+  const SUPABASE_KEY = secretKey();
   if (!SUPABASE_URL || !SUPABASE_KEY) return resp(500, { error: 'Supabase env vars missing' });
 
-  const sbHeaders = { apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY };
+  const sbHeaders = buildSbHeaders(SUPABASE_KEY);
 
   try {
     const body = JSON.parse(event.body);
@@ -115,24 +115,15 @@ exports.handler = async (event) => {
       if (!YT_KEY) return resp(500, { error: 'YOUTUBE_API_KEY not configured' });
 
       // YouTubeプレイリスト全件取得（最大200件）
-      let allItems = [], pageToken = '';
-      while (true) {
-        const pUrl = 'https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&playlistId='
-          + encodeURIComponent(playlistId) + '&key=' + YT_KEY + (pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : '');
-        const pRes = await fetch(pUrl);
-        const pData = await pRes.json();
-        if (pData.error) return resp(400, { error: 'YouTube API: ' + (pData.error.message || 'Unknown') });
-        const pageItems = (pData.items || []).filter(i => i.snippet.resourceId.kind === 'youtube#video');
-        allItems = allItems.concat(pageItems);
-        if (pData.nextPageToken && allItems.length < 200) { pageToken = pData.nextPageToken; } else break;
-      }
+      const pl = await fetchAllPlaylistItems(playlistId, YT_KEY);
+      if (pl.error) return resp(400, { error: 'YouTube API: ' + (pl.error.message || 'Unknown') });
+      const allItems = pl.items;
 
       // 既存動画を全件取得（url と id を取得）
-      // 憲法5: PostgRESTデフォルトLIMIT1000のsilent dropを防ぐためlimit/offset明示
-      const exRes = await fetch(SUPABASE_URL + '/rest/v1/videos?select=id,url&limit=10000&offset=0', { headers: sbHeaders });
-      const existData = await exRes.json();
+      // 憲法5: PostgRESTデフォルトLIMIT1000のsilent dropを防ぐためlimit/offset明示（fetchAllVideoRows）
+      const { rows: existData, overflow } = await fetchAllVideoRows(SUPABASE_URL, SUPABASE_KEY, 'id,url');
       // 上限到達時は突合不完全＝重複公開の恐れがあるため中止
-      if (Array.isArray(existData) && existData.length >= 10000) {
+      if (overflow) {
         return resp(500, { error: 'videos件数が全件fetch上限(10000)に到達。ページング未実装のため安全のため中止。', count: existData.length });
       }
       const existingMap = new Map();

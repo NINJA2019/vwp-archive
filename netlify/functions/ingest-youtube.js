@@ -5,6 +5,11 @@
 // 自動publish禁止 — 取り込みは常に status='pending' 止まり
 // ═══════════════════════════════════════════════════════════════
 
+const { getSupabaseUrl, secretKey, sbHeaders: buildSbHeaders, sbFetch, fetchAllVideoRows } = require('./_shared/supabase');
+// URLからYouTube videoId（11文字）を抽出（playlist-import.js / admin-query.jsと共通）
+// 注: playlistItems.list の1ページ50件取得は意図的仕様のため fetchAllPlaylistItems は使わない
+const { ytId } = require('./_shared/yt');
+
 // ── キーワード定数辞書 ──
 const SHORTS_KEYWORDS = ['#shorts'];
 const LIVE_KEYWORDS = [
@@ -38,11 +43,6 @@ function parseDuration(iso) {
   if (!m) return null;
   return (parseInt(m[1] || 0) * 3600) + (parseInt(m[2] || 0) * 60) + parseInt(m[3] || 0);
 }
-
-/**
- * YouTube URL から videoId を抽出（null安全）
- */
-function ytId(url){ if(!url) return null; const m=String(url).match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/); return m?m[1]:null; }
 
 /**
  * タイトル + description からcontent_typeを判定
@@ -103,22 +103,12 @@ function detectCoverTag(title) {
   return COVER_KEYWORDS.some(k => t.includes(k)) ? 'Covered' : null;
 }
 
-/**
- * Supabase fetch ラッパー（エラーはそのままthrow）
- */
-async function sbFetch(url, options) {
-  const res = await fetch(url, options);
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Supabase ${res.status}: ${text.slice(0, 300)}`);
-  }
-  return res.json();
-}
+// Supabase fetch ラッパーは _shared/supabase.js の sbFetch を errSlice:300 で使用（現行の切り詰め長を維持）
 
 // ── メインハンドラ ──
 exports.handler = async (event) => {
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY;
+  const SUPABASE_URL = getSupabaseUrl();
+  const SUPABASE_KEY = secretKey();
   const YT_KEY = process.env.YOUTUBE_API_KEY;
   const ADMIN_PW = process.env.ADMIN_PASSWORD;
 
@@ -143,12 +133,10 @@ exports.handler = async (event) => {
     }
   }
 
-  const sbHeaders = {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
+  const sbHeaders = buildSbHeaders(SUPABASE_KEY, {
     'Content-Type': 'application/json',
     Prefer: 'return=representation'
-  };
+  });
 
   const results = [];
 
@@ -156,7 +144,8 @@ exports.handler = async (event) => {
     // (a) ingest_channels から enabled=true を取得
     const channels = await sbFetch(
       `${SUPABASE_URL}/rest/v1/ingest_channels?select=*&enabled=eq.true`,
-      { headers: sbHeaders }
+      { headers: sbHeaders },
+      { errSlice: 300 }
     );
     if (!Array.isArray(channels) || channels.length === 0) {
       return { statusCode: 200, body: JSON.stringify({ message: '有効なチャンネルがありません', results }) };
@@ -164,12 +153,11 @@ exports.handler = async (event) => {
 
     // (e) Supabase で既存videoId突合（チャンネル横断・ループ外で1回だけfetch）
     // pending含む全件 — status不問でないと重複取りこぼし
-    // 憲法5: 1,000件超は limit=10000&offset=0 を明示（デフォルトLIMIT 1000でsilent drop）
-    const existingRows = await sbFetch(
-      `${SUPABASE_URL}/rest/v1/videos?select=url&limit=10000&offset=0`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    // 憲法5: 1,000件超は limit=10000&offset=0 を明示（fetchAllVideoRows。デフォルトLIMIT 1000でsilent drop）
+    const { rows: existingRows, overflow } = await fetchAllVideoRows(
+      SUPABASE_URL, SUPABASE_KEY, 'url', { throwOnHttpError: true, errSlice: 300 }
     );
-    if (Array.isArray(existingRows) && existingRows.length >= 10000) {
+    if (overflow) {
       console.error('videos件数が全件fetch上限(10000)に到達。dedup不完全のため取り込み中止。ページング実装が必要。');
       return { statusCode: 500, body: JSON.stringify({ error: 'videos件数が上限に到達。ページング未実装のため安全のため中止。', count: existingRows.length }) };
     }

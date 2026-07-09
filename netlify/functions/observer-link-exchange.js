@@ -1,4 +1,5 @@
-const crypto = require('crypto');
+const { serviceKey, sbFetch } = require('./_shared/supabase');
+const { getClientHash } = require('./_shared/client-hash');
 
 const DAILY_LIMIT = 10;
 const VALID_MOODS = ['Morning', 'Night', 'Rain', 'Walk', 'Work', 'Chill'];
@@ -15,21 +16,7 @@ function resp(status, body) {
   };
 }
 
-function getClientHash(event) {
-  // Use Netlify's reliable client IP header, fall back to x-forwarded-for
-  const ip = (event.headers['x-nf-client-connection-ip']
-    || (event.headers['x-forwarded-for'] || '127.0.0.1').split(',')[0]).trim();
-  return crypto.createHash('sha256').update(ip).digest('hex');
-}
-
-async function sbFetch(url, options) {
-  const res = await fetch(url, options);
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Supabase ${res.status}: ${text.slice(0, 200)}`);
-  }
-  return res.json();
-}
+// getClientHash / sbFetch（errSlice既定=200）は _shared に集約（実装は現行と同一）
 
 // videos取得専用: migration未適用で status 列が存在しない場合（PostgREST 42703）は
 // status=eq.published フィルタなしで1回だけ再試行する。
@@ -63,7 +50,7 @@ exports.handler = async (event) => {
   }
 
   const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+  const key = serviceKey();
   const sbHeaders = {
     apikey: key,
     Authorization: `Bearer ${key}`,
