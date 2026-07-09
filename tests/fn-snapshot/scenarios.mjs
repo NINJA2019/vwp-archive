@@ -703,6 +703,35 @@ scenarios.push(
 );
 
 // ═══════════════════════════════════════════════════════════════
+// observer-link-status（読み取り専用: song_bottles id,status のみ）
+// ═══════════════════════════════════════════════════════════════
+const elevenUuids = Array.from({ length: 11 }, (_, i) =>
+  `${String(i + 1).padStart(8, '0')}-0000-4000-8000-000000000000`).join(',');
+
+scenarios.push(
+  { name: 'observer-link-status/options', fn: 'observer-link-status', event: { httpMethod: 'OPTIONS', headers: {} }, routes: [] },
+  { name: 'observer-link-status/405-post', fn: 'observer-link-status', event: post({ ids: B_MINE }), routes: [] },
+  { name: 'observer-link-status/no-ids', fn: 'observer-link-status', event: get(null), routes: [] },
+  { name: 'observer-link-status/bad-uuid', fn: 'observer-link-status', event: get({ ids: `${B_MINE},not-a-uuid` }), routes: [] },
+  { name: 'observer-link-status/too-many', fn: 'observer-link-status', event: get({ ids: elevenUuids }), routes: [] },
+  {
+    // B_THIRD はDB欠落 → statuses キー省略
+    name: 'observer-link-status/success-mixed', fn: 'observer-link-status',
+    event: get({ ids: ` ${B_MINE} ,${B_OTHER},${B_THIRD}` }),
+    routes: [{
+      method: 'GET',
+      match: (u) => u.includes('song_bottles?select=id,status&id=in.('),
+      body: [{ id: B_MINE, status: 'matched' }, { id: B_OTHER, status: 'waiting' }],
+    }],
+  },
+  {
+    name: 'observer-link-status/sb-error', fn: 'observer-link-status',
+    event: get({ ids: B_MINE }),
+    routes: [{ method: 'GET', match: 'song_bottles', status: 500, body: 'G'.repeat(250) }],
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════
 // observer-link-result（4種HTML全文一致）
 // ═══════════════════════════════════════════════════════════════
 const rsBottle = (rows) => ({
