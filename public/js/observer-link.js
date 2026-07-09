@@ -8,6 +8,9 @@ import { getMemberColor } from './vinyl.js';
 const OL_MOODS = ['Morning', 'Night', 'Rain', 'Walk', 'Work', 'Chill'];
 const OL_DAILY_LIMIT = 10;
 const OL_RECEIVED_KEY = 'vwp_received';
+const OL_SENT_KEY = 'vwp_sent'; // 新キー（既存キー vwp_shelf / vwp_received は不変=憲法3）
+const OL_SENT_MAX = 10;
+const OL_SENT_WAITING_MAX_MS = 30 * 86400000; // 30日
 const OL_MEMBER_DISPLAY = {kafu:'KAF',rime:'RIM',harusar:'HARU',isekai:'JOUCHO',koko:'KOKO',vwp:'V.W.P'};
 const OL_TAG_MAP = {Single:'シングル',Duet:'デュエット',Trio:'トリオ',Cover:'Covered'};
 const OL_TAG_LABELS = ['Single','Duet','Trio','Cover'];
@@ -20,6 +23,7 @@ let olPickerMember = null;
 let olPickerSelectedTags = [];
 let olLastExchangeId = null;
 let olLastReceived = null;
+let olPickedBottles = [];
 
 export function olInit(){
   const mc = document.getElementById('olMoodTags');
@@ -61,6 +65,10 @@ export function olInit(){
       olBuildPickerContent();
     });
   });
+
+  document.getElementById('olPickedView')?.addEventListener('click', olPickedViewTap);
+  document.getElementById('olPickedDismiss')?.addEventListener('click', olPickedDismissTap);
+  olCheckSentBottles();
 
   const params = new URLSearchParams(location.search);
   const olResult = params.get('ol_result');
@@ -188,6 +196,10 @@ export function olOpen(){
     olPickerTab = 'shelf';
     shelfTab.classList.add('ol-picker-tab-active');
     if(allTab) allTab.classList.remove('ol-picker-tab-active');
+  }
+  // 拾得通知（OL open毎に最大1回）
+  if(olPickedBottles.length > 0){
+    _gtag('event','ol_bottle_picked_notice',{picked_count: olPickedBottles.length});
   }
   startOlHeroCanvas();
 }
@@ -516,6 +528,8 @@ function olSendRecord(){
     olUpdateSendBtn();
     olLastExchangeId = data.exchange_id;
     olLastReceived = data.received;
+    // fallback時のみ再訪フックに保存（guardによりwaiting残存個体があり後日拾われ得る）
+    if(data.is_fallback === true) olSaveSentBottle(data.exchange_id);
 
     if(data.received && !data.is_fallback){
       olSaveReceivedRecord(data.received.video_id);
@@ -827,6 +841,85 @@ function olSaveReceivedRecord(videoId){
   } catch(e){}
 }
 
+// === SENT BOTTLES（vwp_sent: 再訪フック） ===
+// 要素 {id: uuid, at: epoch_ms, st: 'waiting'|'picked'|'done'}。新しい順・最大10件。
+function olGetSentBottles(){
+  try {
+    const sent = JSON.parse(localStorage.getItem(OL_SENT_KEY) || '[]');
+    if(!Array.isArray(sent)) return [];
+    // プルーニング: 30日超のwaitingはdone化 + 10件truncate
+    const now = Date.now();
+    return sent
+      .filter(b => b && typeof b.id === 'string')
+      .map(b => (b.st === 'waiting' && now - (b.at || 0) > OL_SENT_WAITING_MAX_MS) ? { id: b.id, at: b.at, st: 'done' } : b)
+      .slice(0, OL_SENT_MAX);
+  } catch(e){ return []; }
+}
+
+function olSetSentBottles(list){
+  try { localStorage.setItem(OL_SENT_KEY, JSON.stringify(list.slice(0, OL_SENT_MAX))); } catch(e){}
+}
+
+function olSaveSentBottle(exchangeId){
+  if(!exchangeId) return;
+  const sent = olGetSentBottles().filter(b => b.id !== exchangeId);
+  sent.unshift({ id: exchangeId, at: Date.now(), st: 'waiting' });
+  olSetSentBottles(sent);
+}
+
+function olUpdatePickedNotice(sent){
+  olPickedBottles = sent.filter(b => b.st === 'picked');
+  const notice = document.getElementById('olPickedNotice');
+  if(!notice) return;
+  if(olPickedBottles.length === 0){
+    notice.style.display = 'none';
+    return;
+  }
+  const txt = document.getElementById('olPickedText');
+  if(txt) txt.textContent = t('olPickedNotice');
+  const viewBtn = document.getElementById('olPickedView');
+  if(viewBtn) viewBtn.textContent = t('olPickedView');
+  notice.style.display = '';
+}
+
+function olCheckSentBottles(){
+  const sent = olGetSentBottles();
+  olSetSentBottles(sent); // プルーニング結果を書き戻し
+  olUpdatePickedNotice(sent);
+  const waiting = sent.filter(b => b.st === 'waiting');
+  if(waiting.length === 0) return; // fetchなし
+  fetch('/.netlify/functions/observer-link-status?ids=' + waiting.map(b => encodeURIComponent(b.id)).join(','))
+    .then(r => r.json())
+    .then(data => {
+      if(!data || !data.success || !data.statuses) return;
+      const updated = olGetSentBottles().map(b => {
+        if(b.st !== 'waiting') return b;
+        const st = data.statuses[b.id];
+        if(st === 'matched') return { id: b.id, at: b.at, st: 'picked' };
+        if(st === 'fallback_matched') return { id: b.id, at: b.at, st: 'done' };
+        return b; // waiting据え置き（欠落idも据え置き→30日プルーニングでdone化）
+      });
+      olSetSentBottles(updated);
+      olUpdatePickedNotice(updated);
+    })
+    .catch(() => {});
+}
+
+function olPickedViewTap(){
+  const b = olPickedBottles[0];
+  if(!b) return;
+  _gtag('event','ol_bottle_picked_tap');
+  olSetSentBottles(olGetSentBottles().map(x => x.id === b.id ? { id: x.id, at: x.at, st: 'done' } : x));
+  location.href = '/result/?id=' + encodeURIComponent(b.id); // 既存経路（憲法7）
+}
+
+function olPickedDismissTap(){
+  const ids = olPickedBottles.map(b => b.id);
+  const updated = olGetSentBottles().map(x => ids.includes(x.id) ? { id: x.id, at: x.at, st: 'done' } : x);
+  olSetSentBottles(updated);
+  olUpdatePickedNotice(updated);
+}
+
 function olShowToast(msg){
   const t = document.getElementById('olToast');
   if(!t) return;
@@ -896,6 +989,8 @@ export function olQuickSend(videoId, btnEl, evt){
 
     olLastExchangeId = data.exchange_id;
     olLastReceived = data.received;
+    // fallback時のみ再訪フックに保存（olSendRecordと同条件）
+    if(data.is_fallback === true) olSaveSentBottle(data.exchange_id);
 
     var screen = document.getElementById('observer-link-screen');
     if(screen){ screen.style.display = ''; screen.classList.add('ol-open'); }
