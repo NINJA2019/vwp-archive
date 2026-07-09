@@ -1,5 +1,6 @@
 // observer-link.js — OBSERVER-LINK（app.js L2464-3451 相当）
 
+import { t } from './i18n.js';
 import { getVideos, ytId, parseTags, parseMembers, esc, safeUrl, _gtag, getIsAdmin, getStoredPw } from './core.js';
 import { getShelf } from './shelf.js';
 import { getMemberColor } from './vinyl.js';
@@ -645,14 +646,14 @@ function olShowResult(data){
   var sentMemberDisplay = olGetMemberDisplay(sent.member);
   var sentColor = getMemberColor(sent.member);
 
-  var labelText = (received && !isFallback) ? 'LINKED' : 'RECOMMENDED';
+  var labelText = (received && !isFallback) ? 'LINKED' : t('olDriftLabel');
   var subText = !received ? 'Something went wrong — try again'
-    : isFallback ? 'No bottles in the sea yet — here\'s a recommendation'
+    : isFallback ? t('olDriftSub')
     : 'From an observer ' + (olFormatTimeAgo(received.time_ago_seconds) || 'moments') + ' ago';
 
   var badgeHtml = '<canvas id="olResultParticles"></canvas>'
     + '<div class="ol-ambient"></div>'
-    + '<div class="ol-match-badge">'
+    + '<div class="ol-match-badge' + (isFallback ? ' ol-drift' : '') + '">'
     + '<div class="ol-ring-container">'
     + '<div class="ol-ring ol-ring-1"></div><div class="ol-ring ol-ring-2"></div><div class="ol-ring ol-ring-3"></div>'
     + '<div class="ol-ripple ol-ripple-1"></div><div class="ol-ripple ol-ripple-2"></div><div class="ol-ripple ol-ripple-3"></div>'
@@ -680,7 +681,7 @@ function olShowResult(data){
     var recColor = getMemberColor(received.member);
 
     receivedCardHtml = '<div class="ol-record-card ol-card-received">'
-      + '<div class="ol-card-label received">Received record</div>'
+      + '<div class="ol-card-label received">' + esc(isFallback ? t('olDriftCardLabel') : 'Received record') + '</div>'
       + '<div class="ol-card-body">'
       + '<div class="ol-card-thumb"><img src="'+esc(recThumb)+'" alt="" loading="lazy">'
       + '<div class="ol-mini-disc"></div></div>'

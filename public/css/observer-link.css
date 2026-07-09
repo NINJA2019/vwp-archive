@@ -282,3 +282,15 @@ body.light .ol-quick-send-btn:hover{background:rgba(108,92,231,.1)}
 .mc-card-ol:active{transform:scale(0.88)}
 .mc-card-ol.sending{pointer-events:none;opacity:.5;animation:ol-qs-pulse .8s ease-in-out infinite}
 .mc-card-ol.sent{color:var(--ol-received,#5dc9a8);border-color:rgba(93,201,168,.3);pointer-events:none}
+/* ── OL Drift（fallback「漂着」演出）: --ol-received(#5dc9a8)系リング + 波リップル強調 ── */
+.ol-drift .ol-checkmark{display:none}
+.ol-drift .ol-match-circle{background:linear-gradient(135deg,#2e7a66,var(--ol-received,#5dc9a8));box-shadow:0 0 40px rgba(93,201,168,.4),0 0 80px rgba(93,201,168,.18)}
+.ol-drift .ol-match-circle::after{content:'≈';color:#fff;font-family:'Shippori Mincho',serif;font-size:30px;line-height:1;opacity:0;animation:ol-drift-wave-in .5s ease .9s forwards}
+@keyframes ol-drift-wave-in{to{opacity:.95}}
+.ol-drift .ol-ring-1{border-color:rgba(93,201,168,.3)}
+.ol-drift .ol-ring-2{border-color:rgba(93,201,168,.22)}
+.ol-drift .ol-ring-3{border-color:rgba(93,201,168,.15)}
+.ol-drift .ol-ripple{border-color:rgba(93,201,168,.5)}
+.ol-drift .ol-ripple-1,.ol-drift .ol-ripple-2,.ol-drift .ol-ripple-3{animation-name:ol-drift-ripple-out}
+@keyframes ol-drift-ripple-out{0%{transform:scale(1);opacity:.6;border-color:rgba(93,201,168,.5)}100%{transform:scale(3);opacity:0;border-color:rgba(93,201,168,.05)}}
+.ol-drift .ol-match-label{background:linear-gradient(90deg,var(--ol-received,#5dc9a8),#8be0c8,var(--ol-received,#5dc9a8));background-size:200% 100%;-webkit-background-clip:text;background-clip:text}
