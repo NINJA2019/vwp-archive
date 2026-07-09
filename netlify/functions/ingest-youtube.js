@@ -153,13 +153,13 @@ exports.handler = async (event) => {
 
     // (e) Supabase で既存videoId突合（チャンネル横断・ループ外で1回だけfetch）
     // pending含む全件 — status不問でないと重複取りこぼし
-    // 憲法5: 1,000件超は limit=10000&offset=0 を明示（fetchAllVideoRows。デフォルトLIMIT 1000でsilent drop）
+    // 憲法5: 1,000件超は fetchAllVideoRows でページング（limit=1000&offset=N&order=id.asc。単発limit=10000はMax Rowsで1,000にsilent drop）
     const { rows: existingRows, overflow } = await fetchAllVideoRows(
       SUPABASE_URL, SUPABASE_KEY, 'url', { throwOnHttpError: true, errSlice: 300 }
     );
     if (overflow) {
-      console.error('videos件数が全件fetch上限(10000)に到達。dedup不完全のため取り込み中止。ページング実装が必要。');
-      return { statusCode: 500, body: JSON.stringify({ error: 'videos件数が上限に到達。ページング未実装のため安全のため中止。', count: existingRows.length }) };
+      console.error('videos件数が全件fetch安全上限(50,000)に到達。dedup不完全のため取り込み中止。テーブル異常膨張の可能性。');
+      return { statusCode: 500, body: JSON.stringify({ error: 'videos件数が安全上限(50,000)に到達。dedup不完全のため安全のため中止。', count: existingRows.length }) };
     }
     const existingVideoIds = new Set(
       (Array.isArray(existingRows) ? existingRows : []).map(r => ytId(r.url)).filter(Boolean)

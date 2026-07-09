@@ -137,11 +137,11 @@ exports.handler = async (event) => {
       const allItems = pl.items;
 
       // 既存動画を全件取得（url と id を取得）
-      // 憲法5: PostgRESTデフォルトLIMIT1000のsilent dropを防ぐためlimit/offset明示（fetchAllVideoRows）
+      // 憲法5: fetchAllVideoRows でページング（limit=1000&offset=N&order=id.asc。単発limit=10000はMax Rowsで1,000にsilent drop）
       const { rows: existData, overflow } = await fetchAllVideoRows(SUPABASE_URL, SUPABASE_KEY, 'id,url');
       // 上限到達時は突合不完全＝重複公開の恐れがあるため中止
       if (overflow) {
-        return resp(500, { error: 'videos件数が全件fetch上限(10000)に到達。ページング未実装のため安全のため中止。', count: existData.length });
+        return resp(500, { error: 'videos件数が安全上限(50,000)に到達。dedup不完全のため安全のため中止。', count: existData.length });
       }
       const existingMap = new Map();
       (Array.isArray(existData) ? existData : []).forEach(v => { const vid = ytId(v.url); if (vid) existingMap.set(vid, v.id); });
