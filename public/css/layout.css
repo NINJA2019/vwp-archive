@@ -40,7 +40,7 @@
 /* ===== アルバム棚ストリップ（メンバー1人選択時・#vc先頭） ===== */
 #albumShelf { padding:1rem 1.4rem .7rem; border-bottom:1px solid var(--border); background:var(--surface); }
 .al-shelf-title { font-family:'Cinzel',serif; font-size:.72rem; letter-spacing:.18em; color:var(--dim); text-transform:uppercase; margin-bottom:.75rem; }
-.al-shelf-row { display:flex; gap:1.1rem; overflow-x:auto; padding:4px 2px 10px; scrollbar-width:thin; -webkit-overflow-scrolling:touch; }
+.al-shelf-row { display:flex; gap:1.1rem; overflow-x:auto; padding:4px 9px 10px 2px; scrollbar-width:thin; -webkit-overflow-scrolling:touch; }
 .al-card { --al-mc:#b0b8ff; position:relative; flex-shrink:0; width:146px; background:none; border:none; padding:0; cursor:pointer; text-align:left; font-family:'Noto Sans JP',sans-serif; }
 .al-card:focus-visible { outline:1px solid var(--al-mc); outline-offset:3px; border-radius:6px; }
 .al-card-disc {
@@ -247,6 +247,9 @@
     transition: none !important;
   }
   .mpill, .cfilt, .mob-chip, .vbtn, .sbtn, .btn, .theme-btn {
+    transition: none !important;
+  }
+  .al-card-disc, .al-card-jacket {
     transition: none !important;
   }
   @keyframes badge-pulse {
