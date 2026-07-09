@@ -660,7 +660,8 @@ function olShowResult(data){
   var sentMemberDisplay = olGetMemberDisplay(sent.member);
   var sentColor = getMemberColor(sent.member);
 
-  var labelText = (received && !isFallback) ? 'LINKED' : t('olDriftLabel');
+  // 漂着ラベルはreceivedありのfallbackに限定。received無し（候補空の稀ケース）は従来の'RECOMMENDED'
+  var labelText = (received && !isFallback) ? 'LINKED' : (received ? t('olDriftLabel') : 'RECOMMENDED');
   var subText = !received ? 'Something went wrong — try again'
     : isFallback ? t('olDriftSub')
     : 'From an observer ' + (olFormatTimeAgo(received.time_ago_seconds) || 'moments') + ' ago';
