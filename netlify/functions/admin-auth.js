@@ -3,7 +3,7 @@
 // Response: { ok: true, token: string } | { ok: false, msg: string }
 // token is a SHA-256 session hash (NOT the Supabase secret key — that stays server-side)
 
-const crypto = require('crypto');
+const { sha256Hex } = require('./_shared/client-hash');
 
 exports.handler = async (event) => {
   const CORS_HEADERS = {
@@ -36,9 +36,7 @@ exports.handler = async (event) => {
       };
     }
 
-    const sessionToken = crypto.createHash('sha256')
-      .update(process.env.ADMIN_PASSWORD)
-      .digest('hex');
+    const sessionToken = sha256Hex(process.env.ADMIN_PASSWORD);
 
     return {
       statusCode: 200,
