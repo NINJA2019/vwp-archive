@@ -1,43 +1,42 @@
+const { getSupabaseUrl, secretKey, sbHeaders } = require('./_shared/supabase');
+const { methodNotAllowed, invalidJson, json, parseJsonBody } = require('./_shared/responses');
+
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return methodNotAllowed();
   }
-  let body = {};
-  try { body = JSON.parse(event.body || '{}'); } catch(e) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
+  const parsed = parseJsonBody(event);
+  if (!parsed.ok) {
+    return invalidJson();
   }
+  const body = parsed.body;
   const { password, id, member, title, tags, date, url, note, spotify_url, album_id } = body;
   if (password !== process.env.ADMIN_PASSWORD) {
-    return { statusCode: 401, body: JSON.stringify({ error: 'パスワードが違います' }) };
+    return json(401, { error: 'パスワードが違います' });
   }
   if (!id) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'idが必要です' }) };
+    return json(400, { error: 'idが必要です' });
   }
-  const supaUrl = process.env.SUPABASE_URL;
-  const supaKey = process.env.SUPABASE_SECRET_KEY;
+  const supaUrl = getSupabaseUrl();
+  const supaKey = secretKey();
   if (!supaUrl || !supaKey) {
-    return { statusCode: 500, body: JSON.stringify({ error: 'Supabase env vars missing' }) };
+    return json(500, { error: 'Supabase env vars missing' });
   }
   try {
     const res = await fetch(`${supaUrl}/rest/v1/videos?id=eq.${id}`, {
       method: 'PATCH',
-      headers: {
-        apikey: supaKey,
-        Authorization: `Bearer ${supaKey}`,
-        'Content-Type': 'application/json',
-        Prefer: 'return=representation',
-      },
+      headers: sbHeaders(supaKey, { 'Content-Type': 'application/json', Prefer: 'return=representation' }),
       body: JSON.stringify({ member, title, tags: tags || '', date, url, note, spotify_url: spotify_url || null, album_id: album_id !== undefined ? album_id : undefined }),
     });
     const text = await res.text();
-    if (!text) return { statusCode: 500, body: JSON.stringify({ error: 'Empty response' }) };
+    if (!text) return json(500, { error: 'Empty response' });
     let data;
     try { data = JSON.parse(text); } catch(e) {
-      return { statusCode: 500, body: JSON.stringify({ error: 'Parse error', raw: text.slice(0,200) }) };
+      return json(500, { error: 'Parse error', raw: text.slice(0,200) });
     }
-    if (!res.ok) return { statusCode: res.status, body: JSON.stringify({ error: data.message || text }) };
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Array.isArray(data) ? data[0] : data) };
+    if (!res.ok) return json(res.status, { error: data.message || text });
+    return json(200, Array.isArray(data) ? data[0] : data, { 'Content-Type': 'application/json' });
   } catch(e) {
-    return { statusCode: 500, body: JSON.stringify({ error: e.message }) };
+    return json(500, { error: e.message });
   }
 };
