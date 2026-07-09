@@ -83,12 +83,20 @@ async function fetchAllRows(supaUrl, key, path, { throwOnHttpError = false, errS
   let overflow = false;
   while (true) {
     const url = `${supaUrl}/rest/v1/${path}${sep}limit=${PAGE_SIZE}&offset=${offset}`;
-    const page = throwOnHttpError
-      ? await sbFetch(url, { headers: sbHeaders(key) }, { errSlice })
-      : await (await fetch(url, { headers: sbHeaders(key) })).json();
+    // status は非配列（PostgRESTエラーJSON）時の呼び出し側の応答ステータス保存用。
+    // throwOnHttpError=true 経路では sbFetch が非OK時にthrowするため status は常に 200。
+    let status = 200;
+    let page;
+    if (throwOnHttpError) {
+      page = await sbFetch(url, { headers: sbHeaders(key) }, { errSlice });
+    } else {
+      const res = await fetch(url, { headers: sbHeaders(key) });
+      status = res.status;
+      page = await res.json();
+    }
     // 非配列（PostgRESTエラーJSON等）: 従来挙動を維持し、そのまま rows として返す
     if (!Array.isArray(page)) {
-      return { rows: page, overflow: false, count: 0 };
+      return { rows: page, overflow: false, count: 0, status };
     }
     for (const r of page) all.push(r);
     // 戻りがPAGE_SIZE未満なら最終ページ

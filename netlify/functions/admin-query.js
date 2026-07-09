@@ -9,7 +9,7 @@
 //   { action:"youtube", videoId }                          — YouTube metadata
 //   { action:"playlist-import", playlistId, member, tags, album_id } — Bulk import
 
-const { getSupabaseUrl, secretKey, sbHeaders: buildSbHeaders, fetchAllVideoRows } = require('./_shared/supabase');
+const { getSupabaseUrl, secretKey, sbHeaders: buildSbHeaders, fetchAllRows, fetchAllVideoRows } = require('./_shared/supabase');
 const { sha256Hex } = require('./_shared/client-hash');
 // URLからYouTube videoId（11文字）を抽出 / プレイリスト全件取得（playlist-import.js / ingest-youtube.jsと共通）
 const { ytId, fetchAllPlaylistItems } = require('./_shared/yt');
@@ -43,12 +43,29 @@ exports.handler = async (event) => {
     // ── SELECT ──
     if (action === 'query') {
       if (!body.table) return resp(400, { error: 'table required' });
+
+      // limit明示かつ<1000: 意図的な少件取得（limit:50等）を尊重して単発fetch。
+      // limit未指定 or ≥1000: 憲法5に従い fetchAllRows でページング（PostgREST Max Rows=1000の
+      //   silent dropを防ぐ）。ページング時に order 未指定なら id.asc を補完し全順序を保証する
+      //   （videos/song_bottles/albums は全て id PK）。
+      const explicitLimit = body.limit != null ? parseInt(body.limit, 10) : null;
+      const paginate = explicitLimit == null || !(explicitLimit < 1000);
+
+      if (paginate) {
+        let path = body.table + '?select=' + encodeURIComponent(body.select || '*');
+        if (body.filter) path += '&' + body.filter;
+        path += '&order=' + (body.order || 'id.asc');
+        const { rows, status } = await fetchAllRows(SUPABASE_URL, SUPABASE_KEY, path);
+        // 配列（正常）は200で全件返す。非配列（PostgRESTエラーJSON）は単発時と同じく
+        // 実ステータス（例: 404 relation does not exist）で透過し、admin.js のエラー契約
+        // （!res.ok → data.error/message）を維持する。
+        return resp(Array.isArray(rows) ? 200 : (status || 400), rows);
+      }
+
       let url = SUPABASE_URL + '/rest/v1/' + body.table + '?select=' + encodeURIComponent(body.select || '*');
       if (body.filter) url += '&' + body.filter;
       if (body.order) url += '&order=' + body.order;
-      // 憲法5: limit未指定時はPostgRESTデフォルトLIMIT 1000でsilent dropするため、サーバ側で明示（playlist-importと同型）
-      if (!body.limit) { body.limit = '10000'; if (!body.offset) body.offset = '0'; }
-      if (body.limit) url += '&limit=' + body.limit;
+      url += '&limit=' + body.limit;
       if (body.offset) url += '&offset=' + body.offset;
       const res = await fetch(url, { headers: sbHeaders });
       return resp(res.status, await res.json());
