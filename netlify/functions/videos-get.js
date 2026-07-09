@@ -1,9 +1,11 @@
+const { readKey, sbHeaders } = require('./_shared/supabase');
+
 exports.handler = async () => {
   const url = process.env.SUPABASE_URL;
   // 読み取り専用: anon key を使用（RLS で制御）
-  // フォールバック: SUPABASE_ANON_KEY 未設定時は SECRET_KEY を使用
-  const key = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SECRET_KEY;
-  const headers = { apikey: key, Authorization: `Bearer ${key}` };
+  // フォールバック: SUPABASE_ANON_KEY 未設定時は SECRET_KEY を使用（readKey）
+  const key = readKey();
+  const headers = sbHeaders(key);
 
   // 1ページ取得。migration未適用で status 列が存在しない場合（PostgREST 42703）は
   // status=eq.published フィルタなしで1回だけ再試行する。
