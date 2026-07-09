@@ -194,8 +194,24 @@ exports.handler = async (event) => {
     }
 
     // Fallback: no match available — recommend a random song
+    // 抽選偏り修正: count=exact + ランダムoffset窓（videos.idは欠番ありのためid範囲乱数は不採用）。
+    // count取得失敗時は offset=0 にdegrade（従来挙動 = 先頭50件窓）。
+    let fbOffset = 0;
+    try {
+      const countRes = await fetch(
+        `${url}/rest/v1/videos?select=id&status=eq.published&limit=1`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}`, Prefer: 'count=exact' } }
+      );
+      const range = (countRes.headers && countRes.headers.get('content-range')) || '';
+      const total = parseInt(String(range).split('/')[1], 10);
+      if (Number.isFinite(total) && total > 50) {
+        fbOffset = Math.floor(Math.random() * (total - 50 + 1));
+      }
+    } catch (e) {
+      fbOffset = 0;
+    }
     const fallbackData = await sbFetchVideos(
-      `${url}/rest/v1/videos?select=id,title,member,date,url&status=eq.published&limit=50`,
+      `${url}/rest/v1/videos?select=id,title,member,date,url&status=eq.published&order=id.asc&limit=50&offset=${fbOffset}`,
       { headers: { apikey: key, Authorization: `Bearer ${key}` } }
     );
     const pool = Array.isArray(fallbackData) ? fallbackData.filter(v => v.id !== numericVideoId) : [];
