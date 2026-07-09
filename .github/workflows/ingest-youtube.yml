@@ -1,0 +1,37 @@
+# ingest-youtube 定期起動（GitHub Actions cron）
+#
+# 経緯: netlify.toml の [functions."ingest-youtube"] schedule がNetlify側に
+# 登録されず一度も実行されていなかった問題（2026-07-10診断）の回避策。
+# Netlifyのスケジュール登録をやめ、GitHub ActionsからHTTPで手動起動する。
+#
+# 注意:
+# - schedule はデフォルトブランチ（main）上のworkflowのみ実行される（マージ後に有効化）。
+# - リポジトリが60日間非活動だとGitHubがcronを自動停止する（手動で再有効化が必要）。
+# - Secret `ADMIN_PASSWORD` をリポジトリのActions secretsに登録すること（Yuki）。
+
+name: ingest-youtube
+
+on:
+  schedule:
+    - cron: '0 */6 * * *' # UTC、6時間ごと（従来のnetlify.toml設定と同じ間隔）
+  workflow_dispatch: # 手動実行用
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Invoke ingest-youtube function
+        run: |
+          set -euo pipefail
+          response=$(curl -sf --max-time 120 -X POST \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_PASSWORD }}" \
+            https://vwp-archive.netlify.app/.netlify/functions/ingest-youtube)
+          echo "Response: ${response}"
+          ok=$(echo "${response}" | jq -r '.ok')
+          processed=$(echo "${response}" | jq -r '.processed')
+          echo "ok=${ok} processed=${processed}"
+          if [ "${ok}" != "true" ]; then
+            echo "ingest-youtube returned ok != true" >&2
+            exit 1
+          fi

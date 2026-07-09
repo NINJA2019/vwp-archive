@@ -2,9 +2,6 @@
   publish = "public"
   functions = "netlify/functions"
 
-[functions."ingest-youtube"]
-  schedule = "0 */6 * * *"
-
 [[redirects]]
   from = "/result/"
   to = "/.netlify/functions/observer-link-result"
