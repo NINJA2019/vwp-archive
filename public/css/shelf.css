@@ -379,3 +379,47 @@ body.light .shelf-empty { color: var(--dim); }
   }
 }
 
+
+/* --- Play all（通しで聴く）ghost buttons — 木棚トーン --- */
+.shelf-play-all,
+.shelf-rcv-play-all {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 10px;
+  padding: 5px 14px;
+  background: none;
+  border: 1px solid rgba(212, 180, 131, .32);
+  border-radius: 16px;
+  color: rgba(226, 200, 160, .78);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all .2s;
+}
+.shelf-play-all::before,
+.shelf-rcv-play-all::before {
+  content: '▶';
+  font-size: .75em;
+}
+.shelf-play-all:hover,
+.shelf-rcv-play-all:hover {
+  border-color: rgba(226, 200, 160, .6);
+  color: #e2c8a0;
+  background: rgba(212, 180, 131, .08);
+}
+body.light .shelf-play-all,
+body.light .shelf-rcv-play-all {
+  border-color: rgba(120, 90, 50, .3);
+  color: rgba(120, 90, 50, .75);
+}
+body.light .shelf-play-all:hover,
+body.light .shelf-rcv-play-all:hover {
+  background: rgba(120, 90, 50, .08);
+  color: #6d5230;
+}

@@ -565,6 +565,21 @@ const exCandidates = (rows) => ({
 const exFallbackList = (rows) => ({
   method: 'GET', match: (u) => u.includes('rest/v1/videos') && u.includes('limit=50') && u.includes('status=eq.published'), body: rows,
 });
+// fallback抽選のcount=exact窓（content-rangeをresHeadersで返す）。
+// total<=50 のfixtureに固定: Math.random消費が増えず result はbase比バイト一致のまま（差分はcallsのみ）。
+const exCount = (total) => ({
+  method: 'GET',
+  match: (u) => u.includes('videos?select=id&status=eq.published&limit=1'),
+  body: [{ id: 1 }],
+  resHeaders: { 'content-range': `0-0/${total}` },
+});
+// 42703（status列なし）環境ではcountクエリも400になる — content-range無し → offset=0 degrade経路
+const exCount42703 = () => ({
+  method: 'GET',
+  match: (u) => u.includes('videos?select=id&status=eq.published&limit=1'),
+  status: 400,
+  body: 'code 42703: column videos.status does not exist',
+});
 const MY_BOTTLE = { id: B_MINE, video_id: 5, mood_tags: ['Night'], message: 'よい夜を', client_hash: CLIENT_HASH, status: 'waiting', created_at: '2026-01-15T12:00:00.000Z' };
 const OTHER_BOTTLE = { id: B_OTHER, video_id: 9, mood_tags: ['Rain'], message: '雨の日に', client_hash: 'otherhash', status: 'waiting', created_at: '2026-01-15T11:00:00.000Z' };
 const THIRD_BOTTLE = { id: B_THIRD, video_id: 12, mood_tags: [], message: null, client_hash: 'thirdhash', status: 'waiting', created_at: '2026-01-15T10:00:00.000Z' };
@@ -606,6 +621,7 @@ scenarios.push(
       exInsert([MY_BOTTLE]),
       exCandidates([OTHER_BOTTLE]),
       { method: 'PATCH', match: (u) => u.includes(`id=eq.${B_OTHER}`) && u.includes('status=eq.waiting'), body: [] },
+      exCount(3),
       exFallbackList([VIDEO5, VIDEO9, VIDEO12]),
       { method: 'PATCH', match: (u) => u.includes(`id=eq.${B_MINE}`), body: [{ ...MY_BOTTLE, status: 'fallback_matched' }] },
     ],
@@ -618,6 +634,7 @@ scenarios.push(
       ...exVideoById(5, [VIDEO5]),
       exInsert([MY_BOTTLE]),
       exCandidates([]),
+      exCount(3),
       exFallbackList([VIDEO5, VIDEO9, VIDEO12]),
       { method: 'PATCH', match: (u) => u.includes(`id=eq.${B_MINE}`), body: [{ ...MY_BOTTLE, status: 'fallback_matched' }] },
     ],
@@ -630,6 +647,7 @@ scenarios.push(
       ...exVideoById(5, [VIDEO5]),
       exInsert([MY_BOTTLE]),
       exCandidates([]),
+      exCount(1),
       exFallbackList([VIDEO5]), // sent自身のみ → pool空 → received:null（PATCHなし）
     ],
   },
@@ -641,6 +659,7 @@ scenarios.push(
       ...exVideoById(5, [VIDEO5], { retry42703: true }),
       exInsert([MY_BOTTLE]),
       exCandidates([]),
+      exCount42703(),
       { method: 'GET', match: (u) => u.includes('rest/v1/videos') && u.includes('limit=50') && u.includes('status=eq.published'), status: 400, body: 'code 42703: column videos.status does not exist' },
       { method: 'GET', match: (u) => u.includes('rest/v1/videos') && u.includes('limit=50') && !u.includes('status=eq.published'), body: [VIDEO5, VIDEO9] },
       { method: 'PATCH', match: (u) => u.includes(`id=eq.${B_MINE}`), body: [{ ...MY_BOTTLE, status: 'fallback_matched' }] },
@@ -659,6 +678,7 @@ scenarios.push(
       ...exVideoById(5, [VIDEO5]),
       exInsert([MY_BOTTLE]),
       exCandidates([]),
+      exCount(2),
       exFallbackList([VIDEO5, VIDEO9]),
       { method: 'PATCH', match: (u) => u.includes(`id=eq.${B_MINE}`), body: [{ ...MY_BOTTLE, status: 'fallback_matched' }] },
     ],
@@ -679,6 +699,35 @@ scenarios.push(
     name: 'exchange/sb-error', fn: 'observer-link-exchange',
     event: post({ video_id: 5 }, EXH),
     routes: [{ method: 'GET', match: (u) => u.includes('song_bottles?select=id&client_hash=eq.'), status: 500, body: 'F'.repeat(250) }],
+  },
+);
+
+// ═══════════════════════════════════════════════════════════════
+// observer-link-status（読み取り専用: song_bottles id,status のみ）
+// ═══════════════════════════════════════════════════════════════
+const elevenUuids = Array.from({ length: 11 }, (_, i) =>
+  `${String(i + 1).padStart(8, '0')}-0000-4000-8000-000000000000`).join(',');
+
+scenarios.push(
+  { name: 'observer-link-status/options', fn: 'observer-link-status', event: { httpMethod: 'OPTIONS', headers: {} }, routes: [] },
+  { name: 'observer-link-status/405-post', fn: 'observer-link-status', event: post({ ids: B_MINE }), routes: [] },
+  { name: 'observer-link-status/no-ids', fn: 'observer-link-status', event: get(null), routes: [] },
+  { name: 'observer-link-status/bad-uuid', fn: 'observer-link-status', event: get({ ids: `${B_MINE},not-a-uuid` }), routes: [] },
+  { name: 'observer-link-status/too-many', fn: 'observer-link-status', event: get({ ids: elevenUuids }), routes: [] },
+  {
+    // B_THIRD はDB欠落 → statuses キー省略
+    name: 'observer-link-status/success-mixed', fn: 'observer-link-status',
+    event: get({ ids: ` ${B_MINE} ,${B_OTHER},${B_THIRD}` }),
+    routes: [{
+      method: 'GET',
+      match: (u) => u.includes('song_bottles?select=id,status&id=in.('),
+      body: [{ id: B_MINE, status: 'matched' }, { id: B_OTHER, status: 'waiting' }],
+    }],
+  },
+  {
+    name: 'observer-link-status/sb-error', fn: 'observer-link-status',
+    event: get({ ids: B_MINE }),
+    routes: [{ method: 'GET', match: 'song_bottles', status: 500, body: 'G'.repeat(250) }],
   },
 );
 

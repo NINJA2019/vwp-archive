@@ -483,6 +483,7 @@
       <div class="shelf-concrete-overlay"></div>
       <div class="shelf-area">
         <div class="shelf-label" id="shelf-label"></div>
+        <button id="shelf-play-all" class="shelf-play-all" type="button" style="display:none;"></button>
         <div id="shelf-rows-container"></div>
       </div>
       <div class="shelf-hint" id="shelf-hint"></div>
@@ -517,6 +518,7 @@
       <div class="shelf-empty" id="shelf-empty" style="display:none;"></div>
       <!-- RECEIVED RECORDS -->
       <div class="shelf-section-header received" id="shelf-rcv-header" style="display:none;">RECEIVED RECORDS</div>
+      <button id="shelf-rcv-play-all" class="shelf-rcv-play-all" type="button" style="display:none;"></button>
       <div class="shelf-area shelf-rcv-area">
         <div id="shelf-rcv-rows-container"></div>
       </div>
@@ -541,6 +543,12 @@
           <div class="ol-hdr-badge" id="olDailyBadge">0 / 10</div>
           <button class="ol-close-btn" id="olCloseBtn" aria-label="Close">✕</button>
         </div>
+      </div>
+      <div id="olPickedNotice" class="ol-picked-notice" role="status" style="display:none;">
+        <span class="ol-picked-dot"></span>
+        <span id="olPickedText"></span>
+        <button id="olPickedView" class="ol-picked-view" type="button"></button>
+        <button id="olPickedDismiss" class="ol-picked-dismiss" type="button" aria-label="Dismiss">✕</button>
       </div>
       <div class="ol-compose-body">
         <div class="ol-hero">
