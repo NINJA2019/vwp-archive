@@ -42,6 +42,11 @@ function memberColor(m) {
 function daysSince(d) { return d ? Math.floor((Date.now() - new Date(d)) / 86400000) : 999; }
 function fmtDate(d) { return d ? d.slice(0, 10).replace(/-/g, '/') : '—'; }
 function esc(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+function ytIdOf(url) {
+  if (!url) return '';
+  var m = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : '';
+}
 
 /* ═══ Auth ═══ */
 MU.Auth = (function() {
@@ -289,14 +294,15 @@ MU.Tabs.register('incoming', {
           '<th></th><th>THUMB</th><th>TITLE</th><th>MEMBER</th><th>DATE</th><th>TYPE</th><th>TAGS</th><th></th>' +
           '</tr></thead><tbody>' +
           filtered.map(function(v) {
-            var ytId = (v.url || '').match(/(?:v=|youtu\.be\/)([^&?#]+)/);
-            ytId = ytId ? ytId[1] : '';
+            var ytId = ytIdOf(v.url);
             var thumb = ytId ? 'https://img.youtube.com/vi/' + ytId + '/default.jpg' : '';
             var chk = state.selected.has(v.id) ? ' checked' : '';
+            var linkOpen = v.url ? '<a href="' + esc(v.url) + '" target="_blank" rel="noopener noreferrer" class="ic-link">' : '';
+            var linkClose = v.url ? '</a>' : '';
             return '<tr data-id="' + v.id + '">' +
               '<td><input type="checkbox" class="ic-row-chk"' + chk + ' data-id="' + v.id + '"></td>' +
-              '<td class="ic-thumb-cell">' + (thumb ? '<img src="' + esc(thumb) + '" alt="" class="ic-thumb" loading="lazy">' : '—') + '</td>' +
-              '<td class="title-col ic-title">' + esc(v.title || '—') + '</td>' +
+              '<td class="ic-thumb-cell">' + (thumb ? linkOpen + '<img src="' + esc(thumb) + '" alt="" class="ic-thumb" loading="lazy">' + linkClose : '—') + '</td>' +
+              '<td class="title-col ic-title">' + linkOpen + esc(v.title || '—') + linkClose + '</td>' +
               '<td>' +
                 '<input class="n-input n-input-sm ic-edit-member" data-id="' + v.id + '" value="' + esc(v.member || '') + '" title="MEMBER">' +
               '</td>' +

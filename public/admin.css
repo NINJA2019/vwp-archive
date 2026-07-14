@@ -500,6 +500,10 @@ canvas#grid-bg { position: absolute; inset: 0; z-index: 0; }
 }
 .ic-table .n-select { font-size: 10px; padding: 2px 4px; }
 
+/* YouTubeリンク */
+.ic-link { text-decoration: none; color: inherit; display: block; }
+.ic-link:hover { color: var(--phosphor); text-decoration: underline; }
+
 @media (max-width: 768px) {
   .ic-subtabs { gap: 2px; }
   .ic-table td:nth-child(2),
