@@ -14,7 +14,7 @@ Vanilla HTML/CSS/JS + Netlify Functions + Supabase。収益なし、本番稼働
 7. **netlify.toml** の `/result/` リダイレクトは `force=true` 必須。
 8. **windowに露出している関数・変数を消さない。** Chrome拡張（VWP New Tab）が `Object.defineProperty` でwindow変数を監視する。ES Modules化しても外部依存のあるものは `window.xxx = xxx` で露出を維持。
 9. **KAMITSUBAKIガイドライン**: 非商業・UNOFFICIAL明示・公式素材の使用禁止。音楽再生はYouTube別タブ遷移のみ（IFrame埋め込みは採用しない）。
-10. **自動publishは永久にしない。** 自動取り込みは常に `status='pending'` 止まり。公開判断は人間。
+10. **videos の status default は `'published'`**（2026-07-14 Yuki決定により改訂）。ingest-youtube は `status='published'` を明示してINSERT。手動経路（playlist-import / videos-add）は status 未指定 = DB default の `published` で即着地する（操作者自身が公開判断者のため）。`pending` は admin での明示的な保留・審査用ステータスとして残し、`rejected` への遷移経路も維持する。**前提条件**: dedup 全件fetchのページングループ（憲法5）が正しく機能していること。dedup が壊れた状態での自動publishは重複が即サイトに出るため、憲法5違反は本条の停止条件になる。
 
 ## 設計思想
 

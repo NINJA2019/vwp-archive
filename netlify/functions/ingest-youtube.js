@@ -2,7 +2,8 @@
 // ingest-youtube.js — YouTube自動取り込みFunction
 // スケジュール: 6時間ごと (netlify.toml で設定)
 // 手動起動: Authorization: Bearer <ADMIN_PASSWORD> が必要
-// 自動publish禁止 — 取り込みは常に status='pending' 止まり
+// 取り込みは status='published' 着地（2026-07-14 Yuki決定・憲法10改訂済み）
+// 前提: dedup全件fetchのページングループ（憲法5）が正しく動作していること
 // ═══════════════════════════════════════════════════════════════
 
 const { getSupabaseUrl, secretKey, sbHeaders: buildSbHeaders, sbFetch, fetchAllVideoRows } = require('./_shared/supabase');
@@ -303,7 +304,7 @@ exports.handler = async (event) => {
             note: '',
             spotify_url: null,
             album_id: null,
-            status: 'pending',        // 自動publishは絶対禁止
+            status: 'published',      // 憲法10改訂: 自動取り込みはpublished着地（2026-07-14 Yuki決定）
             content_type: contentType,
             source: 'youtube_auto',
             ingested_at: new Date().toISOString()
@@ -312,7 +313,7 @@ exports.handler = async (event) => {
           if (publishedAt) resolvedPubs.push(publishedAt);
         }
 
-        // (g) INSERT（status='pending', source='youtube_auto', ingested_at=now()）
+        // (g) INSERT（status='published', source='youtube_auto', ingested_at=now()）
         let inserted = 0;
         if (toInsert.length > 0) {
           const insRes = await fetch(
