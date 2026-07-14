@@ -290,10 +290,12 @@ MU.Tabs.register('incoming', {
         });
         dedupOnline = true;
         computeDupFlags();
-        refresh();
+        // テーブル全再描画せず、DUPバッジとコントロールのみ差し込む（編集中値を保護）
+        applyDedupToDOM();
       }).catch(function() {
         dedupOnline = false;
-        refresh();
+        // DEDUP OFFLINE 表示のためコントロールのみ再描画
+        applyDedupToDOM();
       });
 
       // F5: ingested_at 日付最頻値をバックフィル日として検出
@@ -358,6 +360,33 @@ MU.Tabs.register('incoming', {
           flags[v.id] = badges;
         });
         state.dupFlags = flags;
+      }
+
+      // F4: dedup完了後の軽量DOM差し込み（未保存インライン編集を破棄しない）
+      // テーブル行の .ic-dup-badge だけを差し替え、#ic-controls は再描画してよい
+      function applyDedupToDOM() {
+        // コントロール部（入力欄なし）は再描画してDUPS ONLYカウントを更新
+        document.getElementById('ic-controls').innerHTML = renderControls();
+        bindControlEvents();
+
+        // テーブル行のDUPバッジだけDOM差し込み
+        var tableWrap = document.getElementById('ic-table-wrap');
+        if (!tableWrap) return;
+        tableWrap.querySelectorAll('tr[data-id]').forEach(function(tr) {
+          var id = tr.dataset.id;
+          var titleCell = tr.querySelector('.ic-title');
+          if (!titleCell) return;
+          // 既存DUPバッジを除去
+          titleCell.querySelectorAll('.ic-dup-badge').forEach(function(el) { el.remove(); });
+          // 新DUPバッジを追加
+          (state.dupFlags[id] || []).forEach(function(b) {
+            var span = document.createElement('span');
+            span.className = 'n-badge ic-dup-badge ' + (b === 'DUP:PUB' ? 'n-badge-err' : 'n-badge-warn');
+            span.textContent = b;
+            titleCell.appendChild(document.createTextNode(' '));
+            titleCell.appendChild(span);
+          });
+        });
       }
 
       // F2: memberタブを動的導出
@@ -486,12 +515,12 @@ MU.Tabs.register('incoming', {
             var ytId = ytIdOf(v.url);
             var thumb = ytId ? 'https://img.youtube.com/vi/' + ytId + '/default.jpg' : '';
             var chk = state.selected.has(v.id) ? ' checked' : '';
-            var linkOpen = v.url ? '<a href="' + esc(v.url) + '" target="_blank" rel="noopener noreferrer" class="ic-link">' : '';
-            var linkClose = v.url ? '</a>' : '';
+            var linkOpen = (v.url && /^https?:\/\//.test(v.url)) ? '<a href="' + esc(v.url) + '" target="_blank" rel="noopener noreferrer" class="ic-link">' : '';
+            var linkClose = (v.url && /^https?:\/\//.test(v.url)) ? '</a>' : '';
             // F4: DUPバッジ
             var dupBadges = (state.dupFlags[v.id] || []).map(function(b) {
               var cls = b === 'DUP:PUB' ? 'n-badge-err' : 'n-badge-warn';
-              return ' <span class="n-badge ' + cls + '">' + b + '</span>';
+              return ' <span class="n-badge ic-dup-badge ' + cls + '">' + b + '</span>';
             }).join('');
             // F5: IN:MM/DD バッジ（バックフィル日以外）
             var inBadge = '';
