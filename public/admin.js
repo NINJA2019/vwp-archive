@@ -496,7 +496,7 @@ MU.Tabs.register('incoming', {
             // F5: IN:MM/DD バッジ（バックフィル日以外）
             var inBadge = '';
             if (v.ingested_at && backfillDate && v.ingested_at.slice(0, 10) !== backfillDate) {
-              inBadge = ' <span class="n-badge n-badge-warn">IN:' + v.ingested_at.slice(5, 10).replace('-', '/') + '</span>';
+              inBadge = ' <span class="n-badge n-badge-warn">IN:' + esc(v.ingested_at.slice(5, 10).replace('-', '/')) + '</span>';
             }
             return '<tr data-id="' + v.id + '">' +
               '<td><input type="checkbox" class="ic-row-chk"' + chk + ' data-id="' + v.id + '"></td>' +
