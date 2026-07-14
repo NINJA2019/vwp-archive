@@ -504,6 +504,27 @@ canvas#grid-bg { position: absolute; inset: 0; z-index: 0; }
 .ic-link { text-decoration: none; color: inherit; display: block; }
 .ic-link:hover { color: var(--phosphor); text-decoration: underline; }
 
+/* memberタブ（2段目） */
+.ic-member-tabs { margin-top: 4px; }
+.ic-member-tab { font-size: 9px; padding: 3px 9px; }
+
+/* コントロール行（ソート+DUPSトグル） */
+.ic-controls-row {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.ic-controls-row .n-select { font-size: 10px; padding: 3px 8px; }
+
+/* DUPS ONLYトグル */
+.ic-dups-toggle { font-size: 9px; padding: 3px 9px; }
+.ic-dups-toggle.active {
+  background: rgba(255,184,51,.12); border-color: var(--amber); color: var(--amber);
+}
+
+/* DEDUP OFFLINEノート */
+.ic-dedup-status {
+  font-size: 9px; color: var(--text-xdim); border-left: none; margin: 0; padding: 0;
+}
+
 @media (max-width: 768px) {
   .ic-subtabs { gap: 2px; }
   .ic-table td:nth-child(2),

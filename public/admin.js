@@ -105,6 +105,26 @@ MU.DB = (function() {
         return data;
       });
     },
+    // F4: 全件取得（limit=999ページングループ、憲法5準拠）
+    queryAll: async function(table, params) {
+      var p = params || {};
+      var order = p.order || 'id.asc';
+      var all = [];
+      var offset = 0;
+      var LIMIT = 999;
+      while (true) {
+        var page = await call({
+          table: table, select: p.select || '*',
+          filter: p.filter || '', order: order,
+          limit: String(LIMIT), offset: String(offset)
+        });
+        if (!Array.isArray(page)) throw new Error(table + ' RETURNED NON-ARRAY');
+        all = all.concat(page);
+        if (page.length < LIMIT) break;
+        offset += LIMIT;
+      }
+      return all;
+    },
     insert: function(table, data) { return call({ action: 'insert', table: table, data: data }); },
     update: function(table, id, data) { return call({ action: 'update', table: table, id: id, data: data }); },
     remove: function(table, id) { return call({ action: 'delete', table: table, id: id }); },
@@ -238,12 +258,17 @@ MU.Tabs.register('incoming', {
   render: async function(el) {
     var U = MU.UI;
     var CONTENT_TYPES = ['all', 'song', 'live', 'shorts', 'announcement'];
+    var SORT_OPTS = [
+      { val: 'ingested_desc', label: 'INGESTED NEW→OLD' },
+      { val: 'date_asc',      label: 'DATE OLD→NEW' },
+      { val: 'date_desc',     label: 'DATE NEW→OLD' },
+      { val: 'title_asc',     label: 'TITLE A→Z' }
+    ];
     try {
-      var pending = await MU.DB.query('videos', {
+      // F4: queryAllでpendingを全件取得
+      var pending = await MU.DB.queryAll('videos', {
         select: 'id,title,member,date,url,tags,content_type,status,ingested_at,source',
-        filter: 'status=eq.pending',
-        order: 'ingested_at.desc.nullslast',
-        limit: '9999'
+        filter: 'status=eq.pending'
       });
 
       // タブボタンのバッジを件数で更新
@@ -252,11 +277,140 @@ MU.Tabs.register('incoming', {
         tabBtn.textContent = 'INCOMING TRANSMISSION' + (pending.length > 0 ? ' [' + pending.length + ']' : '');
       }
 
-      var state = { videos: pending, activeType: 'all', selected: new Set() };
+      // F4: publishedのid,urlを全件取得（重複検出用）
+      var publishedIdSet = new Set();   // ytId → true
+      var dedupOnline = false;
+      MU.DB.queryAll('videos', {
+        select: 'id,url',
+        filter: 'status=eq.published'
+      }).then(function(rows) {
+        rows.forEach(function(r) {
+          var yt = ytIdOf(r.url);
+          if (yt) publishedIdSet.add(yt);
+        });
+        dedupOnline = true;
+        computeDupFlags();
+        refresh();
+      }).catch(function() {
+        dedupOnline = false;
+        refresh();
+      });
+
+      // F5: ingested_at 日付最頻値をバックフィル日として検出
+      var backfillDate = (function() {
+        var freq = {};
+        pending.forEach(function(v) {
+          if (!v.ingested_at) return;
+          var d = v.ingested_at.slice(0, 10);
+          freq[d] = (freq[d] || 0) + 1;
+        });
+        var best = null, bestCnt = 0;
+        Object.keys(freq).forEach(function(d) {
+          if (freq[d] > bestCnt) { bestCnt = freq[d]; best = d; }
+        });
+        return best;
+      })();
+
+      var state = {
+        videos: pending,
+        activeType: 'all',
+        activeMember: 'all',
+        sort: 'ingested_desc',
+        selected: new Set(),
+        dupsOnly: false,
+        dupFlags: {}   // id → array of badge strings
+      };
+
+      // F4: 重複フラグ計算
+      function computeDupFlags() {
+        var flags = {};
+        // pending内重複（ytId）
+        var ytMap = {};  // ytId → [id,...]
+        var titleMap = {};  // normTitle → [id,...]
+        state.videos.forEach(function(v) {
+          var yt = ytIdOf(v.url);
+          if (yt) {
+            if (!ytMap[yt]) ytMap[yt] = [];
+            ytMap[yt].push(v.id);
+          }
+          var nt = (v.title || '').normalize('NFKC').trim().toLowerCase();
+          if (nt) {
+            if (!titleMap[nt]) titleMap[nt] = [];
+            titleMap[nt].push(v.id);
+          }
+        });
+        state.videos.forEach(function(v) {
+          var badges = [];
+          var yt = ytIdOf(v.url);
+          // DUP:PUB — publishedに同じytId
+          if (yt && dedupOnline && publishedIdSet.has(yt)) {
+            badges.push('DUP:PUB');
+          }
+          // DUP:ID — pending内同ytId
+          if (yt && ytMap[yt] && ytMap[yt].length > 1) {
+            badges.push('DUP:ID');
+          }
+          // DUP:TITLE — pending内同タイトル
+          var nt = (v.title || '').normalize('NFKC').trim().toLowerCase();
+          if (nt && titleMap[nt] && titleMap[nt].length > 1) {
+            badges.push('DUP:TITLE');
+          }
+          flags[v.id] = badges;
+        });
+        state.dupFlags = flags;
+      }
+
+      // F2: memberタブを動的導出
+      function getMemberTabs() {
+        var memberSet = { 'all': 0, '(none)': 0 };
+        state.videos.forEach(function(v) {
+          if (!v.member || !v.member.trim()) {
+            memberSet['(none)']++;
+          } else {
+            v.member.split(' ').forEach(function(m) {
+              m = m.trim();
+              if (m) memberSet[m] = (memberSet[m] || 0) + 1;
+            });
+          }
+        });
+        // countByMember for 'all'
+        memberSet['all'] = state.videos.length;
+        return memberSet;
+      }
 
       function getFiltered() {
-        if (state.activeType === 'all') return state.videos.slice();
-        return state.videos.filter(function(v) { return v.content_type === state.activeType; });
+        var vids = state.videos;
+        // タイプフィルタ
+        if (state.activeType !== 'all') {
+          vids = vids.filter(function(v) { return v.content_type === state.activeType; });
+        }
+        // メンバーフィルタ
+        if (state.activeMember !== 'all') {
+          vids = vids.filter(function(v) {
+            if (state.activeMember === '(none)') return !v.member || !v.member.trim();
+            var parts = (v.member || '').split(' ');
+            return parts.indexOf(state.activeMember) !== -1;
+          });
+        }
+        // DUPS ONLY
+        if (state.dupsOnly) {
+          vids = vids.filter(function(v) { return state.dupFlags[v.id] && state.dupFlags[v.id].length > 0; });
+        }
+        // ソート
+        vids = vids.slice();
+        vids.sort(function(a, b) {
+          switch (state.sort) {
+            case 'date_asc':
+              return (a.date || '0000') < (b.date || '0000') ? -1 : (a.date || '0000') > (b.date || '0000') ? 1 : 0;
+            case 'date_desc':
+              return (a.date || '0000') > (b.date || '0000') ? -1 : (a.date || '0000') < (b.date || '0000') ? 1 : 0;
+            case 'title_asc':
+              return (a.title || '') < (b.title || '') ? -1 : (a.title || '') > (b.title || '') ? 1 : 0;
+            default: // ingested_desc
+              return (a.ingested_at || '') > (b.ingested_at || '') ? -1 : (a.ingested_at || '') < (b.ingested_at || '') ? 1 : 0;
+          }
+        });
+        return vids;
       }
 
       function countByType(type) {
@@ -264,17 +418,52 @@ MU.Tabs.register('incoming', {
         return state.videos.filter(function(v) { return v.content_type === type; }).length;
       }
 
-      function renderSubTabs() {
-        return '<div class="ic-subtabs">' +
+      // F2+F3: renderControls — typeサブタブ+memberタブ+ソート+DUPSチップ
+      function renderControls() {
+        var memberTabs = getMemberTabs();
+        // typeサブタブ
+        var typeHtml = '<div class="ic-subtabs">' +
           CONTENT_TYPES.map(function(t) {
             var cnt = countByType(t);
             var cls = 'ic-subtab' + (state.activeType === t ? ' active' : '');
             return '<button class="' + cls + '" data-type="' + t + '">' +
-              t.toUpperCase() +
+              esc(t.toUpperCase()) +
               (cnt > 0 ? ' <span class="n-badge">' + cnt + '</span>' : '') +
               '</button>';
           }).join('') +
           '</div>';
+
+        // memberタブ（動的、2段目）
+        var memberOrder = ['all'].concat(
+          Object.keys(memberTabs).filter(function(m) { return m !== 'all'; }).sort()
+        );
+        var memberHtml = '<div class="ic-subtabs ic-member-tabs">' +
+          memberOrder.map(function(m) {
+            var cnt = m === 'all' ? state.videos.length : memberTabs[m];
+            if (!cnt && m !== 'all' && m !== '(none)') return '';
+            var cls = 'ic-subtab ic-member-tab' + (state.activeMember === m ? ' active' : '');
+            return '<button class="' + cls + '" data-member="' + esc(m) + '">' +
+              esc(m.toUpperCase()) +
+              (cnt > 0 ? ' <span class="n-badge">' + cnt + '</span>' : '') +
+              '</button>';
+          }).join('') +
+          '</div>';
+
+        // ソートselect + DUPSトグル
+        var dupTotal = Object.values(state.dupFlags).filter(function(f) { return f.length > 0; }).length;
+        var toolHtml = '<div class="ic-controls-row">' +
+          '<select class="n-select ic-sort-sel">' +
+          SORT_OPTS.map(function(o) {
+            return '<option value="' + o.val + '"' + (state.sort === o.val ? ' selected' : '') + '>' + o.label + '</option>';
+          }).join('') +
+          '</select>' +
+          '<button class="ic-dups-toggle n-btn n-btn-sm' + (state.dupsOnly ? ' active' : '') + '">' +
+          'DUPS ONLY [' + dupTotal + ']' +
+          '</button>' +
+          (!dedupOnline ? '<span class="n-note ic-dedup-status">DEDUP OFFLINE</span>' : '') +
+          '</div>';
+
+        return typeHtml + memberHtml + toolHtml;
       }
 
       function renderTable() {
@@ -299,10 +488,20 @@ MU.Tabs.register('incoming', {
             var chk = state.selected.has(v.id) ? ' checked' : '';
             var linkOpen = v.url ? '<a href="' + esc(v.url) + '" target="_blank" rel="noopener noreferrer" class="ic-link">' : '';
             var linkClose = v.url ? '</a>' : '';
+            // F4: DUPバッジ
+            var dupBadges = (state.dupFlags[v.id] || []).map(function(b) {
+              var cls = b === 'DUP:PUB' ? 'n-badge-err' : 'n-badge-warn';
+              return ' <span class="n-badge ' + cls + '">' + b + '</span>';
+            }).join('');
+            // F5: IN:MM/DD バッジ（バックフィル日以外）
+            var inBadge = '';
+            if (v.ingested_at && backfillDate && v.ingested_at.slice(0, 10) !== backfillDate) {
+              inBadge = ' <span class="n-badge n-badge-warn">IN:' + v.ingested_at.slice(5, 10).replace('-', '/') + '</span>';
+            }
             return '<tr data-id="' + v.id + '">' +
               '<td><input type="checkbox" class="ic-row-chk"' + chk + ' data-id="' + v.id + '"></td>' +
               '<td class="ic-thumb-cell">' + (thumb ? linkOpen + '<img src="' + esc(thumb) + '" alt="" class="ic-thumb" loading="lazy">' + linkClose : '—') + '</td>' +
-              '<td class="title-col ic-title">' + linkOpen + esc(v.title || '—') + linkClose + '</td>' +
+              '<td class="title-col ic-title">' + linkOpen + esc(v.title || '—') + linkClose + dupBadges + inBadge + '</td>' +
               '<td>' +
                 '<input class="n-input n-input-sm ic-edit-member" data-id="' + v.id + '" value="' + esc(v.member || '') + '" title="MEMBER">' +
               '</td>' +
@@ -327,30 +526,61 @@ MU.Tabs.register('incoming', {
         return html;
       }
 
+      // F2+F3: refresh() — コントロールとテーブルを再描画する共通経路
+      function refresh() {
+        document.getElementById('ic-controls').innerHTML = renderControls();
+        document.getElementById('ic-table-wrap').innerHTML = renderTable();
+        bindControlEvents();
+        rebindTableEvents();
+      }
+
       function fullRender() {
         el.innerHTML =
           '<div class="n-section">' + U.section('INCOMING TRANSMISSION', U.badge(pending.length + ' PENDING', pending.length > 0 ? 'warn' : '')) +
-          renderSubTabs() +
+          '<div id="ic-controls">' + renderControls() + '</div>' +
           '<div id="ic-table-wrap">' + renderTable() + '</div>' +
           '</div>';
         MU.Decode.decodeAll(el);
-        bindEvents();
+        bindControlEvents();
+        rebindTableEvents();
       }
 
-      function bindEvents() {
-        // サブタブ切替
-        el.querySelectorAll('.ic-subtab').forEach(function(btn) {
+      // F2+F3: コントロール（サブタブ・メンバータブ・ソート・DUPS）のイベント
+      function bindControlEvents() {
+        // typeサブタブ切替
+        el.querySelectorAll('.ic-subtab[data-type]').forEach(function(btn) {
           btn.addEventListener('click', function() {
             state.activeType = btn.dataset.type;
             state.selected.clear();
-            document.getElementById('ic-table-wrap').innerHTML = renderTable();
-            el.querySelectorAll('.ic-subtab').forEach(function(b) {
-              b.classList.toggle('active', b.dataset.type === state.activeType);
-            });
-            rebindTableEvents();
+            refresh();
           });
         });
-        rebindTableEvents();
+        // memberタブ切替
+        el.querySelectorAll('.ic-member-tab[data-member]').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            state.activeMember = btn.dataset.member;
+            state.selected.clear();
+            refresh();
+          });
+        });
+        // ソートselectの変更
+        var sortSel = el.querySelector('.ic-sort-sel');
+        if (sortSel) {
+          sortSel.addEventListener('change', function() {
+            state.sort = sortSel.value;
+            state.selected.clear();
+            refresh();
+          });
+        }
+        // DUPS ONLYトグル
+        var dupsToggle = el.querySelector('.ic-dups-toggle');
+        if (dupsToggle) {
+          dupsToggle.addEventListener('click', function() {
+            state.dupsOnly = !state.dupsOnly;
+            state.selected.clear();
+            refresh();
+          });
+        }
       }
 
       function rebindTableEvents() {
@@ -409,10 +639,12 @@ MU.Tabs.register('incoming', {
             if (!confirm('PUBLISH RECORD #' + id + '?')) return;
             try {
               await MU.DB.update('videos', id, { status: 'published' });
+              var yt = ytIdOf((state.videos.find(function(v) { return String(v.id) === String(id); }) || {}).url);
+              if (yt) publishedIdSet.add(yt);
               state.videos = state.videos.filter(function(v) { return String(v.id) !== String(id); });
               state.selected.delete(parseInt(id, 10));
-              document.getElementById('ic-table-wrap').innerHTML = renderTable();
-              rebindTableEvents();
+              computeDupFlags();
+              refresh();
               updateBadge();
             } catch (e) { alert('PUBLISH FAILED: ' + e.message); }
           });
@@ -427,47 +659,64 @@ MU.Tabs.register('incoming', {
               await MU.DB.update('videos', id, { status: 'rejected' });
               state.videos = state.videos.filter(function(v) { return String(v.id) !== String(id); });
               state.selected.delete(parseInt(id, 10));
-              document.getElementById('ic-table-wrap').innerHTML = renderTable();
-              rebindTableEvents();
+              computeDupFlags();
+              refresh();
               updateBadge();
             } catch (e) { alert('REJECT FAILED: ' + e.message); }
           });
         });
 
-        // PUBLISH 一括
+        // F6: PUBLISH 一括（チャンク8件 Promise.allSettled）
         var bulkPublishBtn = el.querySelector('.ic-bulk-publish');
         if (bulkPublishBtn) {
           bulkPublishBtn.addEventListener('click', async function() {
             var ids = Array.from(state.selected);
             if (ids.length === 0) return;
             if (!confirm('PUBLISH ' + ids.length + ' RECORDS?')) return;
-            try {
-              await Promise.all(ids.map(function(id) { return MU.DB.update('videos', id, { status: 'published' }); }));
-              state.videos = state.videos.filter(function(v) { return !state.selected.has(v.id); });
-              state.selected.clear();
-              document.getElementById('ic-table-wrap').innerHTML = renderTable();
-              rebindTableEvents();
-              updateBadge();
-            } catch (e) { alert('BULK PUBLISH FAILED: ' + e.message); }
+            await bulkUpdateStatus(ids, 'published');
           });
         }
 
-        // REJECT 一括
+        // F6: REJECT 一括（チャンク8件 Promise.allSettled）
         var bulkRejectBtn = el.querySelector('.ic-bulk-reject');
         if (bulkRejectBtn) {
           bulkRejectBtn.addEventListener('click', async function() {
             var ids = Array.from(state.selected);
             if (ids.length === 0) return;
             if (!confirm('REJECT ' + ids.length + ' RECORDS?')) return;
-            try {
-              await Promise.all(ids.map(function(id) { return MU.DB.update('videos', id, { status: 'rejected' }); }));
-              state.videos = state.videos.filter(function(v) { return !state.selected.has(v.id); });
-              state.selected.clear();
-              document.getElementById('ic-table-wrap').innerHTML = renderTable();
-              rebindTableEvents();
-              updateBadge();
-            } catch (e) { alert('BULK REJECT FAILED: ' + e.message); }
+            await bulkUpdateStatus(ids, 'rejected');
           });
+        }
+      }
+
+      // F6: 一括ステータス更新（チャンク8件ずつ順次 Promise.allSettled）
+      async function bulkUpdateStatus(ids, status) {
+        var CHUNK = 8;
+        var failedIds = [];
+        for (var i = 0; i < ids.length; i += CHUNK) {
+          var chunk = ids.slice(i, i + CHUNK);
+          var results = await Promise.allSettled(
+            chunk.map(function(id) { return MU.DB.update('videos', id, { status: status }); })
+          );
+          results.forEach(function(r, idx) {
+            if (r.status === 'fulfilled') {
+              var id = chunk[idx];
+              if (status === 'published') {
+                var yt = ytIdOf((state.videos.find(function(v) { return String(v.id) === String(id); }) || {}).url);
+                if (yt) publishedIdSet.add(yt);
+              }
+              state.videos = state.videos.filter(function(v) { return String(v.id) !== String(id); });
+              state.selected.delete(id);
+            } else {
+              failedIds.push(chunk[idx]);
+            }
+          });
+        }
+        computeDupFlags();
+        refresh();
+        updateBadge();
+        if (failedIds.length > 0) {
+          alert(failedIds.length + ' FAILED — RETRY');
         }
       }
 
@@ -478,6 +727,7 @@ MU.Tabs.register('incoming', {
         }
       }
 
+      computeDupFlags();
       fullRender();
 
     } catch (e) {
