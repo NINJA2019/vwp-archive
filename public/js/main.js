@@ -23,6 +23,7 @@ import {
   getCurTag, setCurTag,
   getCurSort, setCurSort,
   getCurAlbum, setCurAlbum,
+  getCurContentType, setCurContentType,
   getSearchQ, setSearchQ,
   getIsAdmin,
   getFilteredCache,
