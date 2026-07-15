@@ -8,6 +8,7 @@ import { getMemberColor, drawVinylDisc } from './vinyl.js';
 
 // ===== 可変状態 =====
 let videos = [], curMember = 'all', selectedMembers = [], curTag = 'all', curSort = 'new', curView = 'grid', searchQ = '', isAdmin = false, editId = null;
+let curContentType = 'song'; // メイン表示はデフォルトで楽曲（MV）のみ
 let filteredCache = [], curPage = 0;
 let ioObserver = null;
 let albums = [];
@@ -31,6 +32,8 @@ export function getCurSort(){ return curSort; }
 export function setCurSort(v){ curSort = v; }
 export function getCurAlbum(){ return curAlbum; }
 export function setCurAlbum(v){ curAlbum = v; }
+export function getCurContentType(){ return curContentType; }
+export function setCurContentType(v){ curContentType = v; }
 export function getSearchQ(){ return searchQ; }
 export function setSearchQ(v){ searchQ = v; }
 export function getIsAdmin(){ return isAdmin; }
@@ -193,12 +196,30 @@ export function getDailyPicksFromCache(){
   return getDailyPicks();
 }
 
+// ===== カテゴリ（content_type）棲み分け =====
+// メイン表示は song（MV）のみ。shorts/live/announcement はカテゴリ切替で表示。
+// 未知値・NULL は song 扱い（防御的: 旧データや将来の分類追加でメインから消える事故を防ぐ）
+const CONTENT_TYPES=[
+  {id:'song',key:'ctSong'},
+  {id:'shorts',key:'ctShorts'},
+  {id:'live',key:'ctLive'},
+  {id:'announcement',key:'ctAnnounce'},
+];
+const NON_SONG_TYPES=['shorts','live','announcement'];
+function matchesContentType(v, type){
+  const ct = type===undefined ? curContentType : type;
+  return ct==='song' ? !NON_SONG_TYPES.includes(v.content_type) : v.content_type===ct;
+}
+
 // ===== フィルタリング =====
 export function filtered(){
   let list=videos.slice();
   if(curAlbum!==null){
+    // アルバム表示は収録曲全件（カテゴリフィルタ対象外: 収録曲リストを欠けさせない）
     list=list.filter(v=>v.album_id===curAlbum);
   } else {
+    // メイン表示: カテゴリ棲み分け（デフォルトsong=MVのみ）を先頭で適用
+    list=list.filter(v=>matchesContentType(v));
     list=list.filter(v=>!v.album_id);
   }
   if(selectedMembers.length===1){
@@ -220,7 +241,8 @@ export function filtered(){
 export function allTagsOf(src){const s=new Set();src.forEach(v=>parseTags(v).forEach(t=>s.add(t)));return [...s].sort();}
 
 export function updateCounts(){
-  const srcM=curTag==='all'?videos:videos.filter(v=>parseTags(v).includes(curTag));
+  const base=videos.filter(v=>matchesContentType(v)); // 現カテゴリと整合する件数にする
+  const srcM=curTag==='all'?base:base.filter(v=>parseTags(v).includes(curTag));
   MEMBERS.forEach(m=>{const el=document.getElementById('mc-'+m.id);if(!el)return;if(m.id==='all'){
       el.textContent=srcM.length;
     } else {
@@ -231,9 +253,12 @@ export function updateCounts(){
         el.textContent=srcM.filter(v=>testSel.every(sm=>parseMembers(v).includes(sm))).length;
       }
     }});
-  const srcT=selectedMembers.length===0?videos:videos.filter(v=>selectedMembers.every(m=>parseMembers(v).includes(m)));
+  const srcT=selectedMembers.length===0?base:base.filter(v=>selectedMembers.every(m=>parseMembers(v).includes(m)));
   const el0=document.getElementById('tc-all');if(el0)el0.textContent=srcT.length;
   allTagsOf(srcT).forEach(tag=>{const el=document.getElementById('tc-'+tag);if(el)el.textContent=srcT.filter(v=>parseTags(v).includes(tag)).length;});
+  // カテゴリチップの件数（content_typeフィルタ前のメンバー選択のみ反映）
+  const srcC=selectedMembers.length===0?videos:videos.filter(v=>selectedMembers.every(m=>parseMembers(v).includes(m)));
+  CONTENT_TYPES.forEach(ct=>{const el=document.getElementById('ctc-'+ct.id);if(el)el.textContent=srcC.filter(v=>matchesContentType(v,ct.id)).length;});
 }
 
 export function buildSidebar(){
@@ -406,9 +431,28 @@ export function buildSidebar(){
     }
   }
 
+  // ===== カテゴリ（content_type）チップ =====
+  const ctf=document.getElementById('contentTypeFilters');
+  if(ctf){
+    ctf.innerHTML='';
+    CONTENT_TYPES.forEach(ct=>{
+      const b=document.createElement('button');
+      b.className='cfilt'+(curContentType===ct.id?' on':'');
+      b.innerHTML=`<span class="cfilt-label">${t(ct.key)}</span><span class="ccnt" id="ctc-${ct.id}">0</span>`;
+      b.addEventListener('click',()=>{
+        if(curContentType===ct.id) return;
+        curContentType=ct.id;
+        curTag='all';curAlbum=null;
+        buildSidebar();updateCounts();render();
+      });
+      ctf.appendChild(b);
+    });
+  }
+
   const tf=document.getElementById('tagFilters');
   tf.innerHTML='';
-  const src=selectedMembers.length===0?videos:videos.filter(v=>selectedMembers.every(m=>parseMembers(v).includes(m)));
+  const ctVideos=videos.filter(v=>matchesContentType(v));
+  const src=selectedMembers.length===0?ctVideos:ctVideos.filter(v=>selectedMembers.every(m=>parseMembers(v).includes(m)));
   const tags=allTagsOf(src.filter(v=>!v.album_id));
   const allB=document.createElement('button');
   allB.className='cfilt'+(curTag==='all'?' on':'');
@@ -466,9 +510,27 @@ export function buildMobFilters(){
     });
     mm.appendChild(b);
   });
+  // ===== モバイル: カテゴリ（content_type）チップ =====
+  const mct=document.getElementById('mobContentType');
+  if(mct){
+    mct.innerHTML='';
+    CONTENT_TYPES.forEach(ct=>{
+      const b=document.createElement('button');
+      b.className='mob-chip'+(curContentType===ct.id?' on':'');
+      b.textContent=t(ct.key);
+      b.addEventListener('click',()=>{
+        if(curContentType===ct.id) return;
+        curContentType=ct.id;
+        curTag='all';curAlbum=null;
+        buildSidebar();updateCounts();render();
+      });
+      mct.appendChild(b);
+    });
+  }
   const mt=document.getElementById('mobTags');
   mt.innerHTML='';
-  const src=selectedMembers.length===0?videos:videos.filter(v=>selectedMembers.every(m=>parseMembers(v).includes(m)));
+  const ctVideos=videos.filter(v=>matchesContentType(v));
+  const src=selectedMembers.length===0?ctVideos:ctVideos.filter(v=>selectedMembers.every(m=>parseMembers(v).includes(m)));
   const tags=allTagsOf(src);
   const allB=document.createElement('button');
   allB.className='mob-chip'+(curTag==='all'?' on':'');
@@ -673,7 +735,9 @@ export function render(){
     }
   }
   if(curSort==='daily'){
-    filteredCache=getDailyPicksFromCache();
+    // Daily Pickも表示直前にカテゴリフィルタを適用（レビュー指摘対応）。
+    // キャッシュ(localStorage vwp_daily_obs)はカテゴリ非依存で全picksのまま保持し、表示時のみ絞る
+    filteredCache=getDailyPicksFromCache().filter(v=>matchesContentType(v));
   } else {
     filteredCache=filtered();
   }
