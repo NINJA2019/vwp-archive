@@ -17,8 +17,7 @@ const { methodNotAllowed, json } = require('./_shared/responses');
 
 // 対応ストア（将来ストア追加時はここに分岐を足す。対象外は skipped:unsupported_domain）
 const SUPPORTED_HOST = 'findmestore.thinkr.jp';
-const SUPPORTED_PATH_PREFIX = '/products/';
-// pathname からの商品ハンドル抽出（例: /products/kyoso → kyoso）
+// pathname からの商品ハンドル抽出（例: /products/kyoso, /collections/rim/products/kyoso → kyoso）
 const HANDLE_RE = /\/products\/([^/?#]+)/;
 const FETCH_TIMEOUT_MS = 5000;  // Shopify product.js の個別タイムアウト
 const BATCH_SIZE = 5;           // 同時fetch数（ストアへの礼儀と時間予算のバランス）
@@ -127,14 +126,14 @@ exports.handler = async (event) => {
         skipped.push({ id: album.id, reason: 'invalid_url' });
         continue;
       }
-      if (parsed.hostname !== SUPPORTED_HOST || !parsed.pathname.startsWith(SUPPORTED_PATH_PREFIX)) {
+      if (parsed.hostname !== SUPPORTED_HOST) {
         // 将来ストア追加の目印
         skipped.push({ id: album.id, reason: 'unsupported_domain' });
         continue;
       }
       const m = HANDLE_RE.exec(parsed.pathname);
       if (!m) {
-        skipped.push({ id: album.id, reason: 'handle_extract_failed' });
+        skipped.push({ id: album.id, reason: 'no_products_path' });
         continue;
       }
       targets.push({ album, handle: m[1] });
