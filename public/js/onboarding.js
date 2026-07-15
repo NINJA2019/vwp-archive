@@ -126,8 +126,10 @@ export function applyFeatureDots(){
 // ═══ 初期化 ═══════════════════════════════════════════════
 
 export function initOnboarding(){
-  // intro.js の enterArchive() が入店確定時に dispatch するイベントを購読
-  // （メイン画面が見えてから MEMO_DELAY_MS 後にメモをフェードイン）
+  // 入店確定イベントを購読（メイン画面が見えてから MEMO_DELAY_MS 後にメモをフェードイン）。
+  // dispatch元: intro.js enterArchive()（デスクトップ） / mobile.js mwTransition()（モバイル）。
+  // {once:true} により再入店等で複数回 dispatch されても発火は初回のみ。
+  // さらに showOwnerMemo() 側にも vwp_memo_ver 既読ガード + 既存 #onbMemo ガードがあり二重表示しない。
   document.addEventListener('vwp:archive-entered', () => {
     setTimeout(showOwnerMemo, MEMO_DELAY_MS);
   }, { once: true });

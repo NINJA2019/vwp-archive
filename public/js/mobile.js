@@ -200,6 +200,8 @@ export function initMobile(){
       mcSelectedMember = m.id;
       mcIsDaily = false;
       mcInit();
+      // 入店確定をオンボーディング（店主メモ等）へ通知（onboarding.js が {once:true} で購読）
+      document.dispatchEvent(new CustomEvent('vwp:archive-entered'));
     }, 800);
   }
 
