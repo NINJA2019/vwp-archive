@@ -939,3 +939,89 @@ scenarios.push(
     routes: [{ match: 'youtube/v3/videos', networkError: 'network down dummy' }],
   },
 );
+
+// ═══════════════════════════════════════════════════════════════
+// albums-stock-scan（FINDME STORE在庫スキャン）
+// ═══════════════════════════════════════════════════════════════
+const FM = 'https://findmestore.thinkr.jp/products/';
+// albums一覧fetch（select=id,name,purchase_url,is_sold_out&order=id.asc&limit=1000）
+const stockAlbumsRoute = (rows) => ({
+  method: 'GET', match: 'albums?select=id,name,purchase_url,is_sold_out', body: rows,
+});
+// Shopify product.js fixture
+const shopifyRoute = (handle, body, opts = {}) => ({
+  method: 'GET', match: `findmestore.thinkr.jp/products/${handle}.js`, ...opts, body,
+});
+
+scenarios.push(
+  { name: 'albums-stock-scan/405-get', fn: 'albums-stock-scan', event: get(), routes: [] },
+  { name: 'albums-stock-scan/no-auth', fn: 'albums-stock-scan', event: post({}), routes: [] },
+  { name: 'albums-stock-scan/auth-fail', fn: 'albums-stock-scan', event: post({}, { authorization: 'Bearer wrong_pw' }), routes: [] },
+  {
+    name: 'albums-stock-scan/env-missing', fn: 'albums-stock-scan', env: { SUPABASE_URL: undefined },
+    event: post({}, { authorization: `Bearer ${PW}` }), routes: [],
+  },
+  {
+    // 在庫変化あり/なし + 対象外ドメイン + purchase_urlなし + URL/ハンドル不正の混在。
+    // id1: SALE→SOLD OUT / id2: SOLD OUT→SALE（両方PATCH。status_updated_at=固定日 2026-01-15）
+    // id3: available=true & is_sold_out=false → 変化なし（PATCHなし）
+    // id4: 対象外ドメイン → skipped:unsupported_domain / id5: purchase_urlなし → 記録なし
+    // id6: /products/ 直後にハンドルなし → skipped:handle_extract_failed
+    // id7: pathに正規ドメインを埋めた偽URL → hostname厳格判定で unsupported_domain
+    // id8: URLとしてパース不能 → skipped:invalid_url
+    // ※対象3件は1バッチ（同時5件以内）で並列実行。スタブfetchは同期解決のため
+    //   calls順（fetch発行順→microtask解決順）は決定論的。集計はtargets順なので応答も安定。
+    name: 'albums-stock-scan/scan-mixed', fn: 'albums-stock-scan',
+    event: post({}, { authorization: `Bearer ${PW}` }),
+    routes: [
+      stockAlbumsRoute([
+        { id: 1, name: '狂想', purchase_url: `${FM}album-a?query`, is_sold_out: false },
+        { id: 2, name: '不可解', purchase_url: `${FM}album-b?query`, is_sold_out: true },
+        { id: 3, name: '観測', purchase_url: `${FM}album-c`, is_sold_out: false },
+        { id: 4, name: '外部ストア盤', purchase_url: 'https://example.com/shop/x', is_sold_out: false },
+        { id: 5, name: 'URLなし盤', purchase_url: null, is_sold_out: true },
+        { id: 6, name: '壊れURL盤', purchase_url: `${FM}?query`, is_sold_out: false },
+        { id: 7, name: '偽装URL盤', purchase_url: 'https://evil.com/findmestore.thinkr.jp/products/x', is_sold_out: false },
+        { id: 8, name: 'パース不能盤', purchase_url: 'not a url', is_sold_out: false },
+      ]),
+      shopifyRoute('album-a', { id: 111, title: '狂想', available: false }),
+      shopifyRoute('album-b', { id: 222, title: '不可解', available: true }),
+      shopifyRoute('album-c', { id: 333, title: '観測', available: true }),
+      { method: 'PATCH', match: 'albums?id=eq.1', status: 204, body: '' },
+      { method: 'PATCH', match: 'albums?id=eq.2', status: 204, body: '' },
+    ],
+  },
+  {
+    // fetch失敗系の網羅: HTTP404 / 非JSON / ネットワークエラー / available欠落 — すべてskipで
+    // is_sold_out不変（PATCHが1本も飛ばないことをcallsで保証）。誤SALE戻し事故防止の核心。
+    name: 'albums-stock-scan/scan-skip-errors', fn: 'albums-stock-scan',
+    event: post({}, { authorization: `Bearer ${PW}` }),
+    routes: [
+      stockAlbumsRoute([
+        { id: 11, name: '消滅ページ盤', purchase_url: `${FM}gone`, is_sold_out: false },
+        { id: 12, name: '非JSON盤', purchase_url: `${FM}broken`, is_sold_out: false },
+        { id: 13, name: '通信断盤', purchase_url: `${FM}netdown`, is_sold_out: true },
+        { id: 14, name: 'available欠落盤', purchase_url: `${FM}weird`, is_sold_out: false },
+      ]),
+      shopifyRoute('gone', 'Not Found', { status: 404 }),
+      shopifyRoute('broken', '<!doctype html>not json'),
+      shopifyRoute('netdown', null, { networkError: 'network down dummy' }),
+      shopifyRoute('weird', { id: 444, title: 'available欠落盤' }),
+    ],
+  },
+  {
+    name: 'albums-stock-scan/albums-sb-error', fn: 'albums-stock-scan',
+    event: post({}, { authorization: `Bearer ${PW}` }),
+    routes: [{ method: 'GET', match: 'albums?select=id,name,purchase_url,is_sold_out', status: 500, body: 'E'.repeat(350) }],
+  },
+  {
+    // PATCH失敗はchangedに入れずskipped（patch_failed_500）へ
+    name: 'albums-stock-scan/patch-fail', fn: 'albums-stock-scan',
+    event: post({}, { authorization: `Bearer ${PW}` }),
+    routes: [
+      stockAlbumsRoute([{ id: 21, name: 'PATCH失敗盤', purchase_url: `${FM}album-x`, is_sold_out: false }]),
+      shopifyRoute('album-x', { id: 555, title: 'PATCH失敗盤', available: false }),
+      { method: 'PATCH', match: 'albums?id=eq.21', status: 500, body: 'db down' },
+    ],
+  },
+);
