@@ -1,0 +1,43 @@
+# albums-stock-scan 定期起動（GitHub Actions cron）
+#
+# アルバム在庫の自動スキャン: FINDME STORE（Shopify）の product.js `available` を
+# albums.is_sold_out へ日次同期する。ingest-youtube.yml と同じHTTP起動方式。
+#
+# 注意:
+# - schedule はデフォルトブランチ（main）上のworkflowのみ実行される（マージ後に有効化）。
+# - リポジトリが60日間非活動だとGitHubがcronを自動停止する（手動で再有効化が必要）。
+# - Secret `ADMIN_PASSWORD` は ingest-youtube と共用（登録済みならそのまま動く）。
+# - `changed` の中身をechoするので、Actionsログが在庫変更の履歴になる。
+
+name: albums-stock-scan
+
+on:
+  schedule:
+    - cron: '0 21 * * *' # UTC 21:00 = JST 朝6:00、1日1回
+  workflow_dispatch: # 手動実行用
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Invoke albums-stock-scan function
+        run: |
+          set -euo pipefail
+          response=$(curl -sf --max-time 120 -X POST \
+            -H "Authorization: Bearer ${{ secrets.ADMIN_PASSWORD }}" \
+            https://vwp-archive.netlify.app/.netlify/functions/albums-stock-scan)
+          echo "Response: ${response}"
+          ok=$(echo "${response}" | jq -r '.ok')
+          scanned=$(echo "${response}" | jq -r '.scanned')
+          changed_count=$(echo "${response}" | jq -r '.changed | length')
+          skipped_count=$(echo "${response}" | jq -r '.skipped | length')
+          echo "ok=${ok} scanned=${scanned} changed=${changed_count} skipped=${skipped_count}"
+          if [ "${changed_count}" != "0" ] && [ "${changed_count}" != "null" ]; then
+            echo "--- changed（在庫状態が変わったアルバム） ---"
+            echo "${response}" | jq -c '.changed[]'
+          fi
+          if [ "${ok}" != "true" ]; then
+            echo "albums-stock-scan returned ok != true" >&2
+            exit 1
+          fi
