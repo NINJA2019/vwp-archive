@@ -962,11 +962,15 @@ scenarios.push(
     event: post({}, { authorization: `Bearer ${PW}` }), routes: [],
   },
   {
-    // 在庫変化あり/なし + 対象外ドメイン + purchase_urlなし + ハンドル抽出失敗の混在。
+    // 在庫変化あり/なし + 対象外ドメイン + purchase_urlなし + URL/ハンドル不正の混在。
     // id1: SALE→SOLD OUT / id2: SOLD OUT→SALE（両方PATCH。status_updated_at=固定日 2026-01-15）
     // id3: available=true & is_sold_out=false → 変化なし（PATCHなし）
     // id4: 対象外ドメイン → skipped:unsupported_domain / id5: purchase_urlなし → 記録なし
     // id6: /products/ 直後にハンドルなし → skipped:handle_extract_failed
+    // id7: pathに正規ドメインを埋めた偽URL → hostname厳格判定で unsupported_domain
+    // id8: URLとしてパース不能 → skipped:invalid_url
+    // ※対象3件は1バッチ（同時5件以内）で並列実行。スタブfetchは同期解決のため
+    //   calls順（fetch発行順→microtask解決順）は決定論的。集計はtargets順なので応答も安定。
     name: 'albums-stock-scan/scan-mixed', fn: 'albums-stock-scan',
     event: post({}, { authorization: `Bearer ${PW}` }),
     routes: [
@@ -977,6 +981,8 @@ scenarios.push(
         { id: 4, name: '外部ストア盤', purchase_url: 'https://example.com/shop/x', is_sold_out: false },
         { id: 5, name: 'URLなし盤', purchase_url: null, is_sold_out: true },
         { id: 6, name: '壊れURL盤', purchase_url: `${FM}?query`, is_sold_out: false },
+        { id: 7, name: '偽装URL盤', purchase_url: 'https://evil.com/findmestore.thinkr.jp/products/x', is_sold_out: false },
+        { id: 8, name: 'パース不能盤', purchase_url: 'not a url', is_sold_out: false },
       ]),
       shopifyRoute('album-a', { id: 111, title: '狂想', available: false }),
       shopifyRoute('album-b', { id: 222, title: '不可解', available: true }),

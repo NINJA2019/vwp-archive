@@ -26,13 +26,15 @@ jobs:
           set -euo pipefail
           response=$(curl -sf --max-time 120 -X POST \
             -H "Authorization: Bearer ${{ secrets.ADMIN_PASSWORD }}" \
-            https://vwp-archive.netlify.app/.netlify/functions/albums-stock-scan)
+            https://vwp-archive.netlify.app/.netlify/functions/albums-stock-scan) \
+            || { echo "curl failed: ネットワーク断 / Netlify 5xx / Function timeout の可能性（-f はHTTPエラー時に本文を捨てる）" >&2; exit 1; }
           echo "Response: ${response}"
           ok=$(echo "${response}" | jq -r '.ok')
           scanned=$(echo "${response}" | jq -r '.scanned')
           changed_count=$(echo "${response}" | jq -r '.changed | length')
           skipped_count=$(echo "${response}" | jq -r '.skipped | length')
-          echo "ok=${ok} scanned=${scanned} changed=${changed_count} skipped=${skipped_count}"
+          elapsed_ms=$(echo "${response}" | jq -r '.elapsed_ms')
+          echo "ok=${ok} scanned=${scanned} changed=${changed_count} skipped=${skipped_count} elapsed_ms=${elapsed_ms}"
           if [ "${changed_count}" != "0" ] && [ "${changed_count}" != "null" ]; then
             echo "--- changed（在庫状態が変わったアルバム） ---"
             echo "${response}" | jq -c '.changed[]'

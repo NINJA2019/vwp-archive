@@ -5,22 +5,79 @@
 // 対象: albums.purchase_url が FINDME STORE（findmestore.thinkr.jp = Shopify）の行。
 //       `https://findmestore.thinkr.jp/products/<handle>.js` の JSON `available` を
 //       is_sold_out へ同期する（newSoldOut = !available）。
-// 安全側の原則: HTTPエラー・非JSON・available欠落・ハンドル抽出失敗は該当行を
+// 安全側の原則: HTTPエラー・非JSON・available欠落・URL/ハンドル不正は該当行を
 //       skipped に記録して is_sold_out には絶対に触らない（ページ消滅・一時障害で
 //       誤って SALE に戻す事故防止）。更新は判定が確定し現状と異なる場合のみ。
+// 時間予算: Netlify Functionsの10秒制限内に収めるため同時5件のバッチ並列 +
+//       全体8秒デッドライン（超過分は skipped:deadline で部分結果応答 → 翌日cronが拾う）。
 // ═══════════════════════════════════════════════════════════════
 
 const { getSupabaseUrl, secretKey, sbHeaders, sbFetch } = require('./_shared/supabase');
 const { methodNotAllowed, json } = require('./_shared/responses');
 
-// 対応ストアの判定文字列（将来ストア追加時はここに分岐を足す。対象外は skipped:unsupported_domain）
-const SUPPORTED_STORE = 'findmestore.thinkr.jp/products/';
-// purchase_url からの商品ハンドル抽出（例: /products/kyoso?query → kyoso）
+// 対応ストア（将来ストア追加時はここに分岐を足す。対象外は skipped:unsupported_domain）
+const SUPPORTED_HOST = 'findmestore.thinkr.jp';
+const SUPPORTED_PATH_PREFIX = '/products/';
+// pathname からの商品ハンドル抽出（例: /products/kyoso → kyoso）
 const HANDLE_RE = /\/products\/([^/?#]+)/;
-const FETCH_TIMEOUT_MS = 10000; // Shopify product.js のタイムアウト
-const POLITE_WAIT_MS = 300;     // 逐次リクエスト間の待機（礼儀）
+const FETCH_TIMEOUT_MS = 5000;  // Shopify product.js の個別タイムアウト
+const BATCH_SIZE = 5;           // 同時fetch数（ストアへの礼儀と時間予算のバランス）
+const BATCH_WAIT_MS = 100;      // バッチ間の待機
+const DEADLINE_MS = 8000;       // 全体デッドライン（Netlify 10秒制限に対する余裕）
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * 1アルバムのスキャン: product.js fetch → 判定 → 差分があればPATCH。
+ * 戻り値: { skip: reason } | { change: {id,name,from,to} } | {}（変化なし）
+ * throwしない設計（失敗系はすべて skip として返す）。
+ */
+async function scanOne({ album, handle }, supabaseUrl, supabaseKey, today) {
+  // (1) Shopify product.js fetch — 失敗系はすべて skip（is_sold_out に触らない）
+  let res;
+  try {
+    res = await fetch(`https://${SUPPORTED_HOST}/products/${handle}.js`, {
+      headers: {
+        'User-Agent': 'vwp-archive-stock-scan/1.0 (+https://vwp-archive.netlify.app)',
+        Accept: 'application/json',
+      },
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+  } catch (e) {
+    const detail = (e && e.name === 'TimeoutError') ? 'timeout' : String(e && e.message).slice(0, 100);
+    return { skip: `fetch_error: ${detail}` };
+  }
+  if (!res.ok) {
+    // 404 = ページ消滅の可能性。売り切れ扱いにせず skip（人間が purchase_url を見直す）
+    return { skip: `http_${res.status}` };
+  }
+  let product;
+  try {
+    product = await res.json();
+  } catch {
+    return { skip: 'invalid_json' };
+  }
+  // available が boolean 以外（メンテページ等の想定外JSON）は判定不能として skip
+  if (!product || typeof product.available !== 'boolean') {
+    return { skip: 'available_not_boolean' };
+  }
+
+  // (2) 判定・差分がある場合のみ更新
+  const newSoldOut = !product.available;
+  if (newSoldOut === album.is_sold_out) return {}; // 変化なし
+
+  const patchRes = await fetch(`${supabaseUrl}/rest/v1/albums?id=eq.${album.id}`, {
+    method: 'PATCH',
+    headers: sbHeaders(supabaseKey, { 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+    body: JSON.stringify({ is_sold_out: newSoldOut, status_updated_at: today }),
+  });
+  if (!patchRes.ok) {
+    const text = await patchRes.text().catch(() => '');
+    console.error(`albums-stock-scan: PATCH失敗 id=${album.id}: ${patchRes.status} ${text.slice(0, 200)}`);
+    return { skip: `patch_failed_${patchRes.status}` };
+  }
+  return { change: { id: album.id, name: album.name, from: album.is_sold_out, to: newSoldOut } };
+}
 
 exports.handler = async (event) => {
   if (event.httpMethod !== 'POST') return methodNotAllowed();
@@ -40,6 +97,8 @@ exports.handler = async (event) => {
     return json(500, { error: '環境変数が不足しています' });
   }
 
+  const startedAt = Date.now();
+
   try {
     // ── albums 全件取得 ──
     // 現状31件程度なので単発クエリでよいが、憲法5の精神で limit 明示 + order=id.asc。
@@ -54,17 +113,26 @@ exports.handler = async (event) => {
     }
 
     // ── 対象抽出（purchase_url なしは対象外・記録もしない） ──
+    // ドメイン判定は new URL() のパース結果で厳格に行う（部分文字列判定だと
+    // https://evil.com/findmestore.thinkr.jp/products/x のようなURLを通してしまう）。
     const targets = [];  // { album, handle }
     const skipped = [];  // { id, reason }
     for (const album of albums) {
       const url = album.purchase_url;
       if (!url) continue;
-      if (!url.includes(SUPPORTED_STORE)) {
+      let parsed;
+      try {
+        parsed = new URL(url);
+      } catch {
+        skipped.push({ id: album.id, reason: 'invalid_url' });
+        continue;
+      }
+      if (parsed.hostname !== SUPPORTED_HOST || !parsed.pathname.startsWith(SUPPORTED_PATH_PREFIX)) {
         // 将来ストア追加の目印
         skipped.push({ id: album.id, reason: 'unsupported_domain' });
         continue;
       }
-      const m = HANDLE_RE.exec(url);
+      const m = HANDLE_RE.exec(parsed.pathname);
       if (!m) {
         skipped.push({ id: album.id, reason: 'handle_extract_failed' });
         continue;
@@ -72,68 +140,37 @@ exports.handler = async (event) => {
       targets.push({ album, handle: m[1] });
     }
 
-    // ── 逐次スキャン（並列にしない + 300ms待機 = ストアへの礼儀） ──
+    // ── バッチ並列スキャン（同時5件 + バッチ間100ms + 全体8秒デッドライン） ──
     const changed = [];  // { id, name, from, to }
     let scanned = 0;     // product.js のfetchを試行した件数
     const today = new Date().toISOString().slice(0, 10); // status_updated_at（YYYY-MM-DD）
 
-    for (let i = 0; i < targets.length; i++) {
-      const { album, handle } = targets[i];
-      if (i > 0) await sleep(POLITE_WAIT_MS);
-      scanned++;
-
-      // (1) Shopify product.js fetch — 失敗系はすべて skip（is_sold_out に触らない）
-      let res;
-      try {
-        res = await fetch(`https://findmestore.thinkr.jp/products/${handle}.js`, {
-          headers: {
-            'User-Agent': 'vwp-archive-stock-scan/1.0 (+https://vwp-archive.netlify.app)',
-            Accept: 'application/json',
-          },
-          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-        });
-      } catch (e) {
-        const detail = (e && e.name === 'TimeoutError') ? 'timeout' : String(e && e.message).slice(0, 100);
-        skipped.push({ id: album.id, reason: `fetch_error: ${detail}` });
-        continue;
+    for (let i = 0; i < targets.length; i += BATCH_SIZE) {
+      // デッドライン超過: 残りはスキャンせず skipped:deadline で部分結果応答（翌日cronが拾う）
+      if (Date.now() - startedAt >= DEADLINE_MS) {
+        for (const t of targets.slice(i)) skipped.push({ id: t.album.id, reason: 'deadline' });
+        break;
       }
-      if (!res.ok) {
-        // 404 = ページ消滅の可能性。売り切れ扱いにせず skip（人間が purchase_url を見直す）
-        skipped.push({ id: album.id, reason: `http_${res.status}` });
-        continue;
+      if (i > 0) await sleep(BATCH_WAIT_MS);
+      const batch = targets.slice(i, i + BATCH_SIZE);
+      const settled = await Promise.allSettled(
+        batch.map((t) => scanOne(t, SUPABASE_URL, SUPABASE_KEY, today))
+      );
+      // 集計はバッチ内のtargets順（並列の完了順に依存しない安定した応答順）
+      for (let j = 0; j < settled.length; j++) {
+        scanned++;
+        const s = settled[j];
+        if (s.status !== 'fulfilled') {
+          // scanOneはthrowしない設計だが、万一の想定外例外もis_sold_outに触らずskip
+          skipped.push({ id: batch[j].album.id, reason: `scan_error: ${String(s.reason && s.reason.message).slice(0, 100)}` });
+          continue;
+        }
+        if (s.value.skip) skipped.push({ id: batch[j].album.id, reason: s.value.skip });
+        else if (s.value.change) changed.push(s.value.change);
       }
-      let product;
-      try {
-        product = await res.json();
-      } catch {
-        skipped.push({ id: album.id, reason: 'invalid_json' });
-        continue;
-      }
-      // available が boolean 以外（メンテページ等の想定外JSON）は判定不能として skip
-      if (!product || typeof product.available !== 'boolean') {
-        skipped.push({ id: album.id, reason: 'available_not_boolean' });
-        continue;
-      }
-
-      // (2) 判定・差分がある場合のみ更新
-      const newSoldOut = !product.available;
-      if (newSoldOut === album.is_sold_out) continue; // 変化なし
-
-      const patchRes = await fetch(`${SUPABASE_URL}/rest/v1/albums?id=eq.${album.id}`, {
-        method: 'PATCH',
-        headers: sbHeaders(SUPABASE_KEY, { 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
-        body: JSON.stringify({ is_sold_out: newSoldOut, status_updated_at: today }),
-      });
-      if (!patchRes.ok) {
-        const text = await patchRes.text().catch(() => '');
-        console.error(`albums-stock-scan: PATCH失敗 id=${album.id}: ${patchRes.status} ${text.slice(0, 200)}`);
-        skipped.push({ id: album.id, reason: `patch_failed_${patchRes.status}` });
-        continue;
-      }
-      changed.push({ id: album.id, name: album.name, from: album.is_sold_out, to: newSoldOut });
     }
 
-    return json(200, { ok: true, scanned, changed, skipped });
+    return json(200, { ok: true, scanned, changed, skipped, elapsed_ms: Date.now() - startedAt });
   } catch (e) {
     console.error('albums-stock-scan fatal error:', e);
     return json(500, { error: e.message });
