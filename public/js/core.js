@@ -735,7 +735,9 @@ export function render(){
     }
   }
   if(curSort==='daily'){
-    filteredCache=getDailyPicksFromCache();
+    // Daily Pickも表示直前にカテゴリフィルタを適用（レビュー指摘対応）。
+    // キャッシュ(localStorage vwp_daily_obs)はカテゴリ非依存で全picksのまま保持し、表示時のみ絞る
+    filteredCache=getDailyPicksFromCache().filter(v=>matchesContentType(v));
   } else {
     filteredCache=filtered();
   }
