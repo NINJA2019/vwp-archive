@@ -966,10 +966,11 @@ scenarios.push(
     // id1: SALE→SOLD OUT / id2: SOLD OUT→SALE（両方PATCH。status_updated_at=固定日 2026-01-15）
     // id3: available=true & is_sold_out=false → 変化なし（PATCHなし）
     // id4: 対象外ドメイン → skipped:unsupported_domain / id5: purchase_urlなし → 記録なし
-    // id6: /products/ 直後にハンドルなし → skipped:handle_extract_failed
+    // id6: /products/ 直後にハンドルなし → skipped:no_products_path
     // id7: pathに正規ドメインを埋めた偽URL → hostname厳格判定で unsupported_domain
     // id8: URLとしてパース不能 → skipped:invalid_url
-    // ※対象3件は1バッチ（同時5件以内）で並列実行。スタブfetchは同期解決のため
+    // id9: /collections/<c>/products/<handle> 形式 → 正常スキャン（SALE→SOLD OUT）
+    // ※対象4件は1バッチ（同時5件以内）で並列実行。スタブfetchは同期解決のため
     //   calls順（fetch発行順→microtask解決順）は決定論的。集計はtargets順なので応答も安定。
     name: 'albums-stock-scan/scan-mixed', fn: 'albums-stock-scan',
     event: post({}, { authorization: `Bearer ${PW}` }),
@@ -983,12 +984,15 @@ scenarios.push(
         { id: 6, name: '壊れURL盤', purchase_url: `${FM}?query`, is_sold_out: false },
         { id: 7, name: '偽装URL盤', purchase_url: 'https://evil.com/findmestore.thinkr.jp/products/x', is_sold_out: false },
         { id: 8, name: 'パース不能盤', purchase_url: 'not a url', is_sold_out: false },
+        { id: 9, name: 'コレクション経由盤', purchase_url: 'https://findmestore.thinkr.jp/collections/kaf/products/test-handle-1', is_sold_out: false },
       ]),
       shopifyRoute('album-a', { id: 111, title: '狂想', available: false }),
       shopifyRoute('album-b', { id: 222, title: '不可解', available: true }),
       shopifyRoute('album-c', { id: 333, title: '観測', available: true }),
+      shopifyRoute('test-handle-1', { id: 999, title: 'コレクション経由盤', available: false }),
       { method: 'PATCH', match: 'albums?id=eq.1', status: 204, body: '' },
       { method: 'PATCH', match: 'albums?id=eq.2', status: 204, body: '' },
+      { method: 'PATCH', match: 'albums?id=eq.9', status: 204, body: '' },
     ],
   },
   {
