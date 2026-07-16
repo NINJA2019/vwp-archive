@@ -182,6 +182,8 @@ export function initIntro(){
       // 暗転完了：ターンテーブル画面を非表示
       intro.style.display = 'none';
       document.body.style.overflow = '';
+      // 入店確定をオンボーディング（店主メモ等）へ通知（onboarding.js が購読）
+      document.dispatchEvent(new CustomEvent('vwp:archive-entered'));
 
       const m = chosen.m;
 

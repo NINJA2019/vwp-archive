@@ -5,6 +5,7 @@ import { MEMBERS, MBR_CLS, PAGE_SIZE, CARD_ANIM_DELAY_STEP, PW_SK, THEME_SK, DAI
 import { t, mbr, applyI18n, tTag, getLang, setLang } from './i18n.js';
 import { loadAlbumsApi, loadVideosApi, addAlbumApi, updateAlbumApi, deleteAlbumApi, addVideoApi, deleteVideoApi, updateVideoApi, verifyPwApi } from './supabase.js';
 import { getMemberColor, drawVinylDisc } from './vinyl.js';
+import { applyFeatureDots } from './onboarding.js';
 
 // ===== 可変状態 =====
 let videos = [], curMember = 'all', selectedMembers = [], curTag = 'all', curSort = 'new', curView = 'grid', searchQ = '', isAdmin = false, editId = null;
@@ -467,6 +468,7 @@ export function buildSidebar(){
     tf.appendChild(b);
   });
   buildMobFilters();
+  applyFeatureDots(); // NEWドット再適用（サイドバー再描画で消えないように）
 }
 
 export function buildMobFilters(){
