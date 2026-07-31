@@ -136,22 +136,7 @@ export function initEventTicker() {
     timeSpan.textContent = ev.timeLabel;
     frag.appendChild(timeSpan);
 
-    frag.appendChild(sep('／'));
-
-    // チケットリンク
-    const link = document.createElement('a');
-    link.href = ev.url;
-    link.target = '_blank';
-    link.rel = 'noopener';
-    link.className = 'ticker-ev-link';
-    const linkLabel = document.createElement('span');
-    linkLabel.dataset.i18n = 'eventTickerTicket';
-    linkLabel.textContent = t('eventTickerTicket');
-    link.appendChild(linkLabel);
-    const arrow = document.createElement('span');
-    arrow.textContent = ' →';
-    link.appendChild(arrow);
-    frag.appendChild(link);
+    // チケット導線は右端固定CTAボタンに集約したため、スクロール内はプレーンテキストのみ
 
     return frag;
   }
@@ -200,9 +185,25 @@ export function initEventTicker() {
   track.appendChild(set1);
   track.appendChild(set2);
 
-  // ── 組み立て ──────────────────────────────────────────────
+  // ── 右端固定CTAボタン ─────────────────────────────────────
+  // 複数イベントの場合は先頭イベントのURLへリンク（現状は1件のみ）
+  const cta = document.createElement('a');
+  cta.href = visible[0].url;
+  cta.target = '_blank';
+  cta.rel = 'noopener';
+  cta.className = 'ticker-cta';
+  const ctaLabel = document.createElement('span');
+  ctaLabel.dataset.i18n = 'eventTickerTicket';
+  ctaLabel.textContent = t('eventTickerTicket');
+  cta.appendChild(ctaLabel);
+  const ctaArrow = document.createElement('span');
+  ctaArrow.textContent = ' →';
+  cta.appendChild(ctaArrow);
+
+  // ── 組み立て: label(左固定) → track(スクロール) → cta(右固定) → closeBtn(最右) ──
   container.appendChild(label);
   container.appendChild(track);
+  container.appendChild(cta);
   container.appendChild(closeBtn);
 
   // ── 速度一定化: set1.offsetWidth → --ticker-dur ─────────

@@ -124,24 +124,48 @@
   opacity: .6;
 }
 
-/* チケットリンク */
-.ticker-ev-link {
+/* ── 右端固定CTAボタン ───────────────────────────────────── */
+/* .ticker-label（左固定）の鏡。スクロールテキストがこの下を流れる。 */
+.ticker-cta {
+  position: sticky;
+  right: 0;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
+  height: 100%;
+  /* 右の×ボタン（約36px）と被らないよう右パディングを確保 */
+  padding: 0 44px 0 12px;
+  background: var(--surface);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: .72rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
   color: #c4b5fd;
   text-decoration: none;
-  font-weight: 700;
-  letter-spacing: .08em;
-  border-bottom: 1px solid transparent;
-  transition: border-color .2s, color .2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color .2s;
 }
 
-.ticker-ev-link:hover {
+.ticker-cta:hover {
   color: #d4c8ff;
-  border-bottom-color: rgba(196, 181, 253, .5);
+}
+
+/* 左端フェード（ラベルの::afterと対称） */
+.ticker-cta::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(to left, var(--surface), transparent);
+  pointer-events: none;
 }
 
 /* ── ×閉じボタン ────────────────────────────────────────── */
+/* CTAの右に並ぶ。absolute配置でCTAとは独立。 */
 .ticker-close {
   position: absolute;
   right: 8px;
@@ -185,5 +209,12 @@
   }
   .ticker-track {
     font-size: .78rem;
+  }
+  /* CTAはモバイルでも常時表示・タップ可能（最低40px確保） */
+  .ticker-cta {
+    font-size: .68rem;
+    padding: 0 40px 0 8px;
+    min-width: 40px;
+    justify-content: center;
   }
 }
