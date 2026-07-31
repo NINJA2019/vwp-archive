@@ -1,0 +1,244 @@
+/* ticker.css — ライブ告知ティッカー（電車発車標風・横流れ）
+   z-index 95: ヘッダー(100)の下、mob-filters(90)の上
+   非sticky（インフロー）: 下スクロールで一緒に流れる
+   [hidden]属性を上書きしない */
+
+/* ── コンテナ ────────────────────────────────────────────── */
+.event-ticker {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+}
+
+/* [hidden]はdisplay:noneへ — CSSでは上書きしない */
+.event-ticker[hidden] {
+  display: none;
+}
+
+/* ── 左端固定ラベルchip ──────────────────────────────────── */
+.ticker-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 12px;
+  height: 100%;
+  background: var(--surface);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 右端フェード（ダーク/ライト両テーマ対応）
+   box-shadowは不透明色を前提とするためライトテーマで破綻する。
+   ::after の linear-gradient で var(--surface) → transparent を描く。 */
+.ticker-label::after {
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(to right, var(--surface), transparent);
+  pointer-events: none;
+}
+
+/* 点滅ドット — @keyframes badge-pulse は layout.css で定義済み */
+.ticker-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c4b5fd;
+  flex-shrink: 0;
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+/* ── スクロールトラック ──────────────────────────────────── */
+.ticker-track {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  /* --ticker-dur はJS側から set1.offsetWidth / SPEED_PX_PER_SEC で算出してセット */
+  animation: ticker-scroll var(--ticker-dur, 40s) linear infinite;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .82rem;
+  font-weight: 400;
+  letter-spacing: .04em;
+  color: var(--dim);
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ホバーで一時停止（発車標を読ませる） */
+.event-ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+/* ── セット（1連分）・各要素 ────────────────────────────── */
+.ticker-set {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 24px; /* ラベルchipとの間隔 */
+}
+
+.ticker-ev-title {
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+
+.ticker-ev-date,
+.ticker-ev-time {
+  color: #a0aaff;
+}
+
+.ticker-ev-venue {
+  color: var(--dim);
+}
+
+.ticker-sep {
+  color: var(--dim);
+  opacity: .5;
+}
+
+.ticker-divider {
+  color: #c4b5fd;
+  opacity: .6;
+}
+
+/* ── 右端固定CTAボタン（ピル形状）───────────────────────── */
+/* sticky-right で常時表示。スクロールテキストがこの下を流れる。
+   スクロール下地が透けないよう ::before フェード + solid background で遮蔽。 */
+.ticker-cta {
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  /* ×ボタン(right:8px, ~28px幅)との間に ≥12px の空き = 8+28+12=48px */
+  padding: 0 56px 0 20px;
+  background: var(--surface);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: .72rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color .2s;
+}
+
+/* ピル本体（スクロール背面を遮蔽しつつボタン外見） */
+.ticker-cta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: .28em .8em;
+  border-radius: 999px;
+  border: 1px solid var(--ol-accent, #6c5ce7);
+  background: rgba(108, 92, 231, .16);
+  color: #c4b5fd;
+  font-family: inherit;
+  font-weight: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  transition: background .2s, color .2s, transform .15s, border-color .2s;
+  cursor: pointer;
+}
+
+.ticker-cta:hover .ticker-cta-pill {
+  background: var(--ol-accent, #6c5ce7);
+  color: #fff;
+  transform: translateY(-1px);
+  border-color: var(--ol-accent, #6c5ce7);
+}
+
+/* 左端フェード（ラベルの::afterと対称、テーマ安全） */
+.ticker-cta::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: 0;
+  width: 24px;
+  height: 100%;
+  background: linear-gradient(to left, var(--surface), transparent);
+  pointer-events: none;
+}
+
+/* ── ×閉じボタン（副次的なdismiss、CTAより視覚的に控えめ）── */
+.ticker-close {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  background: transparent;
+  border: none;
+  color: var(--dim);
+  font-size: .72rem;
+  line-height: 1;
+  padding: 4px 5px;
+  border-radius: 3px;
+  cursor: pointer;
+  opacity: .55;
+  transition: opacity .2s, color .2s;
+}
+
+.ticker-close:hover {
+  opacity: 1;
+  color: var(--text);
+}
+
+/* ── reduced-motion フォールバック ──────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+  .event-ticker {
+    overflow-x: auto;
+  }
+}
+
+/* ── モバイル調整 ────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .event-ticker {
+    height: 36px;
+  }
+  .ticker-label {
+    font-size: .68rem;
+    padding: 0 8px 0 10px;
+  }
+  .ticker-track {
+    font-size: .78rem;
+  }
+  /* CTAはモバイルでも常時表示・タップ可能（最低40pxタップ領域確保） */
+  .ticker-cta {
+    font-size: .68rem;
+    padding: 0 48px 0 8px;
+  }
+  .ticker-cta-pill {
+    padding: .25em .65em;
+  }
+}

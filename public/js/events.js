@@ -1,0 +1,245 @@
+// events.js — ライブ告知ティッカー用イベント管理
+// 新しいイベントは EVENTS 配列に1件追加するだけ（DB/migration不要）。
+// startAt <= now <= endAt の期間内のみ自動表示。
+// localStorage キー: vwp_event_ticker（憲法3: 新キーのみ使用）
+
+import { t } from './i18n.js';
+
+// ── イベント定義 ─────────────────────────────────────────────
+export const EVENTS = [
+  {
+    id: 'kwars2026-kawasaki-ciel-seito',
+    title: 'KAMITSUBAKI WARS 2026 神椿川崎戦線 CIEL 1st ONE-MAN LIVE『晴途』',
+    dateLabel: '2026.11.20 FRI',
+    venue: "CLUB CITTA'（川崎）",
+    timeLabel: 'OPEN 18:00 / START 19:00',
+    url: 'https://thinkr.tstar.jp/event/t261120/?scid=su_16699',
+    startAt: '2026-07-01T00:00:00+09:00',
+    endAt:   '2026-11-20T23:59:59+09:00',
+  },
+];
+
+const TICKER_SK = 'vwp_event_ticker';
+const SPEED_PX_PER_SEC = 60; // px/秒（コンテンツ量に依らず一定速度）
+
+// ── アクティブイベント取得 ─────────────────────────────────────
+export function getActiveEvents(now = new Date()) {
+  return EVENTS.filter(ev => {
+    const s = new Date(ev.startAt);
+    const e = new Date(ev.endAt);
+    return s <= now && now <= e;
+  });
+}
+
+// ── dismiss済みID読み取り ─────────────────────────────────────
+function getDismissed() {
+  try {
+    const a = JSON.parse(localStorage.getItem(TICKER_SK) || '[]');
+    return Array.isArray(a) ? a : [];
+  } catch (_) { return []; }
+}
+
+// ── dismiss済みIDに追加 ───────────────────────────────────────
+function addDismissed(ids) {
+  const a = getDismissed();
+  ids.forEach(id => { if (!a.includes(id)) a.push(id); });
+  try { localStorage.setItem(TICKER_SK, JSON.stringify(a)); } catch (_) {}
+}
+
+// ── ティッカー初期化（idempotent） ────────────────────────────
+let _tickerBuilt = false;
+
+export function initEventTicker() {
+  if (_tickerBuilt) return;
+
+  const container = document.getElementById('eventTicker');
+  if (!container) return;
+
+  const active = getActiveEvents();
+  const dismissed = getDismissed();
+  const visible = active.filter(ev => !dismissed.includes(ev.id));
+
+  // 表示すべきイベントがなければ hidden のまま（レイアウト影響ゼロ）
+  if (visible.length === 0) return;
+
+  _tickerBuilt = true;
+  container.removeAttribute('hidden');
+
+  // ── ラベルchip（sticky左端） ──────────────────────────────
+  const label = document.createElement('div');
+  label.className = 'ticker-label';
+
+  const dot = document.createElement('span');
+  dot.className = 'ticker-dot';
+  dot.setAttribute('aria-hidden', 'true');
+
+  const labelText = document.createElement('span');
+  labelText.dataset.i18n = 'eventTickerLabel';
+  labelText.textContent = t('eventTickerLabel');
+
+  label.appendChild(dot);
+  label.appendChild(labelText);
+
+  // ── ×閉じボタン ──────────────────────────────────────────
+  const closeBtn = document.createElement('button');
+  closeBtn.type = 'button';
+  closeBtn.className = 'ticker-close';
+  closeBtn.textContent = '×';
+  closeBtn.setAttribute('aria-label', 'close');
+
+  closeBtn.addEventListener('click', () => {
+    addDismissed(visible.map(ev => ev.id));
+    container.style.transition = 'opacity .35s';
+    container.style.opacity = '0';
+    setTimeout(() => {
+      container.setAttribute('hidden', '');
+      container.style.opacity = '';
+      container.style.transition = '';
+    }, 380);
+  });
+
+  // ── スクロールトラック（2連複製でシームレスループ） ──────
+  const track = document.createElement('div');
+  track.className = 'ticker-track';
+
+  // イベント1件分のHTML文字列を生成（2連分なので関数化）
+  function buildEventFragment(ev) {
+    const frag = document.createDocumentFragment();
+
+    // タイトル
+    const titleSpan = document.createElement('span');
+    titleSpan.className = 'ticker-ev-title';
+    titleSpan.textContent = ev.title;
+    frag.appendChild(titleSpan);
+
+    frag.appendChild(sep('／'));
+
+    // 日付
+    const dateSpan = document.createElement('span');
+    dateSpan.className = 'ticker-ev-date';
+    dateSpan.textContent = ev.dateLabel;
+    frag.appendChild(dateSpan);
+
+    frag.appendChild(sep('／'));
+
+    // 会場
+    const venueSpan = document.createElement('span');
+    venueSpan.className = 'ticker-ev-venue';
+    venueSpan.textContent = ev.venue;
+    frag.appendChild(venueSpan);
+
+    frag.appendChild(sep('／'));
+
+    // 時間
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'ticker-ev-time';
+    timeSpan.textContent = ev.timeLabel;
+    frag.appendChild(timeSpan);
+
+    // チケット導線は右端固定CTAボタンに集約したため、スクロール内はプレーンテキストのみ
+
+    return frag;
+  }
+
+  function sep(char) {
+    const s = document.createElement('span');
+    s.className = 'ticker-sep';
+    s.setAttribute('aria-hidden', 'true');
+    s.textContent = ' ' + char + ' ';
+    return s;
+  }
+
+  // イベント複数の場合は ◆ で区切る
+  function buildAllEvents() {
+    const frag = document.createDocumentFragment();
+    visible.forEach((ev, i) => {
+      if (i > 0) {
+        const divider = document.createElement('span');
+        divider.className = 'ticker-divider';
+        divider.setAttribute('aria-hidden', 'true');
+        divider.textContent = ' ◆ ';
+        frag.appendChild(divider);
+      }
+      frag.appendChild(buildEventFragment(ev));
+    });
+    // 末尾スペーサー（次の複製との間）
+    const spacer = document.createElement('span');
+    spacer.className = 'ticker-spacer';
+    spacer.setAttribute('aria-hidden', 'true');
+    spacer.textContent = '  '; // U+2003 em-space ×2
+    frag.appendChild(spacer);
+    return frag;
+  }
+
+  // 1セット目
+  const set1 = document.createElement('span');
+  set1.className = 'ticker-set';
+  set1.appendChild(buildAllEvents());
+
+  // 2セット目（seamless loop用の複製）
+  const set2 = document.createElement('span');
+  set2.className = 'ticker-set';
+  set2.setAttribute('aria-hidden', 'true');
+  set2.appendChild(buildAllEvents());
+
+  track.appendChild(set1);
+  track.appendChild(set2);
+
+  // ── 右端固定CTAボタン（ピル形状）────────────────────────
+  // 複数イベントの場合は先頭イベントのURLへリンク（現状は1件のみ）
+  const cta = document.createElement('a');
+  cta.href = visible[0].url;
+  cta.target = '_blank';
+  cta.rel = 'noopener';
+  cta.className = 'ticker-cta';
+
+  // ピル本体（<a>のラップ要素 — スクロール背面を遮蔽しつつボタン外見）
+  const pill = document.createElement('span');
+  pill.className = 'ticker-cta-pill';
+
+  const ctaEmoji = document.createElement('span');
+  ctaEmoji.textContent = '🎫';
+  ctaEmoji.setAttribute('aria-hidden', 'true');
+  pill.appendChild(ctaEmoji);
+
+  const ctaLabel = document.createElement('span');
+  ctaLabel.dataset.i18n = 'eventTickerTicket';
+  ctaLabel.textContent = t('eventTickerTicket');
+  pill.appendChild(ctaLabel);
+
+  cta.appendChild(pill);
+
+  // ── 組み立て: label(左固定) → track(スクロール) → cta(右固定) → closeBtn(最右) ──
+  container.appendChild(label);
+  container.appendChild(track);
+  container.appendChild(cta);
+  container.appendChild(closeBtn);
+
+  // ── 速度一定化: set1.offsetWidth → --ticker-dur ─────────
+  // フォント未ロード時は offsetWidth=0 になるため document.fonts.ready 後に計測。
+  // さらに rAF×2 でレイアウト確定を待つ。
+  function setDur() {
+    const w = set1.offsetWidth;
+    if (w > 0) {
+      const dur = Math.max(w / SPEED_PX_PER_SEC, 8); // 最低8秒
+      track.style.setProperty('--ticker-dur', dur.toFixed(1) + 's');
+    }
+  }
+
+  const measure = () => requestAnimationFrame(() => requestAnimationFrame(setDur));
+
+  // 複数トリガーから発火（setDurはCSS変数セットのみで冪等）。
+  // いずれか1つが有効なwidthを取れれば確定する。
+  measure();                                    // 即時（DOMContentLoaded時点でほぼ確定）
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(measure);         // Webフォント確定後（メトリクスが変わる場合）
+  }
+  window.addEventListener('load', setDur);      // 全リソースロード後の最終保険
+
+  // viewport リサイズ時も再計測（debounce 200ms）
+  let _resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(setDur, 200);
+  });
+}
