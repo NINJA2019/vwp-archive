@@ -32,8 +32,6 @@
   padding: 0 10px 0 12px;
   height: 100%;
   background: var(--surface);
-  /* 右側にグラデーションで自然にフェード */
-  box-shadow: 4px 0 8px 4px var(--surface);
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 700;
   font-size: .72rem;
@@ -42,6 +40,20 @@
   color: #c4b5fd;
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+/* 右端フェード（ダーク/ライト両テーマ対応）
+   box-shadowは不透明色を前提とするためライトテーマで破綻する。
+   ::after の linear-gradient で var(--surface) → transparent を描く。 */
+.ticker-label::after {
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(to right, var(--surface), transparent);
+  pointer-events: none;
 }
 
 /* 点滅ドット — @keyframes badge-pulse は layout.css で定義済み */

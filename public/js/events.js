@@ -181,7 +181,7 @@ export function initEventTicker() {
     const spacer = document.createElement('span');
     spacer.className = 'ticker-spacer';
     spacer.setAttribute('aria-hidden', 'true');
-    spacer.textContent = '  '; // em-space ×2
+    spacer.textContent = '  '; // U+2003 em-space ×2
     frag.appendChild(spacer);
     return frag;
   }
