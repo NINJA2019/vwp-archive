@@ -218,11 +218,13 @@ export function initEventTicker() {
 
   const measure = () => requestAnimationFrame(() => requestAnimationFrame(setDur));
 
+  // 複数トリガーから発火（setDurはCSS変数セットのみで冪等）。
+  // いずれか1つが有効なwidthを取れれば確定する。
+  measure();                                    // 即時（DOMContentLoaded時点でほぼ確定）
   if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(measure);
-  } else {
-    measure();
+    document.fonts.ready.then(measure);         // Webフォント確定後（メトリクスが変わる場合）
   }
+  window.addEventListener('load', setDur);      // 全リソースロード後の最終保険
 
   // viewport リサイズ時も再計測（debounce 200ms）
   let _resizeTimer = null;
