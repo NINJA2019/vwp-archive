@@ -124,8 +124,9 @@
   opacity: .6;
 }
 
-/* ── 右端固定CTAボタン ───────────────────────────────────── */
-/* .ticker-label（左固定）の鏡。スクロールテキストがこの下を流れる。 */
+/* ── 右端固定CTAボタン（ピル形状）───────────────────────── */
+/* sticky-right で常時表示。スクロールテキストがこの下を流れる。
+   スクロール下地が透けないよう ::before フェード + solid background で遮蔽。 */
 .ticker-cta {
   position: sticky;
   right: 0;
@@ -133,8 +134,8 @@
   display: inline-flex;
   align-items: center;
   height: 100%;
-  /* 右の×ボタン（約36px）と被らないよう右パディングを確保 */
-  padding: 0 44px 0 12px;
+  /* ×ボタン(right:8px, ~28px幅)との間に ≥12px の空き = 8+28+12=48px */
+  padding: 0 56px 0 20px;
   background: var(--surface);
   font-family: 'Barlow Condensed', sans-serif;
   font-weight: 700;
@@ -148,44 +149,66 @@
   transition: color .2s;
 }
 
-.ticker-cta:hover {
-  color: #d4c8ff;
+/* ピル本体（スクロール背面を遮蔽しつつボタン外見） */
+.ticker-cta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: .28em .8em;
+  border-radius: 999px;
+  border: 1px solid var(--ol-accent, #6c5ce7);
+  background: rgba(108, 92, 231, .16);
+  color: #c4b5fd;
+  font-family: inherit;
+  font-weight: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  transition: background .2s, color .2s, transform .15s, border-color .2s;
+  cursor: pointer;
 }
 
-/* 左端フェード（ラベルの::afterと対称） */
+.ticker-cta:hover .ticker-cta-pill {
+  background: var(--ol-accent, #6c5ce7);
+  color: #fff;
+  transform: translateY(-1px);
+  border-color: var(--ol-accent, #6c5ce7);
+}
+
+/* 左端フェード（ラベルの::afterと対称、テーマ安全） */
 .ticker-cta::before {
   content: '';
   position: absolute;
   right: 100%;
   top: 0;
-  width: 20px;
+  width: 24px;
   height: 100%;
   background: linear-gradient(to left, var(--surface), transparent);
   pointer-events: none;
 }
 
-/* ── ×閉じボタン ────────────────────────────────────────── */
-/* CTAの右に並ぶ。absolute配置でCTAとは独立。 */
+/* ── ×閉じボタン（副次的なdismiss、CTAより視覚的に控えめ）── */
 .ticker-close {
   position: absolute;
   right: 8px;
   top: 50%;
   transform: translateY(-50%);
   z-index: 2;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  background: transparent;
+  border: none;
   color: var(--dim);
-  font-size: .8rem;
+  font-size: .72rem;
   line-height: 1;
-  padding: 1px 6px 2px;
+  padding: 4px 5px;
   border-radius: 3px;
   cursor: pointer;
-  transition: color .2s, border-color .2s;
+  opacity: .55;
+  transition: opacity .2s, color .2s;
 }
 
 .ticker-close:hover {
+  opacity: 1;
   color: var(--text);
-  border-color: var(--dim);
 }
 
 /* ── reduced-motion フォールバック ──────────────────────── */
@@ -210,11 +233,12 @@
   .ticker-track {
     font-size: .78rem;
   }
-  /* CTAはモバイルでも常時表示・タップ可能（最低40px確保） */
+  /* CTAはモバイルでも常時表示・タップ可能（最低40pxタップ領域確保） */
   .ticker-cta {
     font-size: .68rem;
-    padding: 0 40px 0 8px;
-    min-width: 40px;
-    justify-content: center;
+    padding: 0 48px 0 8px;
+  }
+  .ticker-cta-pill {
+    padding: .25em .65em;
   }
 }

@@ -13,7 +13,7 @@ export const EVENTS = [
     dateLabel: '2026.11.20 FRI',
     venue: "CLUB CITTA'（川崎）",
     timeLabel: 'OPEN 18:00 / START 19:00',
-    url: 'https://kamitsubaki.jp/event/kamitsubaki-wars-2026-%E7%A5%9E%E6%A4%BF%E5%B7%9D%E5%B4%8E%E6%88%A6%E7%B7%9A-ciel-1st-one-man-live-%E3%80%8C%E6%99%B4%E9%80%94%E3%80%8D/',
+    url: 'https://thinkr.tstar.jp/event/t261120/?scid=su_16699',
     startAt: '2026-07-01T00:00:00+09:00',
     endAt:   '2026-11-20T23:59:59+09:00',
   },
@@ -185,20 +185,29 @@ export function initEventTicker() {
   track.appendChild(set1);
   track.appendChild(set2);
 
-  // ── 右端固定CTAボタン ─────────────────────────────────────
+  // ── 右端固定CTAボタン（ピル形状）────────────────────────
   // 複数イベントの場合は先頭イベントのURLへリンク（現状は1件のみ）
   const cta = document.createElement('a');
   cta.href = visible[0].url;
   cta.target = '_blank';
   cta.rel = 'noopener';
   cta.className = 'ticker-cta';
+
+  // ピル本体（<a>のラップ要素 — スクロール背面を遮蔽しつつボタン外見）
+  const pill = document.createElement('span');
+  pill.className = 'ticker-cta-pill';
+
+  const ctaEmoji = document.createElement('span');
+  ctaEmoji.textContent = '🎫';
+  ctaEmoji.setAttribute('aria-hidden', 'true');
+  pill.appendChild(ctaEmoji);
+
   const ctaLabel = document.createElement('span');
   ctaLabel.dataset.i18n = 'eventTickerTicket';
   ctaLabel.textContent = t('eventTickerTicket');
-  cta.appendChild(ctaLabel);
-  const ctaArrow = document.createElement('span');
-  ctaArrow.textContent = ' →';
-  cta.appendChild(ctaArrow);
+  pill.appendChild(ctaLabel);
+
+  cta.appendChild(pill);
 
   // ── 組み立て: label(左固定) → track(スクロール) → cta(右固定) → closeBtn(最右) ──
   container.appendChild(label);
