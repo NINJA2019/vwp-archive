@@ -1,0 +1,177 @@
+/* ticker.css — ライブ告知ティッカー（電車発車標風・横流れ）
+   z-index 95: ヘッダー(100)の下、mob-filters(90)の上
+   非sticky（インフロー）: 下スクロールで一緒に流れる
+   [hidden]属性を上書きしない */
+
+/* ── コンテナ ────────────────────────────────────────────── */
+.event-ticker {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  z-index: 95;
+  display: flex;
+  align-items: center;
+}
+
+/* [hidden]はdisplay:noneへ — CSSでは上書きしない */
+.event-ticker[hidden] {
+  display: none;
+}
+
+/* ── 左端固定ラベルchip ──────────────────────────────────── */
+.ticker-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 10px 0 12px;
+  height: 100%;
+  background: var(--surface);
+  /* 右側にグラデーションで自然にフェード */
+  box-shadow: 4px 0 8px 4px var(--surface);
+  font-family: 'Barlow Condensed', sans-serif;
+  font-weight: 700;
+  font-size: .72rem;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #c4b5fd;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* 点滅ドット — @keyframes badge-pulse は layout.css で定義済み */
+.ticker-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c4b5fd;
+  flex-shrink: 0;
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+/* ── スクロールトラック ──────────────────────────────────── */
+.ticker-track {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  /* --ticker-dur はJS側から set1.offsetWidth / SPEED_PX_PER_SEC で算出してセット */
+  animation: ticker-scroll var(--ticker-dur, 40s) linear infinite;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: .82rem;
+  font-weight: 400;
+  letter-spacing: .04em;
+  color: var(--dim);
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* ホバーで一時停止（発車標を読ませる） */
+.event-ticker:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+/* ── セット（1連分）・各要素 ────────────────────────────── */
+.ticker-set {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 24px; /* ラベルchipとの間隔 */
+}
+
+.ticker-ev-title {
+  color: var(--text);
+  font-weight: 700;
+  letter-spacing: .05em;
+}
+
+.ticker-ev-date,
+.ticker-ev-time {
+  color: #a0aaff;
+}
+
+.ticker-ev-venue {
+  color: var(--dim);
+}
+
+.ticker-sep {
+  color: var(--dim);
+  opacity: .5;
+}
+
+.ticker-divider {
+  color: #c4b5fd;
+  opacity: .6;
+}
+
+/* チケットリンク */
+.ticker-ev-link {
+  display: inline-flex;
+  align-items: center;
+  color: #c4b5fd;
+  text-decoration: none;
+  font-weight: 700;
+  letter-spacing: .08em;
+  border-bottom: 1px solid transparent;
+  transition: border-color .2s, color .2s;
+}
+
+.ticker-ev-link:hover {
+  color: #d4c8ff;
+  border-bottom-color: rgba(196, 181, 253, .5);
+}
+
+/* ── ×閉じボタン ────────────────────────────────────────── */
+.ticker-close {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--dim);
+  font-size: .8rem;
+  line-height: 1;
+  padding: 1px 6px 2px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: color .2s, border-color .2s;
+}
+
+.ticker-close:hover {
+  color: var(--text);
+  border-color: var(--dim);
+}
+
+/* ── reduced-motion フォールバック ──────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+  .event-ticker {
+    overflow-x: auto;
+  }
+}
+
+/* ── モバイル調整 ────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .event-ticker {
+    height: 36px;
+  }
+  .ticker-label {
+    font-size: .68rem;
+    padding: 0 8px 0 10px;
+  }
+  .ticker-track {
+    font-size: .78rem;
+  }
+}

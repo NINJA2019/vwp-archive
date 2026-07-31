@@ -78,6 +78,9 @@ import { initMobile } from './mobile.js';
 // ── Onboarding（店主メモ + NEWドット） ─────────────────────────
 import { initOnboarding } from './onboarding.js';
 
+// ── Event Ticker（ライブ告知ティッカー） ─────────────────────
+import { initEventTicker } from './events.js';
+
 // ═══════════════════════════════════════════════════════════════
 // window露出テーブル（A + B + C の計90件）
 // _rcvSongs は shelf.js 内で実行時代入のため除外
@@ -191,6 +194,7 @@ Object.assign(window, {
 document.addEventListener('DOMContentLoaded', () => {
   initCore();           // DOM イベント登録・検索・ビュー切替等
   initOnboarding();     // 店主メモ+NEWドット（intro入店イベント購読。initIntroより先に登録）
+  initEventTicker();    // ライブ告知ティッカー（メイン画面恒常UI）
   initShelf();          // 棚オーバーレイ初期化
   olInit();             // Observer-Link 初期化（deep-link解析含む）
   initMobile();         // モバイルS字UI（window幅>700pxなら即return）
