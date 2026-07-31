@@ -205,14 +205,29 @@ export function initEventTicker() {
   container.appendChild(track);
   container.appendChild(closeBtn);
 
-  // ── 速度一定化: scrollWidth → --ticker-dur ─────────────
-  // rAF2回待ってレイアウト確定後に計測
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    // set1の幅 = コンテンツ1セット分（-50%で丁度1周）
-    const contentW = set1.offsetWidth;
-    if (contentW > 0) {
-      const dur = Math.max(contentW / SPEED_PX_PER_SEC, 8); // 最低8秒
+  // ── 速度一定化: set1.offsetWidth → --ticker-dur ─────────
+  // フォント未ロード時は offsetWidth=0 になるため document.fonts.ready 後に計測。
+  // さらに rAF×2 でレイアウト確定を待つ。
+  function setDur() {
+    const w = set1.offsetWidth;
+    if (w > 0) {
+      const dur = Math.max(w / SPEED_PX_PER_SEC, 8); // 最低8秒
       track.style.setProperty('--ticker-dur', dur.toFixed(1) + 's');
     }
-  }));
+  }
+
+  const measure = () => requestAnimationFrame(() => requestAnimationFrame(setDur));
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(measure);
+  } else {
+    measure();
+  }
+
+  // viewport リサイズ時も再計測（debounce 200ms）
+  let _resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(setDur, 200);
+  });
 }
