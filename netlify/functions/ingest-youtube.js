@@ -13,6 +13,8 @@ const { ytId } = require('./_shared/yt');
 
 // ── キーワード定数辞書 ──
 const SHORTS_KEYWORDS = ['#shorts'];
+// 「Music Archive」シリーズはタイトルで判定（description誤爆リスクあり）
+const MUSIC_ARCHIVE_KEYWORDS = ['music archive'];
 const LIVE_KEYWORDS = [
   'ワンマン', 'ライブ映像', '不可解', '現象', '狂想'
 ];
@@ -53,10 +55,11 @@ function classifyContentType(title, description, durationSec, hasLiveDetails) {
   const text = (title + ' ' + (description || '')).toLowerCase();
   const titleLower = title.toLowerCase();
 
-  // shorts: 60秒以下 OR タイトル/descriptionに #shorts
+  // shorts: 60秒以下 OR タイトル/descriptionに #shorts OR タイトルにMusic Archiveキーワード
   if (
     (durationSec !== null && durationSec <= 60) ||
-    SHORTS_KEYWORDS.some(k => text.includes(k.toLowerCase()))
+    SHORTS_KEYWORDS.some(k => text.includes(k.toLowerCase())) ||
+    MUSIC_ARCHIVE_KEYWORDS.some(k => titleLower.includes(k))
   ) {
     return 'shorts';
   }
