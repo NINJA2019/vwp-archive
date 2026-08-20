@@ -658,8 +658,9 @@ export function initMobile(){
       : (mcIdx - 1 + len) % len;
 
     if(dir === 'up'){
-      // UP: pos0 が上へ飛ぶ
+      // UP: pos0 が上へ飛ぶ（zIndex:5 で昇格カードとの重なり順を保証）
       const flyCard = cardPos0;
+      flyCard.style.zIndex = '5';
       flyCard.classList.add('mc-out-up');
 
       // pos1→0, pos2→1, hide→2（transition 付きで）
@@ -694,12 +695,9 @@ export function initMobile(){
     } else {
       // DOWN: hide カードを newIdx 曲でリセットしてから pos0 へ昇格
       // 飛ばす前に充填（hide 位置に既にあるので瞬間配置不要）
+      // mcResetCard は transition='none' を残さないのでそのままアニメが走る
       mcResetCard(cardHide, mcFiltered[newIdx]);
-
-      // transition 一時停止で hide → pos0（瞬間昇格してからアニメが走る）
-      mcPauseTransition(cardHide, () => {
-        cardHide.dataset.pos = '0';
-      });
+      cardHide.dataset.pos = '0'; // hide→0 の .45s rise-in アニメを自然に走らせる
 
       // 旧 pos0 が下へ飛ぶ（down-flyにはインライン zIndex 5 を付けて前面保証）
       const flyCard = cardPos0;
@@ -711,6 +709,7 @@ export function initMobile(){
       cardPos2.dataset.pos = 'hide';
 
       // 飛行完了後に飛んだカードを pos1 へ（中身は mcIdx+0 = newIdx+1 でリセット不要）
+      // インライン drag スタイルを一緒にクリアして [data-pos="1"] CSS が確実に適用されるようにする
       let finalized = false;
       const finalize = () => {
         if(finalized) return;
@@ -719,6 +718,8 @@ export function initMobile(){
         mcPauseTransition(flyCard, () => {
           flyCard.classList.remove('mc-out-down');
           flyCard.style.zIndex = '';
+          flyCard.style.transform = '';
+          flyCard.style.opacity = '';
           flyCard.dataset.pos = '1';
         });
         mcIdx = newIdx;
@@ -803,8 +804,8 @@ export function initMobile(){
         mcPrefetchMap.delete(firstKey);
       }
       const img = new Image();
-      img.decode().catch(() => {});
       img.src = url;
+      img.decode().catch(() => {});
       mcPrefetchMap.set(url, img);
     });
   }
