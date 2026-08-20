@@ -3,15 +3,13 @@
 /* ── perf/mobile-phase1: header blur 減量（モバイル ≤700px） ──
    デスクトップ blur(24px) をモバイルで blur(8px) に下げる。
    base.css のminified行より後方定義なので同一セレクタで上書き可能。
-   -webkit-backdrop-filter は base.css 既定義になし → 新規追加。 */
+   -webkit-backdrop-filter はコードベース全体で未使用のため追加しない（旧 iOS Safari は現状維持）。 */
 @media(max-width:700px){
   header{
     backdrop-filter:blur(8px);
-    -webkit-backdrop-filter:blur(8px);
   }
   body.light header{
     backdrop-filter:blur(8px);
-    -webkit-backdrop-filter:blur(8px);
   }
 }
 

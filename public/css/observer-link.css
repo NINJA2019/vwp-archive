@@ -353,5 +353,8 @@ body.light .ol-quick-send-btn:hover{background:rgba(108,92,231,.1)}
   @keyframes ol-pulse-out{
     0%,100%{transform:scale(1);opacity:0;border-width:2px}
   }
+  @keyframes ol-drift-ripple-out{
+    0%,100%{transform:scale(1);opacity:0;border-color:rgba(93,201,168,.5)}
+  }
 }
 @media (prefers-reduced-motion: reduce){#observer-link-screen .ol-picked-dot{animation:none}}
