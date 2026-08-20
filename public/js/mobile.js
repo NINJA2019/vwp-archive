@@ -213,6 +213,15 @@ export function initMobile(){
   let mcSelectedMember = 'all', mcIsDaily = false;
   let mcFiltered = [], mcIdx = 0, mcActiveTag = 'all';
   let mcTouchStartY = 0, mcTouchCurY = 0, mcDragging = false, mcRafId = 0;
+  let mcAnimating = false;
+  let mcDelegationBound = false; // 初回のみ委譲リスナーをバインド
+
+  // カードごとに参照キャッシュを保持する WeakMap
+  // 値: { img, colorBar, member, title, date, tags, pin, ol, cta, lpWrap, song, color }
+  const mcCardCache = new WeakMap();
+
+  // 画像プリフェッチ用 LRU Map（上限10）
+  const mcPrefetchMap = new Map();
 
   const mcCardView = document.getElementById('mobCardView');
   const mcTrack    = document.getElementById('mcTrack');
@@ -289,67 +298,155 @@ export function initMobile(){
     });
   }
 
+  // --- 4枚リングバッファ初期化（プール専用） ---
+  // 不変条件: data-pos="hide" のカードは常に mcFiltered[(mcIdx+3)%len] を保持
+  // プール配置: pos=0 → mcIdx+0, pos=1 → mcIdx+1, pos=2 → mcIdx+2, hide → mcIdx+3
   function mcRenderCards(){
     mcTrack.innerHTML = '';
+    mcAnimating = false;
+
     if(mcFiltered.length === 0){
       mcTrack.innerHTML = '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px"><svg width="40" height="40" viewBox="0 0 24 24" stroke="rgba(255,255,255,.15)" stroke-width="1.2" fill="none"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span style="font-family:\'Shippori Mincho\',serif;font-size:14px;color:rgba(232,236,248,.45)">該当する曲がありません</span></div>';
+      mcBindDelegation();
       return;
     }
-    const count = Math.min(3, mcFiltered.length);
-    for(let i = count-1; i >= 0; i--){
-      const idx = (mcIdx + i) % mcFiltered.length;
-      mcTrack.appendChild(mcCreateCard(mcFiltered[idx], i));
+
+    const len = mcFiltered.length;
+
+    if(len < 4){
+      // legacy分岐: 現行ロジック（count枚生成）を維持
+      const count = Math.min(3, len);
+      for(let i = count-1; i >= 0; i--){
+        const idx = (mcIdx + i) % len;
+        mcTrack.appendChild(mcCreateCard(mcFiltered[idx], i));
+      }
+      const cur = mcFiltered[mcIdx % len];
+      const color = window.getMemberColor ? window.getMemberColor(cur.member) : '#b0b8ff';
+      mcGlow.style.background = color;
+      mcCardView.style.setProperty('--mc-active', color);
+    } else {
+      // 4枚リングバッファ
+      // hide は DOM 上で最初に挿入（z-index 最小で背面）
+      // 生成順: hide, 2, 1, 0 (後から追加したものが前面レイヤーへ)
+      for(const posStr of ['hide', '2', '1', '0']){
+        const offset = posStr === 'hide' ? 3 : parseInt(posStr, 10);
+        const song = mcFiltered[(mcIdx + offset) % len];
+        const card = mcCreateCard(song, posStr === 'hide' ? 99 : parseInt(posStr, 10));
+        mcTrack.appendChild(card);
+      }
+      const cur = mcFiltered[mcIdx % len];
+      const color = window.getMemberColor ? window.getMemberColor(cur.member) : '#b0b8ff';
+      mcGlow.style.background = color;
+      mcCardView.style.setProperty('--mc-active', color);
+      mcPrefetch();
     }
-    const cur = mcFiltered[mcIdx % mcFiltered.length];
-    const color = window.getMemberColor ? window.getMemberColor(cur.member) : '#b0b8ff';
-    mcGlow.style.background = color;
-    mcCardView.style.setProperty('--mc-active', color);
-    const front = mcTrack.querySelector('[data-pos="0"]');
-    if(front) mcAttachSwipe(front);
+
+    mcBindDelegation();
   }
 
-  function mcCreateCard(song, pos){
-    const color = window.getMemberColor ? window.getMemberColor(song.member) : '#b0b8ff';
-    const card = document.createElement('div');
-    card.className = 'mc-card';
-    card.dataset.pos = pos <= 2 ? pos : 'hide';
-    card.dataset.sid = song.id;
-    const vid = ytId(song.url);
-    const thumbUrl = vid ? 'https://img.youtube.com/vi/'+vid+'/mqdefault.jpg' : '';
-    const memberLabel = parseMembers(song).map(mid => mbr(mid)).join(', ') || song.member || '';
-    const tags = parseTags(song);
+  // 委譲リスナー（初回のみバインド、フラグガード）
+  function mcBindDelegation(){
+    if(mcDelegationBound) return;
+    mcDelegationBound = true;
 
-    // LP disc (lazy — drawn on first tap)
-    const lpWrap = document.createElement('div');
-    lpWrap.className = 'mc-lp-wrap';
+    // --- タッチ ---
+    mcTrack.addEventListener('touchstart', e => {
+      if(mcAnimating) return;
+      const front = e.target.closest('.mc-card[data-pos="0"]');
+      if(!front) return;
+      mcTouchStartY = e.touches[0].clientY;
+      mcTouchCurY = mcTouchStartY;
+      mcDragging = true;
+      front.style.transition = 'none';
+      front.style.willChange = 'transform,opacity';
+    }, {passive:true});
 
-    card.innerHTML = '<div class="mc-card-inner">' +
-      '<div class="mc-card-thumb"><img src="'+esc(thumbUrl)+'" alt="'+esc(song.title||'')+'" loading="lazy" onerror="this.parentElement.style.background=\'#111627\'"></div>' +
-      '<div class="mc-card-info">' +
-        '<div class="mc-card-color-bar" style="background:linear-gradient(90deg,'+color+',transparent)"></div>' +
-        '<div class="mc-card-member" style="color:'+color+'">'+esc(memberLabel)+'</div>' +
-        '<div class="mc-card-title">'+esc(song.title||'')+'</div>' +
-        '<div class="mc-card-date">'+esc(fmtDate(song.date))+'</div>' +
-        '<div class="mc-card-tags">'+tags.map(t => '<span class="mc-card-tag">'+esc(t)+'</span>').join('')+'</div>' +
-      '</div>' +
-      '<div class="mc-card-pin'+(window.isOnShelf && window.isOnShelf(song.id) ? ' mc-pinned' : '')+'" role="button" aria-label="棚に追加">' +
-        '<svg viewBox="0 0 24 24"><path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 8 12 8 12s8-6.75 8-12c0-4.42-3.58-8-8-8z"/><circle cx="12" cy="10" r="2.5" fill="none"/></svg>' +
-      '</div>' +
-      '<div class="mc-card-ol" role="button" aria-label="Observer-Linkで送る" data-vid="'+song.id+'">' +
-        '<svg viewBox="0 0 16 16" width="16" height="16" fill="none"><circle cx="4" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><line x1="6.5" y1="8" x2="9.5" y2="8" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.5 1.5"/></svg>' +
-      '</div>' +
-      '<div class="mc-card-cta" role="button">' +
-        '<svg viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19"/></svg>' +
-        '<span>YOUTUBE</span>' +
-      '</div>' +
-    '</div>';
+    mcTrack.addEventListener('touchmove', e => {
+      if(!mcDragging) return;
+      mcTouchCurY = e.touches[0].clientY;
+      if(mcRafId) return;
+      const front = mcTrack.querySelector('.mc-card[data-pos="0"]');
+      if(!front) return;
+      mcRafId = requestAnimationFrame(() => {
+        mcRafId = 0;
+        mcApplyDrag(front, mcTouchCurY - mcTouchStartY);
+      });
+    }, {passive:true});
 
-    card.appendChild(lpWrap);
+    mcTrack.addEventListener('touchend', () => {
+      if(!mcDragging) return;
+      const front = mcTrack.querySelector('.mc-card[data-pos="0"]');
+      if(front) mcSwipeEnd(front);
+    });
 
-    // Tap → LP peek (lazy canvas draw)
-    card.addEventListener('click', e => {
+    // --- マウスフォールバック ---
+    mcTrack.addEventListener('mousedown', e => {
+      if(mcAnimating) return;
+      const front = e.target.closest('.mc-card[data-pos="0"]');
+      if(!front) return;
+      mcTouchStartY = e.clientY;
+      mcTouchCurY = mcTouchStartY;
+      mcDragging = true;
+      front.style.transition = 'none';
+      front.style.willChange = 'transform,opacity';
+      const mv = ev => {
+        mcTouchCurY = ev.clientY;
+        if(mcRafId) return;
+        mcRafId = requestAnimationFrame(() => {
+          mcRafId = 0;
+          mcApplyDrag(front, mcTouchCurY - mcTouchStartY);
+        });
+      };
+      const up = () => {
+        if(mcDragging) mcSwipeEnd(front);
+        document.removeEventListener('mousemove', mv);
+        document.removeEventListener('mouseup', up);
+      };
+      document.addEventListener('mousemove', mv);
+      document.addEventListener('mouseup', up);
+    });
+
+    // --- クリック委譲 ---
+    mcTrack.addEventListener('click', e => {
+      const card = e.target.closest('.mc-card');
+      if(!card) return;
+      // ドラッグ判定（縦15px超はスワイプ）
       if(Math.abs(mcTouchCurY - mcTouchStartY) > 15) return;
-      if(e.target.closest('.mc-card-pin') || e.target.closest('.mc-card-ol') || e.target.closest('.mc-card-cta')) return;
+
+      const cache = mcCardCache.get(card);
+      const song = cache ? cache.song : null;
+
+      // ピンボタン
+      if(e.target.closest('.mc-card-pin')){
+        const pinBtn = card.querySelector('.mc-card-pin');
+        if(!pinBtn || !song) return;
+        if(window.isOnShelf && window.isOnShelf(song.id)){
+          if(window.removeFromShelf) window.removeFromShelf(song.id);
+          pinBtn.classList.remove('mc-pinned');
+        } else {
+          if(window.addToShelf) window.addToShelf(song.id);
+          pinBtn.classList.add('mc-pinned');
+        }
+        return;
+      }
+
+      // OL ボタン
+      if(e.target.closest('.mc-card-ol')){
+        const olBtn = card.querySelector('.mc-card-ol');
+        if(olBtn && song && window.olQuickSend) window.olQuickSend(song.id, olBtn, e);
+        return;
+      }
+
+      // CTA ボタン
+      if(e.target.closest('.mc-card-cta')){
+        if(song && song.url) window.open(safeUrl(song.url), '_blank');
+        return;
+      }
+
+      // 本体タップ → LP ピーク
+      const lpWrap = cache ? cache.lpWrap : card.querySelector('.mc-lp-wrap');
+      const color  = cache ? cache.color : (window.getMemberColor ? window.getMemberColor(song && song.member) : '#b0b8ff');
+      if(!lpWrap || !song) return;
       if(!lpWrap.querySelector('canvas') && window.drawVinylDisc){
         const canvas = document.createElement('canvas');
         window.drawVinylDisc(canvas, color, 140);
@@ -358,100 +455,357 @@ export function initMobile(){
       card.classList.toggle('mc-lp-peek');
       _gtag('event','mob_card_tap',{song_title:song.title||'',member_name:song.member||''});
     });
+  }
 
-    // Pin
-    const pinBtn = card.querySelector('.mc-card-pin');
-    pinBtn.addEventListener('click', e => {
-      e.stopPropagation();
-      if(window.isOnShelf && window.isOnShelf(song.id)){
-        if(window.removeFromShelf) window.removeFromShelf(song.id);
-        pinBtn.classList.remove('mc-pinned');
-      } else {
-        if(window.addToShelf) window.addToShelf(song.id);
-        pinBtn.classList.add('mc-pinned');
-      }
-    });
+  // カード生成（純粋 DOM ファクトリ — リスナーは委譲で付ける、img.error のみ自身に付ける）
+  function mcCreateCard(song, posArg){
+    const color = window.getMemberColor ? window.getMemberColor(song.member) : '#b0b8ff';
+    const card = document.createElement('div');
+    card.className = 'mc-card';
+    card.dataset.pos = posArg <= 2 ? String(posArg) : 'hide';
+    card.dataset.sid = song.id;
 
-    // OL Quick Send
-    const olBtn = card.querySelector('.mc-card-ol');
-    if(olBtn){
-      olBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        if(window.olQuickSend) window.olQuickSend(song.id, olBtn, e);
-      });
-    }
+    const vid = ytId(song.url);
+    const thumbUrl = vid ? 'https://img.youtube.com/vi/'+vid+'/mqdefault.jpg' : '';
+    const memberLabel = parseMembers(song).map(mid => mbr(mid)).join(', ') || song.member || '';
+    const tags = parseTags(song);
 
-    // CTA → YouTube
-    const cta = card.querySelector('.mc-card-cta');
-    cta.addEventListener('click', e => {
-      e.stopPropagation();
-      if(song.url) window.open(safeUrl(song.url), '_blank');
-    });
+    const inner = document.createElement('div');
+    inner.className = 'mc-card-inner';
+
+    // サムネイル
+    const thumbDiv = document.createElement('div');
+    thumbDiv.className = 'mc-card-thumb';
+    const img = document.createElement('img');
+    img.src = thumbUrl;
+    img.alt = song.title || '';
+    img.loading = 'lazy';
+    img.addEventListener('error', () => { thumbDiv.style.background = '#111627'; });
+    thumbDiv.appendChild(img);
+
+    // info
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'mc-card-info';
+
+    const colorBar = document.createElement('div');
+    colorBar.className = 'mc-card-color-bar';
+    colorBar.style.background = 'linear-gradient(90deg,'+color+',transparent)';
+
+    const memberEl = document.createElement('div');
+    memberEl.className = 'mc-card-member';
+    memberEl.style.color = color;
+    memberEl.textContent = memberLabel;
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'mc-card-title';
+    titleEl.textContent = song.title || '';
+
+    const dateEl = document.createElement('div');
+    dateEl.className = 'mc-card-date';
+    dateEl.textContent = fmtDate(song.date);
+
+    const tagsEl = document.createElement('div');
+    tagsEl.className = 'mc-card-tags';
+    tagsEl.innerHTML = tags.map(t => '<span class="mc-card-tag">'+esc(t)+'</span>').join('');
+
+    infoDiv.appendChild(colorBar);
+    infoDiv.appendChild(memberEl);
+    infoDiv.appendChild(titleEl);
+    infoDiv.appendChild(dateEl);
+    infoDiv.appendChild(tagsEl);
+
+    // ピンボタン
+    const pinBtn = document.createElement('div');
+    pinBtn.className = 'mc-card-pin' + (window.isOnShelf && window.isOnShelf(song.id) ? ' mc-pinned' : '');
+    pinBtn.setAttribute('role', 'button');
+    pinBtn.setAttribute('aria-label', '棚に追加');
+    pinBtn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 2C7.58 2 4 5.58 4 10c0 5.25 8 12 8 12s8-6.75 8-12c0-4.42-3.58-8-8-8z"/><circle cx="12" cy="10" r="2.5" fill="none"/></svg>';
+
+    // OL ボタン
+    const olBtn = document.createElement('div');
+    olBtn.className = 'mc-card-ol';
+    olBtn.setAttribute('role', 'button');
+    olBtn.setAttribute('aria-label', 'Observer-Linkで送る');
+    olBtn.dataset.vid = song.id;
+    olBtn.innerHTML = '<svg viewBox="0 0 16 16" width="16" height="16" fill="none"><circle cx="4" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="8" r="2.5" stroke="currentColor" stroke-width="1.3"/><line x1="6.5" y1="8" x2="9.5" y2="8" stroke="currentColor" stroke-width="1.2" stroke-dasharray="1.5 1.5"/></svg>';
+
+    // CTA ボタン
+    const cta = document.createElement('div');
+    cta.className = 'mc-card-cta';
+    cta.setAttribute('role', 'button');
+    cta.innerHTML = '<svg viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19"/></svg><span>YOUTUBE</span>';
+
+    inner.appendChild(thumbDiv);
+    inner.appendChild(infoDiv);
+    inner.appendChild(pinBtn);
+    inner.appendChild(olBtn);
+    inner.appendChild(cta);
+
+    // LP disc (lazy — drawn on first tap)
+    const lpWrap = document.createElement('div');
+    lpWrap.className = 'mc-lp-wrap';
+
+    card.appendChild(inner);
+    card.appendChild(lpWrap);
+
+    // 要素参照とsong/colorをキャッシュ
+    mcCardCache.set(card, { img, colorBar, memberEl, titleEl, dateEl, tagsEl, pinBtn, olBtn, cta, lpWrap, song, color });
 
     return card;
   }
 
+  // ドラッグ中の変形
   function mcApplyDrag(el, dy){
     el.style.transform = 'translateY('+dy+'px) scale('+Math.max(.95,1-Math.abs(dy)/800)+') rotate('+dy*-0.02+'deg)';
     el.style.opacity = Math.max(.3,1-Math.abs(dy)/400);
   }
+
+  // スワイプ確定
   function mcSwipeEnd(el){
     mcDragging = false;
     if(mcRafId){ cancelAnimationFrame(mcRafId); mcRafId = 0; }
     el.style.willChange = '';
     const dy = mcTouchCurY - mcTouchStartY;
     el.style.transition = '';
+
     if(Math.abs(dy) > MC_SWIPE_THRESHOLD){
       const dir = dy < 0 ? 'up' : 'down';
-      el.classList.add(dy < 0 ? 'mc-out-up' : 'mc-out-down');
-      _gtag('event','mob_card_swipe',{direction:dir,song_title:mcFiltered[mcIdx%mcFiltered.length]?.title||''});
-      setTimeout(() => {
-        if(dy < 0){ mcIdx = (mcIdx + 1) % mcFiltered.length; }
-        else { mcIdx = (mcIdx - 1 + mcFiltered.length) % mcFiltered.length; }
-        mcRenderCards(); mcUpdateMeta();
-      }, 300);
-    } else { el.style.transform = ''; el.style.opacity = ''; }
+      const len = mcFiltered.length;
+
+      if(len < 4){
+        // legacy: 全再構築
+        el.classList.add(dy < 0 ? 'mc-out-up' : 'mc-out-down');
+        // GA4: mcIdx 更新前の曲名で送信
+        _gtag('event','mob_card_swipe',{direction:dir,song_title:mcFiltered[mcIdx%len]?.title||''});
+        setTimeout(() => {
+          if(dy < 0){ mcIdx = (mcIdx + 1) % len; }
+          else { mcIdx = (mcIdx - 1 + len) % len; }
+          mcRenderCards(); mcUpdateMeta();
+        }, 300);
+      } else {
+        // 4枚リング: mcAdvance
+        // GA4: mcIdx 更新前（= 確定前）の曲名で送信
+        const cache = mcCardCache.get(el);
+        const songTitle = (cache && cache.song) ? (cache.song.title || '') : (mcFiltered[mcIdx%len]?.title||'');
+        _gtag('event','mob_card_swipe',{direction:dir,song_title:songTitle});
+
+        // 確定フレーム: 新曲色で即更新
+        const newIdx = dir === 'up'
+          ? (mcIdx + 1) % len
+          : (mcIdx - 1 + len) % len;
+        const newSong = mcFiltered[newIdx];
+        const newColor = window.getMemberColor ? window.getMemberColor(newSong.member) : '#b0b8ff';
+        mcGlow.style.background = newColor;
+        mcCardView.style.setProperty('--mc-active', newColor);
+
+        // 確定カードから LP ピーク除去
+        el.classList.remove('mc-lp-peek');
+
+        mcAnimating = true;
+        mcAdvance(dir);
+      }
+    } else {
+      // しきい値未満: スナップ戻し
+      el.style.transform = '';
+      el.style.opacity = '';
+    }
   }
-  function mcAttachSwipe(card){
-    card.addEventListener('touchstart', function(e){
-      mcTouchStartY = e.touches[0].clientY; mcTouchCurY = mcTouchStartY;
-      mcDragging = true;
-      this.style.transition = 'none';
-      this.style.willChange = 'transform,opacity';
-    }, {passive:true});
-    card.addEventListener('touchmove', function(e){
-      if(!mcDragging) return;
-      mcTouchCurY = e.touches[0].clientY;
-      if(mcRafId) return;
-      const el = this;
-      mcRafId = requestAnimationFrame(() => {
-        mcRafId = 0;
-        mcApplyDrag(el, mcTouchCurY - mcTouchStartY);
-      });
-    }, {passive:true});
-    card.addEventListener('touchend', function(){ if(mcDragging) mcSwipeEnd(this); });
-    // Mouse fallback
-    card.addEventListener('mousedown', function(e){
-      mcTouchStartY = e.clientY; mcTouchCurY = mcTouchStartY;
-      mcDragging = true;
-      this.style.transition = 'none';
-      this.style.willChange = 'transform,opacity';
-      const self = this;
-      const mv = ev => {
-        mcTouchCurY = ev.clientY;
-        if(mcRafId) return;
-        mcRafId = requestAnimationFrame(() => {
-          mcRafId = 0;
-          mcApplyDrag(self, mcTouchCurY - mcTouchStartY);
+
+  // --- transition 一時停止手順 ---
+  function mcPauseTransition(card, fn){
+    card.style.transition = 'none';
+    void card.offsetWidth; // reflow で即時適用
+    fn();
+    requestAnimationFrame(() => { card.style.transition = ''; });
+  }
+
+  // --- 4枚リング昇格・降格 ---
+  //
+  // UP（dir='up'） newIdx = (mcIdx+1)%len
+  //   対応表（不変条件検算）:
+  //     旧 pos0 (mcIdx+0) → fly mc-out-up → finalize後 mcResetCard → (newIdx+3)%len → data-pos="hide"
+  //     旧 pos1 (mcIdx+1) → data-pos="0"    ... mcIdx+1 = newIdx+0 ✓
+  //     旧 pos2 (mcIdx+2) → data-pos="1"    ... mcIdx+2 = newIdx+1 ✓
+  //     旧 hide (mcIdx+3) → data-pos="2"    ... mcIdx+3 = newIdx+2 ✓
+  //     新 hide は (newIdx+3) = mcIdx+4 → 飛んだカードへ充填 ✓
+  //
+  // DOWN（dir='down'） newIdx = (mcIdx-1+len)%len
+  //   対応表（不変条件検算）:
+  //     旧 hide (mcIdx+3) → mcResetCard → newIdx → data-pos="0"   ... newIdx+0 ✓
+  //     旧 pos0 (mcIdx+0) → fly mc-out-down → finalize後 data-pos="1" (中身 mcIdx+0 = newIdx+1) ✓
+  //     旧 pos1 (mcIdx+1) → data-pos="2"    ... mcIdx+1 = newIdx+2 ✓
+  //     旧 pos2 (mcIdx+2) → data-pos="hide" ... mcIdx+2 = newIdx+3 ✓
+  //     新 hide は (newIdx+3) = mcIdx+2 → 旧 pos2 そのまま ✓（リセット不要）
+  //
+  function mcAdvance(dir){
+    const len = mcFiltered.length;
+    const cards = mcTrack.querySelectorAll('.mc-card');
+
+    let cardPos0, cardPos1, cardPos2, cardHide;
+    cards.forEach(c => {
+      switch(c.dataset.pos){
+        case '0':    cardPos0 = c; break;
+        case '1':    cardPos1 = c; break;
+        case '2':    cardPos2 = c; break;
+        case 'hide': cardHide = c; break;
+      }
+    });
+
+    if(!cardPos0 || !cardPos1 || !cardPos2 || !cardHide) return;
+
+    const newIdx = dir === 'up'
+      ? (mcIdx + 1) % len
+      : (mcIdx - 1 + len) % len;
+
+    if(dir === 'up'){
+      // UP: pos0 が上へ飛ぶ
+      const flyCard = cardPos0;
+      flyCard.classList.add('mc-out-up');
+
+      // pos1→0, pos2→1, hide→2（transition 付きで）
+      cardPos1.dataset.pos = '0';
+      cardPos2.dataset.pos = '1';
+      cardHide.dataset.pos = '2';
+
+      // 飛行完了後に飛んだカードをリセットして hide へ
+      let finalized = false;
+      const finalize = () => {
+        if(finalized) return;
+        finalized = true;
+        if(!flyCard.isConnected) return;
+        const targetSong = mcFiltered[(newIdx + 3) % len];
+        mcResetCard(flyCard, targetSong);
+        mcPauseTransition(flyCard, () => {
+          flyCard.classList.remove('mc-out-up');
+          flyCard.style.zIndex = '';
+          flyCard.dataset.pos = 'hide';
         });
+        mcIdx = newIdx;
+        mcUpdateMeta();
+        mcAnimating = false;
+        mcPrefetch();
       };
-      const up = () => {
-        if(mcDragging) mcSwipeEnd(self);
-        document.removeEventListener('mousemove',mv);
-        document.removeEventListener('mouseup',up);
+      flyCard.addEventListener('transitionend', e => {
+        if(e.target !== flyCard) return; // 子バブル除外
+        finalize();
+      }, {once: true});
+      setTimeout(finalize, 400); // reduced-motion / フォールバック
+
+    } else {
+      // DOWN: hide カードを newIdx 曲でリセットしてから pos0 へ昇格
+      // 飛ばす前に充填（hide 位置に既にあるので瞬間配置不要）
+      mcResetCard(cardHide, mcFiltered[newIdx]);
+
+      // transition 一時停止で hide → pos0（瞬間昇格してからアニメが走る）
+      mcPauseTransition(cardHide, () => {
+        cardHide.dataset.pos = '0';
+      });
+
+      // 旧 pos0 が下へ飛ぶ（down-flyにはインライン zIndex 5 を付けて前面保証）
+      const flyCard = cardPos0;
+      flyCard.style.zIndex = '5';
+      flyCard.classList.add('mc-out-down');
+
+      // pos1→2, pos2→hide（pos2 の中身は mcIdx+2 = newIdx+3 で既に正しい）
+      cardPos1.dataset.pos = '2';
+      cardPos2.dataset.pos = 'hide';
+
+      // 飛行完了後に飛んだカードを pos1 へ（中身は mcIdx+0 = newIdx+1 でリセット不要）
+      let finalized = false;
+      const finalize = () => {
+        if(finalized) return;
+        finalized = true;
+        if(!flyCard.isConnected) return;
+        mcPauseTransition(flyCard, () => {
+          flyCard.classList.remove('mc-out-down');
+          flyCard.style.zIndex = '';
+          flyCard.dataset.pos = '1';
+        });
+        mcIdx = newIdx;
+        mcUpdateMeta();
+        mcAnimating = false;
+        mcPrefetch();
       };
-      document.addEventListener('mousemove',mv);
-      document.addEventListener('mouseup',up);
+      flyCard.addEventListener('transitionend', e => {
+        if(e.target !== flyCard) return; // 子バブル除外
+        finalize();
+      }, {once: true});
+      setTimeout(finalize, 400); // reduced-motion / フォールバック
+    }
+  }
+
+  // --- カード内容リセット（要素リサイクル） ---
+  function mcResetCard(card, song){
+    if(!card || !song) return;
+    const cache = mcCardCache.get(card);
+    if(!cache) return;
+
+    const color = window.getMemberColor ? window.getMemberColor(song.member) : '#b0b8ff';
+    const vid = ytId(song.url);
+    const thumbUrl = vid ? 'https://img.youtube.com/vi/'+vid+'/mqdefault.jpg' : '';
+    const memberLabel = parseMembers(song).map(mid => mbr(mid)).join(', ') || song.member || '';
+    const tags = parseTags(song);
+
+    // LP ピーク・canvas 除去
+    card.classList.remove('mc-lp-peek');
+    const canvas = cache.lpWrap.querySelector('canvas');
+    if(canvas) canvas.remove();
+
+    // サムネイル差し替え（差し替え前に親背景リセット）
+    if(cache.img.parentElement) cache.img.parentElement.style.background = '';
+    cache.img.src = thumbUrl;
+
+    // テキスト更新
+    cache.colorBar.style.background = 'linear-gradient(90deg,'+color+',transparent)';
+    cache.memberEl.style.color = color;
+    cache.memberEl.textContent = memberLabel;
+    cache.titleEl.textContent = song.title || '';
+    cache.dateEl.textContent = fmtDate(song.date);
+    cache.tagsEl.innerHTML = tags.map(t => '<span class="mc-card-tag">'+esc(t)+'</span>').join('');
+
+    // ピン状態再判定
+    if(window.isOnShelf && window.isOnShelf(song.id)){
+      cache.pinBtn.classList.add('mc-pinned');
+    } else {
+      cache.pinBtn.classList.remove('mc-pinned');
+    }
+
+    // OL ボタンの data-vid 更新
+    cache.olBtn.dataset.vid = song.id;
+
+    // dataset.sid 更新
+    card.dataset.sid = song.id;
+
+    // インライン残留クリア
+    card.style.transform = '';
+    card.style.opacity = '';
+    card.style.transition = '';
+    card.style.willChange = '';
+
+    // キャッシュ更新
+    cache.song = song;
+    cache.color = color;
+  }
+
+  // --- プリフェッチ（mcIdx+2, +3 の mqdefault） ---
+  function mcPrefetch(){
+    const len = mcFiltered.length;
+    if(len < 4) return;
+    [2, 3].forEach(offset => {
+      const song = mcFiltered[(mcIdx + offset) % len];
+      const vid = ytId(song.url);
+      if(!vid) return;
+      const url = 'https://img.youtube.com/vi/'+vid+'/mqdefault.jpg';
+      if(mcPrefetchMap.has(url)) return;
+      // LRU: 上限10
+      if(mcPrefetchMap.size >= 10){
+        const firstKey = mcPrefetchMap.keys().next().value;
+        mcPrefetchMap.delete(firstKey);
+      }
+      const img = new Image();
+      img.decode().catch(() => {});
+      img.src = url;
+      mcPrefetchMap.set(url, img);
     });
   }
 
