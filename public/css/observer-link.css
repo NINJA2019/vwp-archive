@@ -303,4 +303,55 @@ body.light .ol-quick-send-btn:hover{background:rgba(108,92,231,.1)}
 #observer-link-screen .ol-picked-view:hover{background:rgba(93,201,168,.12)}
 #observer-link-screen .ol-picked-dismiss{background:none;border:none;color:rgba(232,236,248,.35);font-size:13px;cursor:pointer;padding:2px 4px;line-height:1;flex-shrink:0}
 #observer-link-screen .ol-picked-dismiss:hover{color:#e8ecf8}
+
+/* ── reduced-motion: 無限ループアニメを静的終端に再定義 ──
+   animation:none は入場アニメ依存要素（ol-match-circle など）を不可視にするため使わない。
+   キーフレーム自体を静止値に再定義し、ループのみ止める（layout.css:255-266 パターンに倣う）。 */
+@media(prefers-reduced-motion:reduce){
+  @keyframes ol-heartbeat{
+    0%,100%{transform:scale(1);box-shadow:0 0 40px rgba(108,92,231,.4),0 0 80px rgba(93,201,168,.15)}
+  }
+  @keyframes ol-ripple-out{
+    0%,100%{transform:scale(1);opacity:0;border-color:rgba(108,92,231,.4)}
+  }
+  @keyframes ol-ring-spin{
+    0%,100%{transform:scale(1) rotate(0deg)}
+  }
+  @keyframes ol-ring-spin-r{
+    0%,100%{transform:scale(1) rotate(0deg)}
+  }
+  @keyframes ol-grad-shift{
+    0%,100%{background-position:0% 50%}
+  }
+  @keyframes ol-disc-spin{
+    0%,100%{transform:translateY(-50%) rotate(0deg)}
+  }
+  @keyframes ol-ambient-breathe{
+    0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.6}
+  }
+  @keyframes ol-ring-pulse{
+    0%,100%{box-shadow:0 0 0px 1.5px rgba(108,92,231,.45),0 0 10px 2px rgba(108,92,231,.18),0 0 24px 6px rgba(80,60,200,.10),0 0 55px 14px rgba(60,40,180,.06)}
+  }
+  @keyframes olPulseGlow{
+    0%,100%{color:#c4b5fd;text-shadow:0 0 4px rgba(196,181,253,.15)}
+  }
+  @keyframes ol-qs-pulse{
+    0%,100%{opacity:.5}
+  }
+  @keyframes ol-pulse-dot{
+    0%,100%{opacity:.4;transform:scale(1)}
+  }
+  @keyframes ol-disc-breathe{
+    0%,100%{transform:scale(1);border-color:rgba(108,92,231,.4)}
+  }
+  @keyframes ol-lp-spin{
+    0%,100%{transform:rotate(0deg)}
+  }
+  @keyframes ol-text-breathe{
+    0%,100%{opacity:.5}
+  }
+  @keyframes ol-pulse-out{
+    0%,100%{transform:scale(1);opacity:0;border-width:2px}
+  }
+}
 @media (prefers-reduced-motion: reduce){#observer-link-screen .ol-picked-dot{animation:none}}
