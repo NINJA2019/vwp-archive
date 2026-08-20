@@ -408,6 +408,7 @@ export function initMobile(){
 
     // --- クリック委譲 ---
     mcTrack.addEventListener('click', e => {
+      if(mcAnimating) return; // フライト中はタップ無効（背面カードへの mc-lp-peek 焼き付き防止）
       const card = e.target.closest('.mc-card');
       if(!card) return;
       // ドラッグ判定（縦15px超はスワイプ）
@@ -717,6 +718,7 @@ export function initMobile(){
         if(!flyCard.isConnected) return;
         mcPauseTransition(flyCard, () => {
           flyCard.classList.remove('mc-out-down');
+          flyCard.classList.remove('mc-lp-peek'); // DOWN は mcResetCard を通らないため明示除去
           flyCard.style.zIndex = '';
           flyCard.style.transform = '';
           flyCard.style.opacity = '';
