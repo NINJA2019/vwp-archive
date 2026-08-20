@@ -288,7 +288,7 @@ WELCOME画面（S字ホイール）
 - YouTube CTAボタンも同時にフェードイン
 
 #### パフォーマンス最適化
-- 仮想カードレンダリング（DOM3ノードのみ保持）
+- 4枚リング（DOM4ノード保持・要素リサイクル）
 - requestAnimationFrameスロットリング
 - blurを50px→30pxに削減
 
