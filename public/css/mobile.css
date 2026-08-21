@@ -1,6 +1,11 @@
 /* =======================================
    MOBILE S-CURVE WELCOME
    ======================================= */
+/* glow色変数のアニメーション登録（@property非対応ブラウザは色が瞬時切替にフォールバック） */
+@property --mw-glow-color{syntax:'<color>';inherits:false;initial-value:#b0b8ff}
+@property --mc-glow-color{syntax:'<color>';inherits:false;initial-value:#b0b8ff}
+@property --ms-glow-color{syntax:'<color>';inherits:false;initial-value:#b0b8ff}
+
 @keyframes mw-fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes mw-bluePulse{0%,100%{color:rgba(176,184,255,.4);text-shadow:0 0 4px rgba(176,184,255,0)}50%{color:rgba(176,184,255,.85);text-shadow:0 0 12px rgba(176,184,255,.35)}}
 
@@ -9,7 +14,8 @@
 .mob-nav-btn svg{width:15px;height:15px;stroke:rgba(232,236,248,.45);stroke-width:1.6;fill:none}
 .mob-nav-btn:active{background:rgba(255,255,255,.1)}
 
-.mw-glow{position:absolute;width:300px;height:300px;top:45%;left:55%;transform:translate(-50%,-50%);border-radius:50%;filter:blur(50px);pointer-events:none;z-index:0;opacity:.14;transition:background .7s ease}
+/* blur(50px)廃止 → radial-gradient+@property遷移。opacity/.14/サイズ/位置は維持 */
+.mw-glow{position:absolute;width:300px;height:300px;top:45%;left:55%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,var(--mw-glow-color,#b0b8ff) 0%,transparent 65%);pointer-events:none;z-index:0;opacity:.14;transition:--mw-glow-color .7s ease}
 .mw-curve{position:absolute;inset:0;z-index:1;pointer-events:none;overflow:visible}
 .mw-curve svg{width:100%;height:100%}
 .mw-hdr{position:relative;z-index:10;text-align:center;padding:clamp(20px,5vh,40px) 20px 0;flex-shrink:0}
@@ -38,7 +44,8 @@
 /* =======================================
    MOBILE CARD VIEW
    ======================================= */
-.mc-glow{position:absolute;top:30%;left:50%;width:300px;height:300px;transform:translate(-50%,-50%);border-radius:50%;filter:blur(30px);opacity:.18;transition:background .5s ease;pointer-events:none;z-index:0;contain:strict}
+/* blur(30px)廃止 → radial-gradient+@property遷移。opacity/.18/サイズ/位置/contain:strictは維持 */
+.mc-glow{position:absolute;top:30%;left:50%;width:300px;height:300px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,var(--mc-glow-color,#b0b8ff) 0%,transparent 65%);opacity:.18;transition:--mc-glow-color .5s ease;pointer-events:none;z-index:0;contain:strict}
 .mc-hdr{position:relative;z-index:20;padding:14px 16px 0;flex-shrink:0}
 .mc-hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
 .mc-logo{font-family:'Cinzel',serif;font-size:10px;letter-spacing:2.5px;color:rgba(232,236,248,.45);text-transform:uppercase;line-height:1}
@@ -100,7 +107,8 @@
 /* =======================================
    MOBILE SHELF
    ======================================= */
-.ms-glow{position:absolute;width:280px;height:280px;border-radius:50%;filter:blur(40px);pointer-events:none;z-index:0;top:40%;left:50%;transform:translate(-50%,-50%);opacity:.14;transition:background .8s ease}
+/* blur(40px)廃止 → radial-gradient+@property遷移。opacity/.14/サイズ/位置は維持 */
+.ms-glow{position:absolute;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,var(--ms-glow-color,#b0b8ff) 0%,transparent 65%);pointer-events:none;z-index:0;top:40%;left:50%;transform:translate(-50%,-50%);opacity:.14;transition:--ms-glow-color .8s ease}
 .ms-hdr{position:relative;z-index:10;display:flex;align-items:center;gap:10px;padding:clamp(14px,4vh,24px) 20px 12px;flex-shrink:0}
 .ms-hdr .ms-cnt{margin-left:auto}
 .ms-logo{font-family:'Cinzel',serif;font-size:11px;letter-spacing:2.5px;color:#e8ecf8;text-transform:uppercase;line-height:1}
