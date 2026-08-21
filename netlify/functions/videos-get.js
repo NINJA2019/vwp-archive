@@ -36,7 +36,7 @@ exports.handler = async () => {
     const pageSize = 1000;
     while (true) {
       const data = await fetchPage(
-        `${url}/rest/v1/videos?select=id,url,title,date,member,tags,note,spotify_url,album_id,content_type&status=eq.published&order=date.desc&limit=${pageSize}&offset=${offset}`
+        `${url}/rest/v1/videos?select=id,url,title,date,member,tags,note,spotify_url,album_id,content_type&status=eq.published&order=date.desc,id.desc&limit=${pageSize}&offset=${offset}`
       );
       if (data.length === 0) break;
       all = all.concat(data);
