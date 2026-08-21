@@ -96,6 +96,10 @@ function olOpenFromResult(exchangeId){
 /* ── OL hero oscilloscope canvas ── */
 let _olHeroRaf = null;
 let _olHeroT   = 0;
+// 30fps キャップ: 前回描画タイムスタンプ（msec）
+let _olHeroLastTs = 0;
+// prefers-reduced-motion 判定（静止1フレーム描画してループ停止）
+const _olReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function startOlHeroCanvas(){
   if(_olHeroRaf) return;
@@ -104,7 +108,17 @@ function startOlHeroCanvas(){
   const ctx = cvs.getContext('2d');
   const W = cvs.width, H = cvs.height;
 
-  function drawOlHero(){
+  function drawOlHero(ts){
+    // 30fps キャップ: 33ms未満なら描画スキップ（rAFは継続）
+    if(ts - _olHeroLastTs < 33){
+      _olHeroRaf = requestAnimationFrame(drawOlHero);
+      return;
+    }
+    // 経過時間ベースで _olHeroT を進める（60fps基準 0.016/frame → dt/1000*0.96）
+    const dt = _olHeroLastTs === 0 ? 16.67 : Math.min(ts - _olHeroLastTs, 100); // 初回or長すぎるgapは1フレーム分に制限
+    _olHeroLastTs = ts;
+    _olHeroT += dt / 1000 * 0.96;
+
     ctx.fillStyle = '#020508'; ctx.fillRect(0,0,W,H);
 
     ctx.strokeStyle = 'rgba(96,210,255,0.055)'; ctx.lineWidth = 1;
@@ -152,12 +166,16 @@ function startOlHeroCanvas(){
     ctx.font = '600 10px "Barlow Condensed",sans-serif';
     ctx.fillStyle = 'rgba(80,180,255,0.28)'; ctx.fillText('LINK',8,14);
 
-    _olHeroT += 0.016;
+    // prefers-reduced-motion: 1フレーム描画してループ停止
+    if(_olReducedMotion){ _olHeroRaf = null; return; }
+
     _olHeroRaf = requestAnimationFrame(drawOlHero);
   }
 
   _olHeroT = 0;
-  drawOlHero();
+  _olHeroLastTs = 0;
+  // reduced-motion時は1フレーム描画（rAF経由で初回タイムスタンプを取得）してループ停止
+  _olHeroRaf = requestAnimationFrame(drawOlHero);
 }
 
 function stopOlHeroCanvas(){
