@@ -533,7 +533,7 @@ export function initMobile(){
     msShowDet(msSongs[i]); msUpdateGlow();
   }
 
-  function msUpdateGlow(){ if(msSongs.length && msSongs[msAct]) msGlow.style.background = window.getMemberColor ? window.getMemberColor(msSongs[msAct].member) : '#c4b5fd'; }
+  function msUpdateGlow(){ if(msSongs.length && msSongs[msAct]) msGlow.style.setProperty('--ms-glow-color', window.getMemberColor ? window.getMemberColor(msSongs[msAct].member) : '#c4b5fd'); }
 
   function msShowDet(s){
     if(!s) return;

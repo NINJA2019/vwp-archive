@@ -4,6 +4,7 @@
 /* glow色変数のアニメーション登録（@property非対応ブラウザは色が瞬時切替にフォールバック） */
 @property --mw-glow-color{syntax:'<color>';inherits:false;initial-value:#b0b8ff}
 @property --mc-glow-color{syntax:'<color>';inherits:false;initial-value:#b0b8ff}
+@property --ms-glow-color{syntax:'<color>';inherits:false;initial-value:#b0b8ff}
 
 @keyframes mw-fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes mw-bluePulse{0%,100%{color:rgba(176,184,255,.4);text-shadow:0 0 4px rgba(176,184,255,0)}50%{color:rgba(176,184,255,.85);text-shadow:0 0 12px rgba(176,184,255,.35)}}
@@ -106,7 +107,8 @@
 /* =======================================
    MOBILE SHELF
    ======================================= */
-.ms-glow{position:absolute;width:280px;height:280px;border-radius:50%;filter:blur(40px);pointer-events:none;z-index:0;top:40%;left:50%;transform:translate(-50%,-50%);opacity:.14;transition:background .8s ease}
+/* blur(40px)廃止 → radial-gradient+@property遷移。opacity/.14/サイズ/位置は維持 */
+.ms-glow{position:absolute;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,var(--ms-glow-color,#b0b8ff) 0%,transparent 65%);pointer-events:none;z-index:0;top:40%;left:50%;transform:translate(-50%,-50%);opacity:.14;transition:--ms-glow-color .8s ease}
 .ms-hdr{position:relative;z-index:10;display:flex;align-items:center;gap:10px;padding:clamp(14px,4vh,24px) 20px 12px;flex-shrink:0}
 .ms-hdr .ms-cnt{margin-left:auto}
 .ms-logo{font-family:'Cinzel',serif;font-size:11px;letter-spacing:2.5px;color:#e8ecf8;text-transform:uppercase;line-height:1}
