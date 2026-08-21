@@ -81,7 +81,7 @@ export function initMobile(){
     const cy = rect.height / 2, cx = rect.width * 0.55;
     if(!mwPathDrawn){ mwDrawPath(rect.width, rect.height, cx); mwPathDrawn = true; }
     const m = MW_MEMBERS[mwIdx];
-    mwGlow.style.background = m.color;
+    mwGlow.style.setProperty('--mw-glow-color', m.color);
 
     mwItems.forEach((el, i) => {
       let dist = i - mwIdx + mwOffset;
@@ -302,7 +302,7 @@ export function initMobile(){
     }
     const cur = mcFiltered[mcIdx % mcFiltered.length];
     const color = window.getMemberColor ? window.getMemberColor(cur.member) : '#b0b8ff';
-    mcGlow.style.background = color;
+    mcGlow.style.setProperty('--mc-glow-color', color);
     mcCardView.style.setProperty('--mc-active', color);
     const front = mcTrack.querySelector('[data-pos="0"]');
     if(front) mcAttachSwipe(front);
