@@ -36,7 +36,7 @@ exports.handler = async () => {
     const pageSize = 1000;
     while (true) {
       const data = await fetchPage(
-        `${url}/rest/v1/videos?select=*&status=eq.published&order=date.desc&limit=${pageSize}&offset=${offset}`
+        `${url}/rest/v1/videos?select=id,url,title,date,member,tags,note,spotify_url,album_id,content_type&status=eq.published&order=date.desc,id.desc&limit=${pageSize}&offset=${offset}`
       );
       if (data.length === 0) break;
       all = all.concat(data);
@@ -47,8 +47,10 @@ exports.handler = async () => {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        // CDNで1時間キャッシュ、ブラウザは5分キャッシュ
-        'Cache-Control': 'public, s-maxage=3600, max-age=300, stale-while-revalidate=86400',
+        // ブラウザは5分キャッシュ
+        'Cache-Control': 'public, max-age=300',
+        // Netlify CDN: 5分キャッシュ、stale-while-revalidate=600（バックグラウンド更新）
+        'Netlify-CDN-Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       },
       body: JSON.stringify(all),
     };
