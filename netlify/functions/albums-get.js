@@ -10,6 +10,7 @@ exports.handler = async () => {
       headers: sbHeaders(key)
     });
     const data = await res.json();
+    if (!res.ok || !Array.isArray(data)) throw new Error(`Supabase ${res.status}: ${JSON.stringify(data).slice(0, 200)}`);
     return {
       statusCode: 200,
       headers: {
