@@ -1055,8 +1055,9 @@ const srPost = (headers = srAuth) => post({}, headers);
 
 // videos 全件fetchルート（fetchAllRows が組み立てるクエリ形状に合わせる）
 // fetchAllRows は '/rest/v1/' + path + '&limit=1000&offset=N' で発行する
+// ,tags が select に含まれることも確認する（タグ取得の回帰検知）
 const srVideosFetchMatch = (u) =>
-  u.includes('videos?select=id,url,title,date,member,content_type,status,is_starter,starter_order') &&
+  u.includes('videos?select=id,url,title,date,member,content_type,status,is_starter,starter_order,tags') &&
   u.includes('order=id.asc') &&
   u.includes('offset=');
 
@@ -1073,22 +1074,35 @@ const srStat = (id, viewCount) => ({
   statistics: { viewCount: String(viewCount) },
 });
 
-// ── rich-success フィクスチャ設計 ──
+// ── rich-success フィクスチャ設計（タグ対応版）──
+//
+// タグ検証ポイント:
+//   kafu  id=2: tags='シングル アニメ' （複数トークン、シングルタグあり）
+//   kafu  id=3: tags='#Covered'       （#プレフィックス除去後='Covered'、シングルでない）
+//   kafu  id=21: tags='シングル'      （純シングル、rank3選出対象）
+//   harusar id=8: tags='シングル'     （最新かつ最多視聴→top2に入るシングル）
+//   harusar id=22: tags='ゲーム シングル' （複数トークン、2番目に新しいシングル）
 //
 // メンバー構成（カッコ内はYouTube ID → viewCount）:
-//   kafu  (mi=0): id=1 (KAFU0000001, 100000), id=2 (KAFU0000002, 200000), id=3 (KAFU0000003, 50000, date=最新)
-//                 → top2=id2(rank1,order=11), id1(rank2,order=12); latest=id3(rank3,order=13)
-//                 id=4 は content_type='shorts' → プール除外
-//                 id=5 は content_type=null → song 扱い（プール含む）が視聴数なしで除外
-//   rime  (mi=1): id=6 (RIME0000006, 80000), id=7 (RIME0000007, 60000) — 2曲のみ（<3のケース）
-//                 → top2=id6(rank1,order=21), id7(rank2,order=22); latest=なし（全部top2で消費）
-//   harusar(mi=2): id=8 (HARU0000008, 300000), id=9 (HARU0000009, 150000), id=10 (HARU0000010, 10000)
-//                 id=8 は最新かつ最多視聴 → top2[0]=id8, top2[1]=id9; latest=id8だがset内にある → 次=id10
-//                 → top2=id8(rank1,order=31), id9(rank2,order=32); latest=id10(rank3,order=33)
-//   isekai(mi=3): id=11 (ISEK0000011, 120000), id=12 (ISEK0000012, 90000), id=13 (ISEK0000013, 40000)
+//   kafu  (mi=0): id=1 tags=null (100000), id=2 tags='シングル アニメ' (200000, 2023-06),
+//                 id=3 tags='#Covered' (50000, date=2024-03 最新), id=21 tags='シングル' (30000, 2024-01)
+//                 → top2: id2(rank1,order=11), id1(rank2,order=12)
+//                 → singles by date (desc): id21(2024-01), id2(2023-06); id2 in top2
+//                   rank3=id21(order=13) ← 旧ロジックでは id3(最新-any)になるため識別可能
+//   rime  (mi=1): id=6 (80000), id=7 (60000) — 2曲のみ（<3曲ケース、タグなし）
+//                 → top2=id6(rank1,order=21), id7(rank2,order=22); rank3=なし
+//   harusar(mi=2): id=8 tags='シングル' (300000, 2024-06), id=9 tags=null (150000, 2023-05),
+//                  id=10 tags=null (10000, 2022-10), id=22 tags='ゲーム シングル' (5000, 2023-01)
+//                  → top2: id8(rank1,order=31), id9(rank2,order=32)
+//                  → singles by date (desc): id8(2024-06), id22(2023-01); id8 in top2
+//                    rank3=id22(order=33) ← 旧ロジックでは id10 になるため識別可能
+//   isekai(mi=3): id=11 (120000, 2023-03), id=12 (90000, 2023-07), id=13 (40000, 2024-01)
+//                 タグなし → シングルゼロ → フォールバック（全種最新=id13）
 //                 → top2=id11(rank1,order=41), id12(rank2,order=42); latest=id13(rank3,order=43)
-//   koko  (mi=4): id=14 (KOKO0000014, 70000), id=15 (KOKO0000015, 55000), id=16 (KOKO0000016, 30000)
+//   koko  (mi=4): id=14 (70000, 2023-04), id=15 (55000, 2023-09), id=16 (30000, 2022-12)
+//                 タグなし → シングルゼロ → フォールバック
 //                 → top2=id14(rank1,order=51), id15(rank2,order=52); latest=id16(rank3,order=53)
+//                   ※id15 は top2[rank2] なので最新-any フォールバック時は id14→id15 が top2、id16 が rank3
 //
 // 除外行:
 //   id=17: member='kafu rime' (duet) → SOLO_MEMBERS 除外
@@ -1098,54 +1112,55 @@ const srStat = (id, viewCount) => ({
 //
 // 現行 is_starter=true の行:
 //   id=99: status='pending', is_starter=true, starter_order=11 → 削除対象（statusフィルタなし確認）
-//   id=2:  status='published', is_starter=false, starter_order=null → 新規追加
-//   （初期状態で is_starter=true なものがないシンプル構成にし、
-//     id=99 のみ削除→grouped PATCH が発行されることを確認、
-//     選曲対象は全部新規追加→per-id PATCHが発行されることを確認）
+//   （選曲対象は全部新規追加→per-id PATCHが発行されることを確認）
 
 const srRichVideos = [
-  // kafu songs
-  { id: 1,  url: 'https://www.youtube.com/watch?v=KAFU0000001', title: 'KAF曲1', date: '2023-01-01', member: 'kafu', content_type: 'song',         status: 'published', is_starter: false, starter_order: null },
-  { id: 2,  url: 'https://www.youtube.com/watch?v=KAFU0000002', title: 'KAF曲2', date: '2023-06-01', member: 'kafu', content_type: 'song',         status: 'published', is_starter: false, starter_order: null },
-  { id: 3,  url: 'https://www.youtube.com/watch?v=KAFU0000003', title: 'KAF曲3', date: '2024-03-01', member: 'kafu', content_type: 'song',         status: 'published', is_starter: false, starter_order: null },
-  { id: 4,  url: 'https://www.youtube.com/watch?v=KAFU0000004', title: 'KAFショーツ', date: '2024-04-01', member: 'kafu', content_type: 'shorts', status: 'published', is_starter: false, starter_order: null },
-  { id: 5,  url: 'https://www.youtube.com/watch?v=KAFU0000005', title: 'KAF未分類', date: '2024-05-01', member: 'kafu', content_type: null,        status: 'published', is_starter: false, starter_order: null },
-  // rime songs (2曲のみ)
-  { id: 6,  url: 'https://www.youtube.com/watch?v=RIME0000006', title: 'RIM曲1', date: '2023-02-01', member: 'rime', content_type: 'song',         status: 'published', is_starter: false, starter_order: null },
-  { id: 7,  url: 'https://www.youtube.com/watch?v=RIME0000007', title: 'RIM曲2', date: '2023-08-01', member: 'rime', content_type: 'song',         status: 'published', is_starter: false, starter_order: null },
-  // harusar songs (最新=最多視聴のdedup確認)
-  { id: 8,  url: 'https://www.youtube.com/watch?v=HARU0000008', title: 'HAR曲1', date: '2024-06-01', member: 'harusar', content_type: 'song',     status: 'published', is_starter: false, starter_order: null },
-  { id: 9,  url: 'https://www.youtube.com/watch?v=HARU0000009', title: 'HAR曲2', date: '2023-05-01', member: 'harusar', content_type: 'song',     status: 'published', is_starter: false, starter_order: null },
-  { id: 10, url: 'https://www.youtube.com/watch?v=HARU0000010', title: 'HAR曲3', date: '2022-10-01', member: 'harusar', content_type: 'song',     status: 'published', is_starter: false, starter_order: null },
-  // isekai songs
-  { id: 11, url: 'https://www.youtube.com/watch?v=ISEK0000011', title: 'JOU曲1', date: '2023-03-01', member: 'isekai', content_type: 'song',      status: 'published', is_starter: false, starter_order: null },
-  { id: 12, url: 'https://www.youtube.com/watch?v=ISEK0000012', title: 'JOU曲2', date: '2023-07-01', member: 'isekai', content_type: 'song',      status: 'published', is_starter: false, starter_order: null },
-  { id: 13, url: 'https://www.youtube.com/watch?v=ISEK0000013', title: 'JOU曲3', date: '2024-01-01', member: 'isekai', content_type: 'song',      status: 'published', is_starter: false, starter_order: null },
-  // koko songs
-  { id: 14, url: 'https://www.youtube.com/watch?v=KOKO0000014', title: 'KOK曲1', date: '2023-04-01', member: 'koko', content_type: 'song',        status: 'published', is_starter: false, starter_order: null },
-  { id: 15, url: 'https://www.youtube.com/watch?v=KOKO0000015', title: 'KOK曲2', date: '2023-09-01', member: 'koko', content_type: 'song',        status: 'published', is_starter: false, starter_order: null },
-  { id: 16, url: 'https://www.youtube.com/watch?v=KOKO0000016', title: 'KOK曲3', date: '2022-12-01', member: 'koko', content_type: 'song',        status: 'published', is_starter: false, starter_order: null },
+  // kafu songs: id=2 はシングル(多トークン), id=3 は#Covered(シングルでない), id=21 はシングル
+  { id: 1,  url: 'https://www.youtube.com/watch?v=KAFU0000001', title: 'KAF曲1', date: '2023-01-01', member: 'kafu', content_type: 'song',         status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 2,  url: 'https://www.youtube.com/watch?v=KAFU0000002', title: 'KAF曲2', date: '2023-06-01', member: 'kafu', content_type: 'song',         status: 'published', is_starter: false, starter_order: null, tags: 'シングル アニメ' },
+  { id: 3,  url: 'https://www.youtube.com/watch?v=KAFU0000003', title: 'KAF曲3', date: '2024-03-01', member: 'kafu', content_type: 'song',         status: 'published', is_starter: false, starter_order: null, tags: '#Covered' },
+  { id: 4,  url: 'https://www.youtube.com/watch?v=KAFU0000004', title: 'KAFショーツ', date: '2024-04-01', member: 'kafu', content_type: 'shorts', status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 5,  url: 'https://www.youtube.com/watch?v=KAFU0000005', title: 'KAF未分類', date: '2024-05-01', member: 'kafu', content_type: null,        status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 21, url: 'https://www.youtube.com/watch?v=KAFU0000021', title: 'KAF曲21(シングル)', date: '2024-01-01', member: 'kafu', content_type: 'song', status: 'published', is_starter: false, starter_order: null, tags: 'シングル' },
+  // rime songs (2曲のみ、タグなし → rank3なし)
+  { id: 6,  url: 'https://www.youtube.com/watch?v=RIME0000006', title: 'RIM曲1', date: '2023-02-01', member: 'rime', content_type: 'song',         status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 7,  url: 'https://www.youtube.com/watch?v=RIME0000007', title: 'RIM曲2', date: '2023-08-01', member: 'rime', content_type: 'song',         status: 'published', is_starter: false, starter_order: null, tags: null },
+  // harusar songs: id=8 はシングル(最新かつtop1→top2入り), id=22 はシングル(2番目最新)
+  { id: 8,  url: 'https://www.youtube.com/watch?v=HARU0000008', title: 'HAR曲1', date: '2024-06-01', member: 'harusar', content_type: 'song',     status: 'published', is_starter: false, starter_order: null, tags: 'シングル' },
+  { id: 9,  url: 'https://www.youtube.com/watch?v=HARU0000009', title: 'HAR曲2', date: '2023-05-01', member: 'harusar', content_type: 'song',     status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 10, url: 'https://www.youtube.com/watch?v=HARU0000010', title: 'HAR曲3', date: '2022-10-01', member: 'harusar', content_type: 'song',     status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 22, url: 'https://www.youtube.com/watch?v=HARU0000022', title: 'HAR曲22(シングル)', date: '2023-01-01', member: 'harusar', content_type: 'song', status: 'published', is_starter: false, starter_order: null, tags: 'ゲーム シングル' },
+  // isekai songs (タグなし → シングルゼロ → フォールバック=最新any)
+  { id: 11, url: 'https://www.youtube.com/watch?v=ISEK0000011', title: 'JOU曲1', date: '2023-03-01', member: 'isekai', content_type: 'song',      status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 12, url: 'https://www.youtube.com/watch?v=ISEK0000012', title: 'JOU曲2', date: '2023-07-01', member: 'isekai', content_type: 'song',      status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 13, url: 'https://www.youtube.com/watch?v=ISEK0000013', title: 'JOU曲3', date: '2024-01-01', member: 'isekai', content_type: 'song',      status: 'published', is_starter: false, starter_order: null, tags: null },
+  // koko songs (タグなし → シングルゼロ → フォールバック=最新any)
+  { id: 14, url: 'https://www.youtube.com/watch?v=KOKO0000014', title: 'KOK曲1', date: '2023-04-01', member: 'koko', content_type: 'song',        status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 15, url: 'https://www.youtube.com/watch?v=KOKO0000015', title: 'KOK曲2', date: '2023-09-01', member: 'koko', content_type: 'song',        status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 16, url: 'https://www.youtube.com/watch?v=KOKO0000016', title: 'KOK曲3', date: '2022-12-01', member: 'koko', content_type: 'song',        status: 'published', is_starter: false, starter_order: null, tags: null },
   // 除外行: duet / vwp / live / announcement
-  { id: 17, url: 'https://www.youtube.com/watch?v=DUET0000017', title: 'デュエット曲', date: '2024-01-01', member: 'kafu rime', content_type: 'song', status: 'published', is_starter: false, starter_order: null },
-  { id: 18, url: 'https://www.youtube.com/watch?v=VWP00000018', title: 'VWP曲',     date: '2024-01-01', member: 'vwp',      content_type: 'song', status: 'published', is_starter: false, starter_order: null },
-  { id: 19, url: 'https://www.youtube.com/watch?v=KAFU0000019', title: 'KAFライブ', date: '2024-01-01', member: 'kafu',     content_type: 'live', status: 'published', is_starter: false, starter_order: null },
-  { id: 20, url: 'https://www.youtube.com/watch?v=KAFU0000020', title: 'KAF告知',  date: '2024-01-01', member: 'kafu',     content_type: 'announcement', status: 'published', is_starter: false, starter_order: null },
+  { id: 17, url: 'https://www.youtube.com/watch?v=DUET0000017', title: 'デュエット曲', date: '2024-01-01', member: 'kafu rime', content_type: 'song', status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 18, url: 'https://www.youtube.com/watch?v=VWP00000018', title: 'VWP曲',     date: '2024-01-01', member: 'vwp',      content_type: 'song', status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 19, url: 'https://www.youtube.com/watch?v=KAFU0000019', title: 'KAFライブ', date: '2024-01-01', member: 'kafu',     content_type: 'live', status: 'published', is_starter: false, starter_order: null, tags: null },
+  { id: 20, url: 'https://www.youtube.com/watch?v=KAFU0000020', title: 'KAF告知',  date: '2024-01-01', member: 'kafu',     content_type: 'announcement', status: 'published', is_starter: false, starter_order: null, tags: null },
   // 現行 is_starter=true の pending 行 → 削除対象（statusフィルタなしで取得されることの確認）
-  { id: 99, url: 'https://www.youtube.com/watch?v=PEND0000099', title: 'pending曲', date: '2023-01-01', member: 'kafu', content_type: 'song',      status: 'pending',   is_starter: true,  starter_order: 11 },
+  { id: 99, url: 'https://www.youtube.com/watch?v=PEND0000099', title: 'pending曲', date: '2023-01-01', member: 'kafu', content_type: 'song',      status: 'pending',   is_starter: true,  starter_order: 11,   tags: null },
 ];
 
 // YouTube statistics（id=5のKAF未分類はAPIレスポンスなし→プール除外）
-// id=4,17,18,19,20 はプール外なのでAPIに送らない
+// id=4,17,18,19,20 はプール外なのでAPIに送らない。id=21,22 は新規追加行。
 const srRichStats = [
   srStat('KAFU0000001', 100000),
   srStat('KAFU0000002', 200000),
   srStat('KAFU0000003', 50000),
+  srStat('KAFU0000021', 30000),
   // KAFU0000005 は返さない（statistics欠落 → プール除外）
   srStat('RIME0000006', 80000),
   srStat('RIME0000007', 60000),
   srStat('HARU0000008', 300000),
   srStat('HARU0000009', 150000),
   srStat('HARU0000010', 10000),
+  srStat('HARU0000022', 5000),
   srStat('ISEK0000011', 120000),
   srStat('ISEK0000012', 90000),
   srStat('ISEK0000013', 40000),
@@ -1155,14 +1170,14 @@ const srRichStats = [
 ];
 
 // 選曲結果の期待 starter_order（per-id PATCH のマッチに使用）
-// kafu: id2→11, id1→12, id3→13
-// rime: id6→21, id7→22 （2曲のみ、rank3なし）
-// harusar: id8→31, id9→32, id10→33（最新=id8がtop2にあるのでid10がlatestになる）
-// isekai: id11→41, id12→42, id13→43
-// koko: id14→51, id15→52, id16→53
+// kafu:    id2→11(rank1), id1→12(rank2), id21→13(rank3=最新シングル; id3は#Covered=非シングルで選ばれない)
+// rime:    id6→21(rank1), id7→22(rank2) （2曲のみ、rank3なし）
+// harusar: id8→31(rank1), id9→32(rank2), id22→33(rank3=次の最新シングル; id8はtop2消費済み)
+// isekai:  id11→41(rank1), id12→42(rank2), id13→43(rank3=フォールバック最新any)
+// koko:    id14→51(rank1), id15→52(rank2), id16→53(rank3=フォールバック最新any)
 
 // 削除グループPATCH: id=99（pending）
-// 追加per-id PATCH: 上記14曲（rime2曲含め）
+// 追加per-id PATCH: 上記15曲（rime2曲含め）
 
 scenarios.push(
   {
@@ -1183,34 +1198,36 @@ scenarios.push(
     //   - shorts除外（id=4）/ vwp除外（id=18）/ duet除外（id=17）/ live除外（id=19）/ announcement除外（id=20）
     //   - null content_type は song 扱い（id=5がプールに入るが statistics欠落で最終除外）
     //   - member<3 songs（rime 2曲 → rank3なし）
-    //   - latest が top2 に含まれる場合は次の曲（harusar: id8が最新かつ最多視聴 → latestはid10）
+    //   - rank3=最新シングル（kafu: id3=#Covered=非シングル → id21が選ばれる; 旧ロジックはid3を選ぶ）
+    //   - 最新シングルがtop2消費済み → 次の最新シングルを選出（harusar: id8がtop1かつシングル → id22）
+    //   - シングルゼロ → フォールバック最新any（isekai: id13, koko: id16）
     //   - is_starter=true かつ status='pending' の行（id=99）→ 削除grouped PATCH に含まれる
     //   - grouped PATCH bodyに starter_note が含まれないこと（不変条件）
     //   - per-id PATCH bodyに starter_note が含まれないこと（不変条件）
     name: 'starter-refresh/rich-success', fn: 'starter-refresh',
     event: srPost(),
     routes: [
-      // videos 全件fetch（1ページで完了）
+      // videos 全件fetch（1ページで完了）。srVideosFetchMatch は ,tags を要求するため旧コードはUNMATCHED。
       { method: 'GET', match: srVideosFetchMatch, body: srRichVideos },
       // YouTube statistics（プール内のYouTube IDのみ。id=4,17,18,19,20はプール外 → バッチに含まれない）
       srYtStats(srRichStats),
-      // W1修正: 追加per-id PATCH を削除grouped PATCH より先に実行
-      // per-id PATCH: kafu
+      // 追加per-id PATCH を削除grouped PATCH より先に実行（adds-before-removal 安全弁）
+      // per-id PATCH: kafu （rank3=id21、id3ではない）
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.2'), status: 204, body: '' },
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.1'), status: 204, body: '' },
-      { method: 'PATCH', match: (u) => u.includes('videos?id=eq.3'), status: 204, body: '' },
+      { method: 'PATCH', match: (u) => u.includes('videos?id=eq.21'), status: 204, body: '' },
       // per-id PATCH: rime
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.6'), status: 204, body: '' },
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.7'), status: 204, body: '' },
-      // per-id PATCH: harusar
+      // per-id PATCH: harusar （rank3=id22、id10ではない）
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.8'), status: 204, body: '' },
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.9'), status: 204, body: '' },
-      { method: 'PATCH', match: (u) => u.includes('videos?id=eq.10'), status: 204, body: '' },
-      // per-id PATCH: isekai
+      { method: 'PATCH', match: (u) => u.includes('videos?id=eq.22'), status: 204, body: '' },
+      // per-id PATCH: isekai （フォールバック=id13）
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.11'), status: 204, body: '' },
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.12'), status: 204, body: '' },
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.13'), status: 204, body: '' },
-      // per-id PATCH: koko
+      // per-id PATCH: koko （フォールバック=id16）
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.14'), status: 204, body: '' },
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.15'), status: 204, body: '' },
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.16'), status: 204, body: '' },
@@ -1224,7 +1241,7 @@ scenarios.push(
     event: srPost(),
     routes: [
       { method: 'GET', match: srVideosFetchMatch, body: [
-        { id: 1, url: 'https://www.youtube.com/watch?v=KAFU0000001', title: 'KAF曲1', date: '2023-01-01', member: 'kafu', content_type: 'song', status: 'published', is_starter: false, starter_order: null },
+        { id: 1, url: 'https://www.youtube.com/watch?v=KAFU0000001', title: 'KAF曲1', date: '2023-01-01', member: 'kafu', content_type: 'song', status: 'published', is_starter: false, starter_order: null, tags: null },
       ]},
       { method: 'GET', match: (u) => u.includes('youtube/v3/videos?part=statistics'), body: { error: { message: 'quota exceeded', code: 403 } } },
     ],
@@ -1236,8 +1253,8 @@ scenarios.push(
     event: srPost(),
     routes: [
       { method: 'GET', match: srVideosFetchMatch, body: [
-        { id: 6, url: 'https://www.youtube.com/watch?v=RIME0000006', title: 'RIM曲1', date: '2023-02-01', member: 'rime', content_type: 'song', status: 'published', is_starter: true, starter_order: 21 },
-        { id: 7, url: 'https://www.youtube.com/watch?v=RIME0000007', title: 'RIM曲2', date: '2023-08-01', member: 'rime', content_type: 'song', status: 'published', is_starter: true, starter_order: 22 },
+        { id: 6, url: 'https://www.youtube.com/watch?v=RIME0000006', title: 'RIM曲1', date: '2023-02-01', member: 'rime', content_type: 'song', status: 'published', is_starter: true,  starter_order: 21, tags: null },
+        { id: 7, url: 'https://www.youtube.com/watch?v=RIME0000007', title: 'RIM曲2', date: '2023-08-01', member: 'rime', content_type: 'song', status: 'published', is_starter: true,  starter_order: 22, tags: null },
       ]},
       // YouTube API が HTTP 200 + items:[] を返す（data.error なし）
       { method: 'GET', match: (u) => u.includes('youtube/v3/videos?part=statistics'), body: { items: [] } },
@@ -1251,12 +1268,43 @@ scenarios.push(
     event: srPost(),
     routes: [
       { method: 'GET', match: srVideosFetchMatch, body: [
-        { id: 6,  url: 'https://www.youtube.com/watch?v=RIME0000006', title: 'RIM曲1', date: '2023-02-01', member: 'rime', content_type: 'song', status: 'published', is_starter: true,  starter_order: 21 },
-        { id: 7,  url: 'https://www.youtube.com/watch?v=RIME0000007', title: 'RIM曲2', date: '2023-08-01', member: 'rime', content_type: 'song', status: 'published', is_starter: true,  starter_order: 22 },
+        { id: 6,  url: 'https://www.youtube.com/watch?v=RIME0000006', title: 'RIM曲1', date: '2023-02-01', member: 'rime', content_type: 'song', status: 'published', is_starter: true,  starter_order: 21, tags: null },
+        { id: 7,  url: 'https://www.youtube.com/watch?v=RIME0000007', title: 'RIM曲2', date: '2023-08-01', member: 'rime', content_type: 'song', status: 'published', is_starter: true,  starter_order: 22, tags: null },
       ]},
       { method: 'GET', match: (u) => u.includes('youtube/v3/videos?part=statistics'), body: {
         items: [srStat('RIME0000006', 80000), srStat('RIME0000007', 60000)],
       }},
+    ],
+  },
+  {
+    // single-in-top2: メンバーの唯一のシングルがtop2に入る場合のrank3フォールバック確認。
+    // 旧コード（消費済み判定なし）では bySingleDate=[id31] → latestCandidates=[id31] →
+    // ループでid31をスキップして rank3 未選出 → 2曲しか返らない（バグ）。
+    // 修正後は bySingleDate=[] (id31消費済みでフィルタ済み) → latestCandidates=byDate →
+    // id33(次に新しい非消費曲)が rank3 に選出される → 3曲が確実に返る。
+    //
+    // kafu (mi=0): id=31 tags='シングル' (500000, 2024-05) → rank1 (top1かつ唯一シングル)
+    //              id=32 tags=null      (400000, 2023-01) → rank2
+    //              id=33 tags=null      (100000, 2024-02) → rank3（latest-any フォールバック）
+    //   top2消費後の byDate（日付降順）: id31(2024-05), id33(2024-02), id32(2023-01)
+    //   旧ロジック: bySingleDate=[id31], latestCandidates=[id31], id31消費済みでスキップ → 未選出
+    //   新ロジック: bySingleDate=[] (id31が消費済みで除外), latestCandidates=byDate,
+    //              id31消費済みスキップ → id33が rank3 に選出
+    name: 'starter-refresh/single-in-top2', fn: 'starter-refresh',
+    event: srPost(),
+    routes: [
+      { method: 'GET', match: srVideosFetchMatch, body: [
+        { id: 31, url: 'https://www.youtube.com/watch?v=KAFU0000031', title: 'KAF曲31(シングル)', date: '2024-05-01', member: 'kafu', content_type: 'song', status: 'published', is_starter: false, starter_order: null, tags: 'シングル' },
+        { id: 32, url: 'https://www.youtube.com/watch?v=KAFU0000032', title: 'KAF曲32',           date: '2023-01-01', member: 'kafu', content_type: 'song', status: 'published', is_starter: false, starter_order: null, tags: null },
+        { id: 33, url: 'https://www.youtube.com/watch?v=KAFU0000033', title: 'KAF曲33',           date: '2024-02-01', member: 'kafu', content_type: 'song', status: 'published', is_starter: false, starter_order: null, tags: null },
+      ]},
+      { method: 'GET', match: (u) => u.includes('youtube/v3/videos?part=statistics'), body: {
+        items: [srStat('KAFU0000031', 500000), srStat('KAFU0000032', 400000), srStat('KAFU0000033', 100000)],
+      }},
+      // 3曲すべてが選出される（rank3=id33 via latest-any フォールバック）
+      { method: 'PATCH', match: (u) => u.includes('videos?id=eq.31'), status: 204, body: '' },
+      { method: 'PATCH', match: (u) => u.includes('videos?id=eq.32'), status: 204, body: '' },
+      { method: 'PATCH', match: (u) => u.includes('videos?id=eq.33'), status: 204, body: '' },
     ],
   },
 );

@@ -4,7 +4,10 @@
 //       Authorization: Bearer <ADMIN_PASSWORD> 必須（albums-stock-scan.js と同型）
 // 選曲ロジック:
 //   - published の pure-solo ソング（shorts/live/announcement除外）を対象に
-//     メンバーごとに「視聴数トップ2 + 最新1曲」を選出
+//     メンバーごとに「視聴数トップ2 + 最新シングル1曲」を選出
+//   - 最新枠（rank3）はタグに「シングル」を含む曲から選出。
+//     トップ2と重複する場合は次の最新シングルを選出。
+//     シングル曲がプールに存在しない場合は最新曲（全種）にフォールバック。
 //   - YouTube Data API videos.list?part=statistics で視聴数取得（50件単位バッチ）
 //   - 現行 is_starter=true セットとの差分のみ PATCH（is_starter / starter_order のみ書き込み）
 // 安全弁:
@@ -28,6 +31,16 @@ const SOLO_MEMBERS = ['kafu', 'rime', 'harusar', 'isekai', 'koko'];
 
 // YouTube Data API: 1リクエストあたりの上限
 const YT_BATCH_SIZE = 50;
+
+// タグ文字列からシングルタグを持つか判定する。
+// public/js/core.js の parseTags と同じ規則（スペースまたはカンマ区切り、先頭の '#' を除去）を
+// サーバーサイドでインライン実装。フロントエンドモジュールは import しない（サーバー非対応のため）。
+// DB の tags 値例: 'シングル', 'シングル アニメ', 'Live シングル', 'ゲーム シングル', '#Covered' 等。
+// tags は NULL の場合があるため `|| ''` でガード。
+function hasSingleTag(row) {
+  const raw = row.tags || '';
+  return raw.split(/[ ,]+/).some(s => s.replace(/^#/, '') === 'シングル');
+}
 
 // starter_order エンコーディング: (memberIndex+1)*10 + rank
 // 例: kafu(0)→11,12,13 / rime(1)→21,22,23 / ... / koko(4)→51,52,53
@@ -64,7 +77,7 @@ exports.handler = async (event) => {
     // ─────────────────────────────────────────────────────────────
     const { rows: allRows, overflow } = await fetchAllRows(
       SUPABASE_URL, SUPABASE_KEY,
-      'videos?select=id,url,title,date,member,content_type,status,is_starter,starter_order&order=id.asc',
+      'videos?select=id,url,title,date,member,content_type,status,is_starter,starter_order,tags&order=id.asc',
       { throwOnHttpError: true, errSlice: 300 }
     );
 
@@ -135,8 +148,10 @@ exports.handler = async (event) => {
 
     // ─────────────────────────────────────────────────────────────
     // (7) メンバーごとの選曲
-    //     各メンバー: (a) 視聴数トップ2、(b) 最新1曲（トップ2と重複なら次の1曲）
-    //     ランク: 1=top-views-1, 2=top-views-2, 3=latest
+    //     各メンバー: (a) 視聴数トップ2、(b) 最新シングル1曲（rank3）
+    //     rank3 はシングルタグ曲を優先。トップ2と重複する場合は次の最新シングル。
+    //     シングル曲がゼロ（またはすべてトップ2に消費済み）の場合は最新曲（全種）にフォールバック。
+    //     ランク: 1=top-views-1, 2=top-views-2, 3=latest-single
     //     タイブレーク: viewCount降順 → date降順 → id降順
     //                   date タイブレーク: id降順（dateがnullは最古扱い: '' として比較）
     // ─────────────────────────────────────────────────────────────
@@ -183,8 +198,13 @@ exports.handler = async (event) => {
         selectedIdSet.add(row.id);
       }
 
-      // (b) 最新1曲（トップ2と重複なら次の1曲）
-      for (const row of byDate) {
+      // (b) 最新1曲: シングルタグ曲を優先（トップ2と重複なら次の最新シングル）。
+      //     シングル曲がプールにない場合は全種から最新1曲にフォールバック（Yuki決定）。
+      //     【設計判断】消費済み判定をプール選択前に行う。これにより「シングルが存在するが
+      //     すべてトップ2で消費済み」の場合も全種フォールバックとなり、3曲構造を維持する。
+      const bySingleDate = byDate.filter(r => hasSingleTag(r) && !selectedIdSet.has(r.id));
+      const latestCandidates = bySingleDate.length > 0 ? bySingleDate : byDate;
+      for (const row of latestCandidates) {
         if (selectedIdSet.has(row.id)) continue;
         picked.push({ row, rank: 3 });
         selectedIdSet.add(row.id);
