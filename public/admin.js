@@ -1212,11 +1212,18 @@ MU.Tabs.register('starter', {
       // ── Swap helper ──
       async function swapOrder(i, j) {
         var a = rows[i], b = rows[j];
+        // null / 同値ガード: 同値または null を含む場合は配列インデックスベースで振り直す
         var ao = a.starter_order != null ? a.starter_order : i + 1;
         var bo = b.starter_order != null ? b.starter_order : j + 1;
-        await MU.DB.update('videos', a.id, { starter_order: bo });
-        await MU.DB.update('videos', b.id, { starter_order: ao });
-        MU.Tabs.switchTo('starter');
+        if (ao === bo) { ao = i + 1; bo = j + 1; }
+        try {
+          await MU.DB.update('videos', a.id, { starter_order: bo });
+          await MU.DB.update('videos', b.id, { starter_order: ao });
+          MU.Tabs.switchTo('starter');
+        } catch (e) {
+          alert('REORDER FAILED: ' + e.message);
+          MU.Tabs.switchTo('starter');
+        }
       }
 
       // ── Up/Down handlers ──

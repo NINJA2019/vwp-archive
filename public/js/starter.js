@@ -63,10 +63,12 @@ function buildStarterList() {
   body.innerHTML = '<ul class="starter-list">' + items + '</ul>';
 
   // クリックイベント（trackSongClick = GA4 + YouTube新タブ）
+  // safeUrl が '#' を返す場合（URL不正）はデッドタブを開かないためガード
   body.querySelectorAll('.starter-item').forEach(function(el) {
     el.addEventListener('click', function() {
       var id = parseInt(el.getAttribute('data-id'), 10);
       var url = el.getAttribute('data-url');
+      if (!url || url === '#') return;
       trackSongClick(id, url);
     });
   });

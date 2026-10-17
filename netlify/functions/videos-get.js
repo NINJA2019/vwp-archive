@@ -8,21 +8,29 @@ exports.handler = async () => {
   const headers = sbHeaders(key);
 
   // 1ページ取得。migration未適用で列が存在しない場合（PostgREST 42703）は
-  // 該当列を外して1回だけ再試行する。
-  // (a) starter列（is_starter/starter_order/starter_note）未存在: starter列をselectから除去して再試行。
-  // (b) status列未存在: status=eq.published フィルタなしで再試行。
+  // 該当列を外して最大2回再試行する。
+  // (a) starter列（is_starter/starter_order/starter_note）未存在: starter列をselectから除去。
+  // (b) status列未存在: status=eq.published フィルタを除去。
+  //     両方が未存在のケースでは (a) → (b) の順に両方除去して合成する。
   //     migration適用前は status 列が存在しない = pending 行も存在し得ないため安全。
   const STARTER_COLS = ',is_starter,starter_order,starter_note';
   async function fetchPage(pageUrl) {
     let res = await fetch(pageUrl, { headers });
     if (!res.ok) {
       const errText = await res.text().catch(() => '');
-      if (errText.includes('42703') && /is_starter|starter_order|starter_note/.test(errText)) {
-        // starter列が未存在: selectからstarter列を除去して再試行
-        res = await fetch(pageUrl.replace(STARTER_COLS, ''), { headers });
-      } else if (errText.includes('42703') && pageUrl.includes('&status=eq.published')) {
-        // status列が未存在: statusフィルタを除去して再試行
-        res = await fetch(pageUrl.replace('&status=eq.published', ''), { headers });
+      if (errText.includes('42703')) {
+        let retryUrl = pageUrl;
+        if (/is_starter|starter_order|starter_note/.test(errText)) {
+          // starter列が未存在: selectからstarter列を除去
+          retryUrl = retryUrl.replace(STARTER_COLS, '');
+        }
+        if (pageUrl.includes('&status=eq.published') && /\bstatus\b/.test(errText)) {
+          // status列が未存在: statusフィルタを除去（starter除去と合成可能）
+          retryUrl = retryUrl.replace('&status=eq.published', '');
+        }
+        if (retryUrl !== pageUrl) {
+          res = await fetch(retryUrl, { headers });
+        }
       }
       if (!res.ok) {
         const text = await res.text().catch(() => errText);
