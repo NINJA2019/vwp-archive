@@ -1161,6 +1161,7 @@ MU.Tabs.register('starter', {
       // ── Stats ──
       var statsHtml =
         '<div class="n-section">' + U.section('STARTER LIST', U.badge(rows.length + ' TRACKS')) +
+        '<div style="font-size:11px;color:var(--text-xdim);margin-bottom:8px">※ 自動選曲（週次）。手動並べ替え/追加削除は次回自動更新で上書きされます</div>' +
         '<div class="n-grid n-g4">' +
           U.metric(rows.length.toLocaleString(), 'TOTAL TRACKS') +
           U.metric(rows.filter(function(r) { return r.status !== 'published'; }).length.toLocaleString(), 'NOT PUBLIC', rows.some(function(r) { return r.status !== 'published'; }) ? 'warn' : '') +
