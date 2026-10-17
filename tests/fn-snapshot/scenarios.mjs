@@ -904,6 +904,21 @@ scenarios.push(
     ],
   },
   {
+    name: 'videos-get/starter-42703-retry', fn: 'videos-get', event: get(),
+    routes: [
+      { method: 'GET', match: (u) => u.includes('is_starter'), status: 400, body: 'code 42703: column videos.is_starter does not exist' },
+      { method: 'GET', match: (u) => !u.includes('is_starter'), body: [VIDEO5, VIDEO9] },
+    ],
+  },
+  {
+    // 両列同時未存在: starter列除去 + status除去を1リクエストで合成するケース
+    name: 'videos-get/42703-both-cols-retry', fn: 'videos-get', event: get(),
+    routes: [
+      { method: 'GET', match: (u) => u.includes('is_starter') || u.includes('status=eq.published'), status: 400, body: 'code 42703: column videos.is_starter does not exist, column videos.status does not exist' },
+      { method: 'GET', match: (u) => !u.includes('is_starter') && !u.includes('status=eq.published'), body: [VIDEO5, VIDEO9] },
+    ],
+  },
+  {
     name: 'videos-get/sb-error-no-store', fn: 'videos-get', event: get(),
     routes: [{ method: 'GET', match: 'rest/v1/videos', status: 500, body: 'db is on fire' }],
   },
