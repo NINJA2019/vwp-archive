@@ -1,5 +1,5 @@
-// main.js — ES Module エントリポイント（PR-B2a / v1.8.0）
-// import順: constants → i18n/supabase/vinyl → core → shelf → observer-link → intro → mobile
+// main.js — ES Module エントリポイント（PR-B2a / v1.8.0、feat/starter-list v1.9.4）
+// import順: constants → i18n/supabase/vinyl → core → shelf → starter → observer-link → intro → mobile
 // window露出テーブル: A=明示24件 / B=インラインハンドラ11件 / C=要確認55件（_searchGa4Timer除く）
 
 // ── Leaf modules ──────────────────────────────────────────────
@@ -70,6 +70,9 @@ import {
   olShareToDiscord, olCopyShareUrl, olTrackXShare,
   olResetCompose, olQuickSendHtml, olQuickSend,
 } from './observer-link.js';
+
+// ── Starter List ──────────────────────────────────────────────
+import { initStarter } from './starter.js';
 
 // ── Intro / Mobile ────────────────────────────────────────────
 import { initIntro } from './intro.js';
@@ -196,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initOnboarding();     // 店主メモ+NEWドット（intro入店イベント購読。initIntroより先に登録）
   initEventTicker();    // ライブ告知ティッカー（メイン画面恒常UI）
   initShelf();          // 棚オーバーレイ初期化
+  initStarter();        // スターターリストオーバーレイ初期化
   olInit();             // Observer-Link 初期化（deep-link解析含む）
   initMobile();         // モバイルS字UI（window幅>700pxなら即return）
   initIntro();          // ターンテーブルイントロ（モバイル時はinitMobileが先に制御を取る）

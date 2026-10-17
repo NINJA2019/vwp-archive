@@ -1144,6 +1144,192 @@ MU.Tabs.register('songs', {
 });
 
 /* ═══════════════════════════════════════
+ *   TAB: STARTER LIST
+ * ═══════════════════════════════════════ */
+MU.Tabs.register('starter', {
+  label: 'STARTER LIST', order: 15,
+  render: async function(el) {
+    var U = MU.UI;
+    el.innerHTML = '<div class="n-loading">LOADING...</div>';
+    try {
+      var rows = await MU.DB.queryAll('videos', {
+        select: 'id,title,member,date,status,is_starter,starter_order,starter_note',
+        filter: 'is_starter=eq.true',
+        order: 'starter_order.asc.nullslast'
+      });
+
+      // ── Stats ──
+      var statsHtml =
+        '<div class="n-section">' + U.section('STARTER LIST', U.badge(rows.length + ' TRACKS')) +
+        '<div class="n-grid n-g4">' +
+          U.metric(rows.length.toLocaleString(), 'TOTAL TRACKS') +
+          U.metric(rows.filter(function(r) { return r.status !== 'published'; }).length.toLocaleString(), 'NOT PUBLIC', rows.some(function(r) { return r.status !== 'published'; }) ? 'warn' : '') +
+        '</div></div>';
+
+      // ── Table ──
+      function buildTable(list) {
+        if (list.length === 0) {
+          return '<div class="n-section"><div class="n-card" style="text-align:center;padding:24px;color:var(--text-xdim)">NO STARTER SONGS CONFIGURED</div></div>';
+        }
+        var tbody = list.map(function(v, i) {
+          var mc = memberColor(v.member);
+          var orderBadge = v.starter_order != null ? String(v.starter_order) : '—';
+          var notPublic = v.status !== 'published' ? ' ' + U.badge('NOT PUBLIC', 'warn') : '';
+          var noteText = v.starter_note ? esc(v.starter_note).substring(0, 60) + (v.starter_note.length > 60 ? '…' : '') : '<span style="color:var(--text-xdim)">—</span>';
+          return '<tr data-id="' + v.id + '">' +
+            '<td class="mono" style="width:40px;text-align:center">' + orderBadge + '</td>' +
+            '<td><span style="color:' + mc + '">' + memberName(v.member) + '</span>' + notPublic + '</td>' +
+            '<td class="title-col">' + esc(v.title || '—') + '</td>' +
+            '<td style="max-width:200px;font-size:10px;color:var(--text-dim)">' + noteText + '</td>' +
+            '<td class="r"><div class="n-btn-group">' +
+              '<button class="n-btn n-btn-sm starter-up" data-i="' + i + '" ' + (i === 0 ? 'disabled' : '') + '>▲</button>' +
+              '<button class="n-btn n-btn-sm starter-dn" data-i="' + i + '" ' + (i === list.length - 1 ? 'disabled' : '') + '>▼</button>' +
+              '<button class="n-btn n-btn-sm starter-note-edit" data-id="' + v.id + '" data-note="' + esc(v.starter_note || '') + '">NOTE</button>' +
+              '<button class="n-btn n-btn-sm n-btn-red starter-remove" data-id="' + v.id + '">REMOVE</button>' +
+            '</div></td>' +
+          '</tr>';
+        }).join('');
+
+        return '<div class="n-section">' +
+          '<table class="n-table"><thead><tr>' +
+            '<th style="width:40px">#</th><th>MEMBER</th><th>TITLE</th><th>NOTE</th><th></th>' +
+          '</tr></thead><tbody>' + tbody + '</tbody></table></div>';
+      }
+
+      // ── Add song section ──
+      var addHtml =
+        '<div class="n-section">' + U.section('ADD SONG TO STARTER LIST') +
+        '<div class="n-toolbar">' +
+          '<input class="n-input" id="starter-search-input" placeholder="SEARCH BY TITLE...">' +
+          '<button class="n-btn" id="starter-search-btn">SEARCH</button>' +
+        '</div>' +
+        '<div id="starter-search-results"></div>' +
+        '</div>';
+
+      el.innerHTML = statsHtml + buildTable(rows) + addHtml;
+      MU.Decode.decodeAll(el);
+
+      // ── Swap helper ──
+      async function swapOrder(i, j) {
+        var a = rows[i], b = rows[j];
+        var ao = a.starter_order != null ? a.starter_order : i + 1;
+        var bo = b.starter_order != null ? b.starter_order : j + 1;
+        await MU.DB.update('videos', a.id, { starter_order: bo });
+        await MU.DB.update('videos', b.id, { starter_order: ao });
+        MU.Tabs.switchTo('starter');
+      }
+
+      // ── Up/Down handlers ──
+      el.querySelectorAll('.starter-up').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var i = parseInt(btn.getAttribute('data-i'), 10);
+          if (i > 0) swapOrder(i, i - 1);
+        });
+      });
+      el.querySelectorAll('.starter-dn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var i = parseInt(btn.getAttribute('data-i'), 10);
+          if (i < rows.length - 1) swapOrder(i, i + 1);
+        });
+      });
+
+      // ── Note edit modal ──
+      el.querySelectorAll('.starter-note-edit').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = btn.getAttribute('data-id');
+          var currentNote = btn.getAttribute('data-note');
+          var html =
+            '<div class="n-form-row"><div class="n-form-label">OWNER NOTE (JAPANESE)</div>' +
+            '<textarea class="n-input" id="starter-note-val" rows="4" style="resize:vertical;font-family:monospace">' + esc(currentNote) + '</textarea></div>';
+          MU.Modal.open('EDIT STARTER NOTE #' + id, html, {
+            okLabel: 'SAVE',
+            onOk: async function() {
+              try {
+                await MU.DB.update('videos', id, { starter_note: document.getElementById('starter-note-val').value.trim() || null });
+                MU.Modal.close();
+                MU.Tabs.switchTo('starter');
+              } catch (e) {
+                alert('UPDATE FAILED: ' + e.message);
+              }
+            }
+          });
+        });
+      });
+
+      // ── Remove from starter ──
+      el.querySelectorAll('.starter-remove').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var id = btn.getAttribute('data-id');
+          var row = rows.find(function(r) { return String(r.id) === String(id); });
+          MU.Modal.open('REMOVE FROM STARTER', U.alert('REMOVE "' + esc(row ? row.title : id) + '" FROM STARTER LIST?', 'warn'), {
+            okLabel: 'REMOVE',
+            onOk: async function() {
+              try {
+                await MU.DB.update('videos', id, { is_starter: false, starter_order: null });
+                MU.Modal.close();
+                MU.Tabs.switchTo('starter');
+              } catch (e) {
+                alert('UPDATE FAILED: ' + e.message);
+              }
+            }
+          });
+        });
+      });
+
+      // ── Add song search ──
+      var maxOrder = rows.reduce(function(m, r) { return Math.max(m, r.starter_order || 0); }, 0);
+
+      document.getElementById('starter-search-btn').addEventListener('click', async function() {
+        var q = document.getElementById('starter-search-input').value.trim();
+        if (!q) return;
+        var resultsEl = document.getElementById('starter-search-results');
+        resultsEl.innerHTML = '<div class="n-loading">SEARCHING...</div>';
+        try {
+          var found = await MU.DB.query('videos', {
+            select: 'id,title,member,status',
+            filter: 'title=ilike.*' + q + '*&is_starter=eq.false&status=eq.published',
+            order: 'date.desc',
+            limit: '20'
+          });
+          if (!found.length) { resultsEl.innerHTML = U.alert('NO RESULTS'); return; }
+          var listHtml = '<div class="n-card n-card-wide">' +
+            found.map(function(v) {
+              var mc = memberColor(v.member);
+              return '<div class="n-fresh-row">' +
+                '<span style="flex:1;font-size:11px;color:#e0e0ff">' + esc(v.title) + '</span>' +
+                '<span style="font-size:10px;color:' + mc + ';margin-right:8px">' + memberName(v.member) + '</span>' +
+                '<button class="n-btn n-btn-sm starter-add-song" data-id="' + v.id + '">+ ADD</button>' +
+              '</div>';
+            }).join('') +
+          '</div>';
+          resultsEl.innerHTML = listHtml;
+          resultsEl.querySelectorAll('.starter-add-song').forEach(function(b) {
+            b.addEventListener('click', async function() {
+              try {
+                await MU.DB.update('videos', b.getAttribute('data-id'), { is_starter: true, starter_order: maxOrder + 1 });
+                maxOrder++;
+                MU.Tabs.switchTo('starter');
+              } catch (e) {
+                alert('ADD FAILED: ' + e.message);
+              }
+            });
+          });
+        } catch (e) {
+          resultsEl.innerHTML = U.alert('SEARCH FAILED: ' + e.message);
+        }
+      });
+
+      document.getElementById('starter-search-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') document.getElementById('starter-search-btn').click();
+      });
+
+    } catch (e) {
+      el.innerHTML = MU.UI.alert('SYSTEM ERROR: ' + esc(e.message));
+    }
+  }
+});
+
+/* ═══════════════════════════════════════
  *   TAB: OBSERVER-LINK
  * ═══════════════════════════════════════ */
 MU.Tabs.register('ol', {
