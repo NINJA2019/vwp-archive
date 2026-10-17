@@ -1276,4 +1276,35 @@ scenarios.push(
       }},
     ],
   },
+  {
+    // single-in-top2: メンバーの唯一のシングルがtop2に入る場合のrank3フォールバック確認。
+    // 旧コード（消費済み判定なし）では bySingleDate=[id31] → latestCandidates=[id31] →
+    // ループでid31をスキップして rank3 未選出 → 2曲しか返らない（バグ）。
+    // 修正後は bySingleDate=[] (id31消費済みでフィルタ済み) → latestCandidates=byDate →
+    // id33(次に新しい非消費曲)が rank3 に選出される → 3曲が確実に返る。
+    //
+    // kafu (mi=0): id=31 tags='シングル' (500000, 2024-05) → rank1 (top1かつ唯一シングル)
+    //              id=32 tags=null      (400000, 2023-01) → rank2
+    //              id=33 tags=null      (100000, 2024-02) → rank3（latest-any フォールバック）
+    //   top2消費後の byDate（日付降順）: id31(2024-05), id33(2024-02), id32(2023-01)
+    //   旧ロジック: bySingleDate=[id31], latestCandidates=[id31], id31消費済みでスキップ → 未選出
+    //   新ロジック: bySingleDate=[] (id31が消費済みで除外), latestCandidates=byDate,
+    //              id31消費済みスキップ → id33が rank3 に選出
+    name: 'starter-refresh/single-in-top2', fn: 'starter-refresh',
+    event: srPost(),
+    routes: [
+      { method: 'GET', match: srVideosFetchMatch, body: [
+        { id: 31, url: 'https://www.youtube.com/watch?v=KAFU0000031', title: 'KAF曲31(シングル)', date: '2024-05-01', member: 'kafu', content_type: 'song', status: 'published', is_starter: false, starter_order: null, tags: 'シングル' },
+        { id: 32, url: 'https://www.youtube.com/watch?v=KAFU0000032', title: 'KAF曲32',           date: '2023-01-01', member: 'kafu', content_type: 'song', status: 'published', is_starter: false, starter_order: null, tags: null },
+        { id: 33, url: 'https://www.youtube.com/watch?v=KAFU0000033', title: 'KAF曲33',           date: '2024-02-01', member: 'kafu', content_type: 'song', status: 'published', is_starter: false, starter_order: null, tags: null },
+      ]},
+      { method: 'GET', match: (u) => u.includes('youtube/v3/videos?part=statistics'), body: {
+        items: [srStat('KAFU0000031', 500000), srStat('KAFU0000032', 400000), srStat('KAFU0000033', 100000)],
+      }},
+      // 3曲すべてが選出される（rank3=id33 via latest-any フォールバック）
+      { method: 'PATCH', match: (u) => u.includes('videos?id=eq.31'), status: 204, body: '' },
+      { method: 'PATCH', match: (u) => u.includes('videos?id=eq.32'), status: 204, body: '' },
+      { method: 'PATCH', match: (u) => u.includes('videos?id=eq.33'), status: 204, body: '' },
+    ],
+  },
 );

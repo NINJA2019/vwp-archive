@@ -200,9 +200,9 @@ exports.handler = async (event) => {
 
       // (b) 最新1曲: シングルタグ曲を優先（トップ2と重複なら次の最新シングル）。
       //     シングル曲がプールにない場合は全種から最新1曲にフォールバック（Yuki決定）。
-      //     【設計判断】「シングルは存在するがすべてトップ2で消費済み」の場合も全種フォールバック。
-      //     この場合も3曲構造を維持するため、仕様の「ゼロシングルならフォールバック」と同様に扱う。
-      const bySingleDate = byDate.filter(r => hasSingleTag(r));
+      //     【設計判断】消費済み判定をプール選択前に行う。これにより「シングルが存在するが
+      //     すべてトップ2で消費済み」の場合も全種フォールバックとなり、3曲構造を維持する。
+      const bySingleDate = byDate.filter(r => hasSingleTag(r) && !selectedIdSet.has(r.id));
       const latestCandidates = bySingleDate.length > 0 ? bySingleDate : byDate;
       for (const row of latestCandidates) {
         if (selectedIdSet.has(row.id)) continue;
