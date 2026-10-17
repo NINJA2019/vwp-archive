@@ -1194,8 +1194,7 @@ scenarios.push(
       { method: 'GET', match: srVideosFetchMatch, body: srRichVideos },
       // YouTube statistics（プール内のYouTube IDのみ。id=4,17,18,19,20はプール外 → バッチに含まれない）
       srYtStats(srRichStats),
-      // 削除grouped PATCH: id=99 のみ（sorted ascending）
-      { method: 'PATCH', match: (u) => u.includes('videos?id=in.(99)'), status: 204, body: '' },
+      // W1修正: 追加per-id PATCH を削除grouped PATCH より先に実行
       // per-id PATCH: kafu
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.2'), status: 204, body: '' },
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.1'), status: 204, body: '' },
@@ -1215,6 +1214,8 @@ scenarios.push(
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.14'), status: 204, body: '' },
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.15'), status: 204, body: '' },
       { method: 'PATCH', match: (u) => u.includes('videos?id=eq.16'), status: 204, body: '' },
+      // 削除grouped PATCH: id=99 のみ（追加PATCHの後）
+      { method: 'PATCH', match: (u) => u.includes('videos?id=in.(99)'), status: 204, body: '' },
     ],
   },
   {
@@ -1226,6 +1227,21 @@ scenarios.push(
         { id: 1, url: 'https://www.youtube.com/watch?v=KAFU0000001', title: 'KAF曲1', date: '2023-01-01', member: 'kafu', content_type: 'song', status: 'published', is_starter: false, starter_order: null },
       ]},
       { method: 'GET', match: (u) => u.includes('youtube/v3/videos?part=statistics'), body: { error: { message: 'quota exceeded', code: 403 } } },
+    ],
+  },
+  {
+    // yt-items-empty-abort: YouTube videos.list が HTTP 200 + items:[] を返す（data.errorなし）
+    // → 空選曲ガードが発動 → 500、PATCH/POSTなし（既存is_starter=trueが全消しされない）
+    name: 'starter-refresh/yt-items-empty-abort', fn: 'starter-refresh',
+    event: srPost(),
+    routes: [
+      { method: 'GET', match: srVideosFetchMatch, body: [
+        { id: 6, url: 'https://www.youtube.com/watch?v=RIME0000006', title: 'RIM曲1', date: '2023-02-01', member: 'rime', content_type: 'song', status: 'published', is_starter: true, starter_order: 21 },
+        { id: 7, url: 'https://www.youtube.com/watch?v=RIME0000007', title: 'RIM曲2', date: '2023-08-01', member: 'rime', content_type: 'song', status: 'published', is_starter: true, starter_order: 22 },
+      ]},
+      // YouTube API が HTTP 200 + items:[] を返す（data.error なし）
+      { method: 'GET', match: (u) => u.includes('youtube/v3/videos?part=statistics'), body: { items: [] } },
+      // PATCH は発行されない（空選曲ガードで中止）
     ],
   },
   {

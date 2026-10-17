@@ -236,6 +236,17 @@ exports.handler = async (event) => {
     }
 
     // ─────────────────────────────────────────────────────────────
+    // 空選曲ガード: 新セットが0件かつ既存スターターが存在する場合は全消しを回避して中止。
+    // YouTube API が HTTP 200 + items:[] を返した場合（quota上限前後の空レスポンス等）に
+    // viewCountMap が空 → eligiblePool が空 → newSelected が空 → diff がすべて removal になる。
+    // data.error では検出できないため、書き込み直前に明示ガードを置く。
+    // ─────────────────────────────────────────────────────────────
+    if (newSelected.length === 0 && currentStarters.length > 0) {
+      console.error('starter-refresh: 選曲結果が空。既存スターター全消しを回避し中止。');
+      return json(500, { error: '選曲結果が空のため中止（0書き込み）', currentStarters: currentStarterIds.size });
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // (9) DB書き込み
     //     全計算完了後にのみ書き込む（abort safety）
     //
@@ -248,31 +259,12 @@ exports.handler = async (event) => {
     // ─────────────────────────────────────────────────────────────
 
     let removedCount = 0;
+    let patchFailed = false;
 
-    // (9a) 削除: 1つのグループPATCH（id=in.(...)）で一括処理
+    // (9a) 追加/順序変更: per-id PATCH を Promise.all で並列実行（削除より先に実行）
+    //      追加→削除の順にすることで、タイムアウト等による中断時でも
+    //      公開リストが一時的に空になる窓を最小化する。
     //      starter_note は含めない（上記不変条件）
-    if (removals.length > 0) {
-      const removalIds = removals.map(r => r.id).sort((a, b) => a - b); // 決定論的順序
-      const remRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/videos?id=in.(${removalIds.join(',')})`,
-        {
-          method: 'PATCH',
-          headers: sbHeaders(SUPABASE_KEY, { 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
-          // starter_note は含めない（不変条件: ユーザーが設定したnoteを自動更新で消してはならない）
-          body: JSON.stringify({ is_starter: false, starter_order: null }),
-        }
-      );
-      if (!remRes.ok) {
-        const text = await remRes.text().catch(() => '');
-        // PATCH段階の部分失敗: ログ記録して続行（次週self-heal）
-        console.error(`starter-refresh: 削除PATCH失敗 ids=${removalIds}: ${remRes.status} ${text.slice(0, 200)}`);
-      } else {
-        removedCount = removalIds.length;
-      }
-    }
-
-    // (9b) 追加/順序変更: per-id PATCH を Promise.all で並列実行
-    //      starter_note は含めない（不変条件: ユーザーが設定したnoteを自動更新で消してはならない）
     const addResults = await Promise.all(
       adds.map(async (s) => {
         const res = await fetch(
@@ -295,6 +287,42 @@ exports.handler = async (event) => {
     );
 
     const addedCount = addResults.filter(Boolean).length;
+    if (addedCount < adds.length) patchFailed = true;
+
+    // (9b) 削除: 1つのグループPATCH（id=in.(...)）で一括処理（追加の後に実行）
+    //      starter_note は含めない（上記不変条件）
+    if (removals.length > 0) {
+      const removalIds = removals.map(r => r.id).sort((a, b) => a - b); // 決定論的順序
+      const remRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/videos?id=in.(${removalIds.join(',')})`,
+        {
+          method: 'PATCH',
+          headers: sbHeaders(SUPABASE_KEY, { 'Content-Type': 'application/json', Prefer: 'return=minimal' }),
+          // starter_note は含めない（不変条件: ユーザーが設定したnoteを自動更新で消してはならない）
+          body: JSON.stringify({ is_starter: false, starter_order: null }),
+        }
+      );
+      if (!remRes.ok) {
+        const text = await remRes.text().catch(() => '');
+        // PATCH段階の部分失敗: ログ記録して続行（次週self-heal）
+        console.error(`starter-refresh: 削除PATCH失敗 ids=${removalIds}: ${remRes.status} ${text.slice(0, 200)}`);
+        patchFailed = true;
+      } else {
+        removedCount = removalIds.length;
+      }
+    }
+
+    // PATCH部分失敗: ok:false + 500 を返す（GitHub Actionsの ok!=true チェックで可視化）
+    // 書き込み自体は続行済み（continue-and-self-heal ポリシー）。次週自動更新でself-heal。
+    if (patchFailed) {
+      return json(500, {
+        ok: false,
+        error: 'PATCH部分失敗（次週自動更新でself-heal）',
+        selected: newSelected,
+        changed: removedCount + addedCount,
+        removed: removedCount,
+      });
+    }
 
     return json(200, {
       ok: true,
