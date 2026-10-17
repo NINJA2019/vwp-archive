@@ -39,7 +39,7 @@ function buildStarterList() {
 
   var items = videos.map(function(v, i) {
     var num = String(i + 1).padStart(2, '0');
-    var thumbUrl = thumb(v.url);
+    var thumbUrl = thumb(v);
     var thumbImg = thumbUrl
       ? '<img class="starter-thumb" src="' + esc(thumbUrl) + '" alt="" loading="lazy" decoding="async">'
       : '<div class="starter-thumb" style="background:rgba(255,255,255,.06)"></div>';
