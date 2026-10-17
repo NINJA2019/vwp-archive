@@ -1155,7 +1155,7 @@ MU.Tabs.register('starter', {
       var rows = await MU.DB.queryAll('videos', {
         select: 'id,title,member,date,status,is_starter,starter_order,starter_note',
         filter: 'is_starter=eq.true',
-        order: 'starter_order.asc.nullslast'
+        order: 'starter_order.asc.nullslast,id.asc'
       });
 
       // ── Stats ──

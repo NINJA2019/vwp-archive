@@ -3,7 +3,7 @@
 // 公開: initStarter() のみ。windowへの新キー露出なし（憲法8）。
 
 import { getVideos, thumb, esc, safeUrl, trackSongClick } from './core.js';
-import { t } from './i18n.js';
+import { t, mbr } from './i18n.js';
 
 // ── 内部状態 ────────────────────────────────────────────
 var _initialized = false;
@@ -46,14 +46,14 @@ function buildStarterList() {
     var noteHtml = v.starter_note
       ? '<div class="starter-note">' + esc(v.starter_note) + '</div>'
       : '';
-    var memberName = v.member || 'all';
+    var memberSlug = v.member || 'all';
     return (
       '<li class="starter-item" data-id="' + v.id + '" data-url="' + esc(safeUrl(v.url)) + '">' +
         '<span class="starter-num">' + num + '</span>' +
         thumbImg +
         '<div class="starter-info">' +
           '<div class="starter-title">' + esc(v.title || '—') + '</div>' +
-          '<div class="starter-member ' + memberCls(memberName) + '">' + esc(memberName.toUpperCase()) + '</div>' +
+          '<div class="starter-member ' + memberCls(memberSlug) + '">' + esc(mbr(memberSlug)) + '</div>' +
           noteHtml +
         '</div>' +
       '</li>'
