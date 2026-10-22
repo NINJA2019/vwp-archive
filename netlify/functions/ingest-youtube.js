@@ -24,7 +24,7 @@ const LIVE_WORD_RE = /\blive\b/i;
 // liveStreamingDetails単独では live と判定しない（20分閾値を設ける）。
 // 真のライブ/配信: contentDetails.duration='P0D'（"PT"を含まないためparseDurationがnullを返す） → live
 // プレミアMV: 公開前後も本来の尺（例PT4M10S）が入っており20分未満 → song
-// 閾値20分: 短尺ライブクリップ（例20min以上）はキーワード判定で拾われるため実害なし
+// 閾値20分: 20分未満の実ライブ素材（切り抜き等）はsongに落ちるが、タイトルのライブ系キーワードで拾われるため実害なし
 const LIVE_DURATION_THRESHOLD_SEC = 20 * 60;
 const ANNOUNCEMENT_KEYWORDS = [
   '告知', 'トレーラー', 'Teaser', 'XFD', 'クロスフェード', '予告',

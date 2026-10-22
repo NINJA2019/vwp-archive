@@ -1,6 +1,6 @@
 # V.W.P ARCHIVE — 統合プロジェクト仕様書
 
-> 最終更新: 2026/04/03
+> 最終更新: 2026/10/17
 > 作成者: Yuki Kakinuma + Claude (設計パートナー)
 > 統合元: プロジェクト仕様書(03/22), MY SHELF変更仕様書(03/25), mobile_ui_spec(03/26), observer_link_spec(04/02), quick_send(04/03)
 
