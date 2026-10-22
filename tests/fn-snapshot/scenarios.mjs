@@ -498,6 +498,10 @@ const INGEST_PLAYLIST = {
     plVid('old_kafu_06', 'カーソル以前の旧曲', '2026-01-05T00:00:00Z'),
     plVid('exs_kafu_07', '既存曲（DB登録済み）', '2026-01-14T00:00:00Z'),
     plVid('mis_kafu_08', '詳細未取得（プレミア処理中）', '2026-01-14T06:00:00Z'),
+    // プレミア分類テスト用（publishedAtをexs_kafu_07より前に設定しカーソルに影響させない）
+    plVid('prm_kafu_09', '花譜 新曲【オリジナルMV】プレミア公開', '2026-01-13T09:00:00Z'),  // (a) プレミアMV
+    plVid('p0d_kafu_10', '春の生配信アーカイブ', '2026-01-13T12:00:00Z'),                  // (b) P0Dストリーム
+    plVid('sht_live_11', '配信クリップ（60秒以内）', '2026-01-13T18:00:00Z'),             // (c) shorts > live 優先確認
   ],
 };
 const INGEST_DETAILS = {
@@ -509,6 +513,14 @@ const INGEST_DETAILS = {
     ytDetail('cov_kafu_05', '理芽とデュエット - Covered by 花譜', '2026-01-13T06:00:00Z', 'PT3M45S'),
     ytDetail('exs_kafu_07', '既存曲（DB登録済み）', '2026-01-14T00:00:00Z', 'PT4M0S'),
     // mis_kafu_08 は意図的に欠落（削除/非公開/プレミア処理中の再現）
+    // (a) プレミアMV: live:true かつ PT4M10S (250秒 < LIVE_DURATION_THRESHOLD_SEC=1200) → content_type='song'
+    //     旧コード(hasLiveDetails単独)では 'live' に誤分類されていたバグの再現
+    ytDetail('prm_kafu_09', '花譜 新曲【オリジナルMV】プレミア公開', '2026-01-13T09:00:00Z', 'PT4M10S', { live: true }),
+    // (b) P0Dストリーム: live:true かつ P0D → parseDuration が null を返す → durationSec===null → content_type='live'
+    //     真のライブ/upcoming配信の識別（旧コード・新コード共に 'live'）
+    ytDetail('p0d_kafu_10', '春の生配信アーカイブ', '2026-01-13T12:00:00Z', 'P0D', { live: true }),
+    // (c) shorts > live 優先: live:true かつ PT30S (30秒 ≤ 60秒) → shorts が先に判定 → content_type='shorts'
+    ytDetail('sht_live_11', '配信クリップ（60秒以内）', '2026-01-13T18:00:00Z', 'PT30S', { live: true }),
   ],
 };
 const ingestChannelsRoute = (channels) => ({
