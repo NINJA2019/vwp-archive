@@ -281,6 +281,7 @@ export function openShelf(){
   document.body.style.overflow = 'hidden';
   _gtag('event','shelf_open',{song_count:getShelf().length});
   trackScreen('/shelf','My Shelf | VWP Archive',{overlay:true});
+  document.dispatchEvent(new CustomEvent('vwp:shelf-opened')); // setlist.js が購読（入口ボタン表示）
 }
 
 function updateShelfI18n(){
@@ -420,6 +421,8 @@ export function initShelf(){
         if(typeof window.closeShareDialog==='function') window.closeShareDialog();
         return;
       }
+      const sl = document.getElementById('setlist-overlay');
+      if(sl && sl.style.display !== 'none') return; // setlist が上に開いているときは setlist.js が処理
       const overlay = document.getElementById('my-shelf-overlay');
       if(overlay && overlay.style.display !== 'none'){
         closeShelfOverlay();

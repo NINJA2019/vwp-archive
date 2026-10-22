@@ -1320,3 +1320,95 @@ scenarios.push(
     ],
   },
 );
+
+// ═══════════════════════════════════════════════════════════════
+// setlist-submit / setlist-rankings（Phase 1）
+// ═══════════════════════════════════════════════════════════════
+const SL_CLIENT = '0f0f0f0f-aaaa-4bbb-8ccc-0123456789ab';
+const SL_H = { 'x-nf-client-connection-ip': CLIENT_IP };
+const slPost = (body, headers = {}) => post(body, { ...SL_H, ...headers });
+// 3 曲（published / kafu ソング）
+const SL_VIDS = [
+  { id: 101, member: 'kafu', content_type: 'song' },
+  { id: 102, member: 'kafu rime', content_type: null },     // デュエット: kafu に登録可
+  { id: 103, member: 'kafu', content_type: 'song' },
+];
+const slRate = (rows) => ({ method: 'GET', match: (u) => u.includes('setlists?select=id&client_hash=eq.'), body: rows });
+const slVideos = (rows) => ({ method: 'GET', match: (u) => u.includes('rest/v1/videos?select=id,member,content_type&id=in.(') && u.includes('status=eq.published'), body: rows });
+const slExisting = (rows) => ({ method: 'GET', match: (u) => u.includes('setlists?select=id&client_id=eq.'), body: rows });
+const slUpsert = (rows) => ({ method: 'POST', match: (u) => u.includes('rest/v1/setlists?on_conflict=client_id,member'), status: 201, body: rows });
+const slRpc = (rows, status = 200) => ({ method: 'POST', match: (u) => u.includes('rest/v1/rpc/setlist_rankings'), status, body: rows });
+const SL_ROW = { id: '44444444-4444-4444-4444-444444444444', client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102, 103], client_hash: CLIENT_HASH, created_at: '2026-01-15T12:00:00.000Z', updated_at: '2026-01-15T12:00:00.000Z' };
+// RPC 行: kafu は 12 人登録（ready）、rime は 4 人（集計中）
+const slRpcRows = (kafuSubs = 12) => [
+  { member: 'kafu', video_id: 101, votes: 9, rank: 1, submitters: kafuSubs },
+  { member: 'kafu', video_id: 103, votes: 7, rank: 2, submitters: kafuSubs },
+  { member: 'kafu', video_id: 777, votes: 6, rank: 3, submitters: kafuSubs },
+  { member: 'kafu', video_id: 102, votes: 2, rank: 4, submitters: kafuSubs },
+  { member: 'rime', video_id: 9, votes: 3, rank: 1, submitters: 4 },
+];
+const SL_MISSING = { method: 'POST', match: (u) => u.includes('rest/v1/rpc/setlist_rankings'), status: 404, body: '{"code":"PGRST202","message":"Could not find the function public.setlist_rankings(p_limit) in the schema cache"}' };
+
+scenarios.push(
+  { name: 'setlist-submit/options', fn: 'setlist-submit', event: { httpMethod: 'OPTIONS', headers: SL_H }, routes: [] },
+  { name: 'setlist-submit/405-get', fn: 'setlist-submit', event: { httpMethod: 'GET', headers: SL_H }, routes: [] },
+  { name: 'setlist-submit/too-large', fn: 'setlist-submit', event: slPost('{"client_id":"' + 'x'.repeat(2100) + '"}'), routes: [] },
+  { name: 'setlist-submit/invalid-json', fn: 'setlist-submit', event: slPost('{{{'), routes: [] },
+  { name: 'setlist-submit/invalid-client', fn: 'setlist-submit', event: slPost({ client_id: 'not-a-uuid', member: 'kafu', video_ids: [101, 102, 103] }), routes: [] },
+  { name: 'setlist-submit/invalid-member', fn: 'setlist-submit', event: slPost({ client_id: SL_CLIENT, member: 'all', video_ids: [101, 102, 103] }), routes: [] },
+  { name: 'setlist-submit/invalid-ids-length', fn: 'setlist-submit', event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102] }), routes: [] },
+  { name: 'setlist-submit/invalid-ids-dup', fn: 'setlist-submit', event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 101, 103] }), routes: [] },
+  { name: 'setlist-submit/invalid-ids-nan', fn: 'setlist-submit', event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 'abc', 103] }), routes: [] },
+  {
+    name: 'setlist-submit/rate-limit', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102, 103] }),
+    routes: [slRate(Array.from({ length: 30 }, (_, i) => ({ id: i + 1 })))],
+  },
+  {
+    name: 'setlist-submit/video-not-found', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102, 103] }),
+    routes: [slRate([]), slVideos(SL_VIDS.slice(0, 2))],   // 1 件が pending/欠番
+  },
+  {
+    name: 'setlist-submit/member-mismatch', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT, member: 'rime', video_ids: [101, 102, 103] }),
+    routes: [slRate([]), slVideos(SL_VIDS)],
+  },
+  {
+    name: 'setlist-submit/not-a-song', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102, 103] }),
+    routes: [slRate([]), slVideos([SL_VIDS[0], SL_VIDS[1], { id: 103, member: 'kafu', content_type: 'shorts' }])],
+  },
+  {
+    name: 'setlist-submit/success-new-counting', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102, 103] }),
+    routes: [slRate([]), slVideos(SL_VIDS), slExisting([]), slUpsert([SL_ROW]), slRpc(slRpcRows(7))],
+  },
+  {
+    name: 'setlist-submit/success-update-ready', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT.toUpperCase(), member: 'kafu', video_ids: ['101', 102, 103] }),
+    routes: [slRate([{ id: 1 }, { id: 2 }]), slVideos(SL_VIDS), slExisting([{ id: SL_ROW.id }]), slUpsert([SL_ROW]), slRpc(slRpcRows(12))],
+  },
+  {
+    name: 'setlist-submit/admin-bypass', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102, 103] }, { 'x-admin-key': PW }),
+    routes: [slVideos(SL_VIDS), slExisting([]), slUpsert([SL_ROW]), slRpc(slRpcRows(12))],
+  },
+  {
+    name: 'setlist-submit/table-missing', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102, 103] }),
+    routes: [{ method: 'GET', match: (u) => u.includes('setlists?select=id&client_hash=eq.'), status: 404, body: '{"code":"42P01","message":"relation \\"public.setlists\\" does not exist"}' }],
+  },
+  {
+    name: 'setlist-submit/sb-error', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102, 103] }),
+    routes: [slRate([]), slVideos(SL_VIDS), slExisting([]), { method: 'POST', match: 'rest/v1/setlists?on_conflict', status: 500, body: 'db down' }],
+  },
+  { name: 'setlist-rankings/options', fn: 'setlist-rankings', event: { httpMethod: 'OPTIONS', headers: {} }, routes: [] },
+  { name: 'setlist-rankings/405-post', fn: 'setlist-rankings', event: { httpMethod: 'POST', headers: {}, body: '{}' }, routes: [] },
+  { name: 'setlist-rankings/success', fn: 'setlist-rankings', event: get(null), routes: [slRpc(slRpcRows(12))] },
+  { name: 'setlist-rankings/success-member-filter', fn: 'setlist-rankings', event: get({ member: 'rime' }), routes: [slRpc(slRpcRows(12))] },
+  { name: 'setlist-rankings/empty', fn: 'setlist-rankings', event: get(null), routes: [slRpc([])] },
+  { name: 'setlist-rankings/function-missing', fn: 'setlist-rankings', event: get(null), routes: [SL_MISSING] },
+  { name: 'setlist-rankings/sb-error', fn: 'setlist-rankings', event: get(null), routes: [slRpc('db down', 500)] },
+);

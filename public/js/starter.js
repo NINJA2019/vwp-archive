@@ -5,6 +5,7 @@
 import { getVideos, thumb, esc, safeUrl, trackSongClick } from './core.js';
 import { t, mbr } from './i18n.js';
 import { trackScreen, trackScreenRestore } from './pageview.js';
+import { renderFanSelect } from './setlist.js';
 
 // ── 内部状態 ────────────────────────────────────────────
 var _initialized = false;
@@ -35,6 +36,7 @@ function buildStarterList() {
 
   if (videos.length === 0) {
     body.innerHTML = '<p class="starter-empty">' + esc(t('starterEmpty')) + '</p>';
+    renderFanSelect(body); // 店主セレクトが空でもファン・セレクトは出す
     return;
   }
 
@@ -73,6 +75,9 @@ function buildStarterList() {
       trackSongClick(id, url);
     });
   });
+
+  // ファン・セレクト（店主セレクトの下に併記。非同期に埋まる）
+  renderFanSelect(body);
 }
 
 // ── open/close ───────────────────────────────────────────
@@ -120,6 +125,8 @@ export function initStarter() {
   // Esc key to close
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
+      var sl = document.getElementById('setlist-overlay');
+      if (sl && sl.style.display !== 'none') return; // setlist が上に開いているときは setlist.js が処理
       var s = document.getElementById('starter-list-screen');
       if (s && s.style.display !== 'none') closeStarter();
     }

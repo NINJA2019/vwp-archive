@@ -28,14 +28,15 @@
 <link rel="preconnect" href="https://img.youtube.com">
 <link rel="dns-prefetch" href="https://www.googletagmanager.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Shippori+Mincho:wght@400&family=Noto+Sans+JP:wght@400&family=Barlow+Condensed:wght@400;700;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/base.css?v=1.11.0">
-<link rel="stylesheet" href="/css/layout.css?v=1.11.0">
-<link rel="stylesheet" href="/css/shelf.css?v=1.11.0">
-<link rel="stylesheet" href="/css/mobile.css?v=1.11.0">
-<link rel="stylesheet" href="/css/observer-link.css?v=1.11.0">
-<link rel="stylesheet" href="/css/ticker.css?v=1.11.0">
-<link rel="stylesheet" href="/css/starter.css?v=1.11.0">
-<link rel="modulepreload" href="/js/main.js?v=1.9.5">
+<link rel="stylesheet" href="/css/base.css?v=1.12.0">
+<link rel="stylesheet" href="/css/layout.css?v=1.12.0">
+<link rel="stylesheet" href="/css/shelf.css?v=1.12.0">
+<link rel="stylesheet" href="/css/mobile.css?v=1.12.0">
+<link rel="stylesheet" href="/css/observer-link.css?v=1.12.0">
+<link rel="stylesheet" href="/css/ticker.css?v=1.12.0">
+<link rel="stylesheet" href="/css/starter.css?v=1.12.0">
+<link rel="stylesheet" href="/css/setlist.css?v=1.12.0">
+<link rel="modulepreload" href="/js/main.js?v=1.10.0">
 </head>
 <body>
 
@@ -378,7 +379,7 @@
   </div>
 </div>
 
-<script type="module" src="/js/main.js?v=1.9.5"></script>
+<script type="module" src="/js/main.js?v=1.10.0"></script>
 
 <!-- About / Contact Page Modal -->
 <div id="pageMover" style="display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);overflow-y:auto;">
@@ -495,6 +496,7 @@
       <div class="shelf-area">
         <div class="shelf-label" id="shelf-label"></div>
         <button id="shelf-play-all" class="shelf-play-all" type="button" style="display:none;"></button>
+        <button id="sl-shelf-entry" class="sl-entry-btn" type="button" style="display:none;"></button>
         <div id="shelf-rows-container"></div>
       </div>
       <div class="shelf-hint" id="shelf-hint"></div>
@@ -649,6 +651,39 @@
   </div>
   <div class="starter-body" id="starter-list-body"></div>
 </div>
+
+<!-- SETLIST OVERLAY (Fan Select, Phase 1) -->
+<div id="setlist-overlay" role="dialog" aria-modal="true" aria-label="Setlist" style="display:none;">
+  <div class="sl-backdrop"></div>
+  <div class="sl-sheet">
+    <div class="sl-header">
+      <div>
+        <div class="sl-heading" data-i18n="slTitle">SETLIST</div>
+        <div class="sl-sub" id="sl-sub"></div>
+      </div>
+      <button class="sl-close" type="button" aria-label="Close">✕ CLOSE</button>
+    </div>
+    <div class="sl-body">
+      <div id="sl-pick" class="sl-pick">
+        <div class="sl-members" id="sl-members"></div>
+        <div class="sl-slots" id="sl-slots"></div>
+        <div class="sl-source">
+          <div class="sl-tabs" id="sl-tabs">
+            <button type="button" class="sl-tab active" data-tab="shelf" data-i18n="slTabShelf">MY SHELF</button>
+            <button type="button" class="sl-tab" data-tab="all" data-i18n="slTabAll">ALL</button>
+          </div>
+          <div class="sl-search-wrap" id="sl-search-wrap" style="display:none;">
+            <input type="text" class="sl-search" id="sl-search" autocomplete="off">
+          </div>
+        </div>
+        <div class="sl-list" id="sl-list"></div>
+        <div class="sl-footer"><button type="button" class="sl-btn" id="sl-submit" disabled></button></div>
+      </div>
+      <div id="sl-done" class="sl-done" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+<div class="sl-toast" id="sl-toast"></div>
 
 <!-- OBSERVER-LINK PICKER -->
 <div class="ol-picker-overlay" id="olPickerOverlay">
