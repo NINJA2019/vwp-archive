@@ -519,8 +519,8 @@ const INGEST_DETAILS = {
     // (b) P0Dストリーム: live:true かつ P0D → parseDuration が null を返す → durationSec===null → content_type='live'
     //     真のライブ/upcoming配信の識別（旧コード・新コード共に 'live'）
     ytDetail('p0d_kafu_10', '春の生配信アーカイブ', '2026-01-13T12:00:00Z', 'P0D', { live: true }),
-    // (c) shorts > live 優先: live:true かつ PT30S (30秒 ≤ 60秒) → shorts が先に判定 → content_type='shorts'
-    ytDetail('sht_live_11', '配信クリップ（60秒以内）', '2026-01-13T18:00:00Z', 'PT30S', { live: true }),
+    // (c) shorts優先確認 — P0D+liveDetailsはlive条件を満たすが、#shortsが先に捕捉
+    ytDetail('sht_live_11', '配信クリップ（60秒以内）', '2026-01-13T18:00:00Z', 'P0D', { live: true, description: '#shorts' }),
   ],
 };
 const ingestChannelsRoute = (channels) => ({

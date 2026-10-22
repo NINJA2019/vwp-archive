@@ -67,7 +67,7 @@ ingested_at TIMESTAMPTZ
 
 **content_type フィールド（ingest-youtubeによる自動分類）:**
 - `shorts`: duration ≤ 60秒 または #shorts タグ または Music Archiveキーワード（最優先）
-- `live`: (liveStreamingDetails あり かつ duration が 20分以上 または P0D) または ライブ系キーワード（ワンマン/ライブ映像/LIVE/不可解/現象/狂想）。プレミアMVはアーカイブ後も liveStreamingDetails が永続するため duration で区別する。真のライブ/配信は `P0D`（parseDurationがnullを返す）→ live 判定通過
+- `live`: (liveStreamingDetails あり かつ（duration が 20分以上 または P0D）) または ライブ系キーワード（ワンマン/ライブ映像/LIVE/不可解/現象/狂想）。プレミアMVはアーカイブ後も liveStreamingDetails が永続するため duration で区別する。真のライブ/配信は `P0D`（parseDurationがnullを返す）→ live 判定通過
 - `announcement`: 告知系キーワード（告知/トレーラー/Teaser/XFD/クロスフェード/予告/開催決定/発売決定/情報解禁）
 - `song`: 上記に該当しないもの（デフォルト）
 
