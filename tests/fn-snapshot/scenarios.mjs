@@ -1411,4 +1411,47 @@ scenarios.push(
   { name: 'setlist-rankings/empty', fn: 'setlist-rankings', event: get(null), routes: [slRpc([])] },
   { name: 'setlist-rankings/function-missing', fn: 'setlist-rankings', event: get(null), routes: [SL_MISSING] },
   { name: 'setlist-rankings/sb-error', fn: 'setlist-rankings', event: get(null), routes: [slRpc('db down', 500)] },
+  // ── reviewer m-15 追加 ──
+  {
+    // 不正な admin key は bypass にならずレート制限が効く
+    name: 'setlist-submit/bad-admin-key-rate-limit', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102, 103] }, { 'x-admin-key': 'wrong_pw_dummy' }),
+    routes: [slRate(Array.from({ length: 30 }, (_, i) => ({ id: i + 1 })))],
+  },
+  { name: 'setlist-submit/invalid-ids-unsafe-int', fn: 'setlist-submit', event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 9007199254740993, 103] }), routes: [] },
+  { name: 'setlist-submit/invalid-ids-float', fn: 'setlist-submit', event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102.5, 103] }), routes: [] },
+  {
+    // upsert 成功後に RPC が失敗 → 200 + rankings_error（書き込みは完了している）
+    name: 'setlist-submit/rpc-fail-after-upsert', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102, 103] }),
+    routes: [slRate([]), slVideos(SL_VIDS), slExisting([]), slUpsert([SL_ROW]), slRpc('db down', 500)],
+  },
+  {
+    name: 'setlist-submit/video-ids-as-strings', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: ['101', '102', '103'] }),
+    routes: [slRate([]), slVideos(SL_VIDS), slExisting([]), slUpsert([SL_ROW]), slRpc(slRpcRows(7))],
+  },
+  {
+    // IP ヘッダなし → 127.0.0.1 の hash でレート制限クエリ
+    name: 'setlist-submit/no-ip-header', fn: 'setlist-submit',
+    event: post({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102, 103] }),
+    routes: [slRate([]), slVideos(SL_VIDS), slExisting([]), slUpsert([SL_ROW]), slRpc(slRpcRows(7))],
+  },
+  {
+    // 更新時は daily_used を増やさない（m-10）
+    name: 'setlist-submit/update-daily-used', fn: 'setlist-submit',
+    event: slPost({ client_id: SL_CLIENT, member: 'kafu', video_ids: [101, 102, 103] }),
+    routes: [slRate([{ id: 1 }]), slVideos(SL_VIDS), slExisting([{ id: SL_ROW.id }]), slUpsert([SL_ROW]), slRpc(slRpcRows(7))],
+  },
+  { name: 'setlist-rankings/invalid-member', fn: 'setlist-rankings', event: get({ member: 'all' }), routes: [] },
+  {
+    // m-4: published 曲 0 件のメンバー（LEFT JOIN の NULL 行）は submitters だけ採用、top は空
+    name: 'setlist-rankings/null-rows-submitters', fn: 'setlist-rankings', event: get(null),
+    routes: [slRpc([{ member: 'koko', video_id: null, votes: null, rank: null, submitters: 11 }, ...slRpcRows(12)])],
+  },
+  {
+    // m-6: 公開応答は top 3 件に切る
+    name: 'setlist-rankings/top-sliced-to-3', fn: 'setlist-rankings', event: get({ member: 'kafu' }),
+    routes: [slRpc(slRpcRows(12))],
+  },
 );

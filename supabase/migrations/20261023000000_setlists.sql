@@ -13,7 +13,10 @@ CREATE TABLE IF NOT EXISTS public.setlists (
   member      TEXT NOT NULL
                 CHECK (member IN ('kafu','rime','harusar','isekai','koko','vwp')),
   video_ids   BIGINT[] NOT NULL
-                CHECK (array_length(video_ids, 1) = 3),   -- 重複排除は Function 側で検証
+                CHECK (array_length(video_ids, 1) = 3
+                       AND video_ids[1] <> video_ids[2]
+                       AND video_ids[1] <> video_ids[3]
+                       AND video_ids[2] <> video_ids[3]),  -- 3 曲・重複なし（Function 側でも検証）
   client_hash TEXT NOT NULL,                      -- IP SHA-256（レート制限用。song_bottles と同じ getClientHash）
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now(), -- 初回登録（upsert で据え置き）
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(), -- Function が明示的に now を書く
@@ -29,7 +32,8 @@ ALTER TABLE public.setlists ENABLE ROW LEVEL SECURITY;
 
 -- ── メンバー別ランキング（上位 p_limit 件 / メンバー） ──
 -- 憲法2: videos を status='published' で JOIN し、非公開曲は集計から除外する。
--- タイブレーク: votes DESC → first_at ASC（その曲が最初に選ばれた時刻。先に選んだ人が勝つ）→ video_id ASC
+-- タイブレーク: votes DESC → first_at ASC（その曲を含む行の最初の登録時刻 = created_at の最小。更新では動かない）→ video_id ASC
+-- published 曲が 0 件のメンバーも submitters を返す（subs LEFT JOIN r。rank NULL 行は Function 側で top から除外）
 -- 戻り行数の上限は 6 メンバー × p_limit（既定 50 → 300 行）で PostgREST の 1,000 行キャップ未満（憲法5）。
 CREATE OR REPLACE FUNCTION public.setlist_rankings(p_limit INT DEFAULT 50)
 RETURNS TABLE (member TEXT, video_id BIGINT, votes BIGINT, rank INT, submitters BIGINT)
@@ -41,7 +45,7 @@ AS $$
     FROM public.setlists s GROUP BY s.member
   ),
   v AS (
-    SELECT s.member, e.video_id, COUNT(*) AS votes, MIN(s.updated_at) AS first_at
+    SELECT s.member, e.video_id, COUNT(DISTINCT s.id) AS votes, MIN(s.created_at) AS first_at
     FROM public.setlists s
     CROSS JOIN LATERAL unnest(s.video_ids) AS e(video_id)
     JOIN public.videos vd ON vd.id = e.video_id AND vd.status = 'published'
@@ -52,10 +56,10 @@ AS $$
            ROW_NUMBER() OVER (PARTITION BY v.member ORDER BY v.votes DESC, v.first_at ASC, v.video_id ASC) AS rank
     FROM v
   )
-  SELECT r.member, r.video_id, r.votes, r.rank::INT, subs.submitters
-  FROM r JOIN subs ON subs.member = r.member
-  WHERE r.rank <= LEAST(GREATEST(COALESCE(p_limit, 50), 1), 100)
-  ORDER BY r.member, r.rank;
+  SELECT subs.member, r.video_id, r.votes, r.rank::INT, subs.submitters
+  FROM subs LEFT JOIN r ON r.member = subs.member
+                       AND r.rank <= LEAST(GREATEST(COALESCE(p_limit, 50), 1), 100)
+  ORDER BY subs.member, r.rank;
 $$;
 
 -- anon / authenticated からの直接 RPC 呼び出しを閉じる（service key のみ）

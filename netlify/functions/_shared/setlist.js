@@ -14,7 +14,8 @@ const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}
 /** migration 未適用（テーブル/関数なし）を PostgREST のエラー文から判定 */
 function isMissingSchemaError(e) {
   const msg = String((e && e.message) || e || '');
-  return /42P01|42883|PGRST202|PGRST205|does not exist|Could not find the (table|function)/i.test(msg);
+  // 対象名入りに絞る（無関係な 404/does not exist を「未適用」と誤判定しない）
+  return /relation "public\.setlists" does not exist|relation "setlists" does not exist|42P01[^]*setlists|42883[^]*setlist_rankings|PGRST202[^]*setlist_rankings|PGRST205[^]*setlists|Could not find the (table|function) '?public\.setlist/i.test(msg);
 }
 
 /**
@@ -32,6 +33,8 @@ function shapeRankings(rows) {
     if (!m) continue;
     const subs = Number(r.submitters) || 0;
     if (subs > m.submitters) m.submitters = subs;
+    // LEFT JOIN の NULL 行（published 曲 0 件のメンバー）は submitters だけ採用し top には入れない
+    if (r.video_id == null || r.rank == null) continue;
     m.top.push({ video_id: Number(r.video_id), votes: Number(r.votes) || 0, rank: Number(r.rank) || 0 });
   }
   for (const m of SETLIST_MEMBERS) {

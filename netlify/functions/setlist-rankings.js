@@ -43,6 +43,9 @@ exports.handler = async (event) => {
   const url = process.env.SUPABASE_URL;
   const key = serviceKey();
   const only = event.queryStringParameters && event.queryStringParameters.member;
+  if (only !== undefined && only !== null && only !== '' && !SETLIST_MEMBERS.includes(only)) {
+    return resp(400, { success: false, error: 'INVALID_MEMBER' }, false);
+  }
 
   try {
     const rows = await sbFetch(
@@ -54,6 +57,8 @@ exports.handler = async (event) => {
       }
     );
     let members = shapeRankings(rows);
+    // 公開応答は上位 3 件のみ（submit 応答は my_ranks 用に 50 件のまま）
+    for (const m of Object.keys(members)) members[m].top = members[m].top.slice(0, 3);
     if (only && SETLIST_MEMBERS.includes(only)) {
       members = { [only]: members[only] };
     }

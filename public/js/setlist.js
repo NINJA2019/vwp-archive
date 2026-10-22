@@ -38,6 +38,7 @@ let _rankingsAt = 0;
 const _sessionOverride = {};  // member → submit 応答由来の鮮度100%データ（CDN 5分キャッシュ対策）
 const _bgCache = new WeakMap();
 const RANKINGS_TTL = 60 * 1000;
+const _rankViewSent = new Set();  // setlist_rank_view はセッション内でメンバーごと 1 回
 
 // ── localStorage ─────────────────────────────────────────
 function uuidv4(){
@@ -96,10 +97,12 @@ export function fetchRankings(force){
   const now = Date.now();
   if(!force && _rankingsPromise && (now - _rankingsAt) < RANKINGS_TTL) return _rankingsPromise.then(applyOverride);
   _rankingsAt = now;
+  // 通信失敗 / 5xx は success:false（available は undefined のまま）で返し、キャッシュしない
   _rankingsPromise = fetch(API_RANKINGS, { cache: 'no-cache' })
     .then(r => r.ok ? r.json() : { success:false })
-    .then(d => (d && d.success) ? d : { success:false, available:false, members:{} })
-    .catch(() => ({ success:false, available:false, members:{} }));
+    .then(d => (d && d.success) ? d : { success:false, members:{} })
+    .catch(() => ({ success:false, members:{} }))
+    .then(d => { if(!d.success) _rankingsAt = 0; return d; });
   return _rankingsPromise.then(d => applyOverride(JSON.parse(JSON.stringify(d))));
 }
 
@@ -121,7 +124,9 @@ export function renderFanSelect(host){
   if(!sec){ sec = document.createElement('section'); sec.className = 'sl-fans'; sec.id = 'sl-fans'; host.appendChild(sec); }
   sec.innerHTML = '';
   fetchRankings().then(data => {
-    if(!data || !data.available){ sec.remove(); return; }
+    // available===false（migration 未適用）のときだけ非表示。通信失敗時はランキングなし・登録ボタンありで描画
+    if(data && data.available === false){ sec.remove(); return; }
+    if(!data || !data.members) data = { members:{} };
     const mine = getMySetlists();
     let html = '<div class="sl-fans-head"><div class="sl-fans-heading">'+esc(t('slFans'))+'</div><div class="sl-fans-sub">'+esc(t('slFansSub'))+'</div></div>';
     MEMBERS.forEach(m => {
@@ -145,7 +150,7 @@ export function renderFanSelect(host){
         '<button type="button" class="sl-entry-btn sl-fans-btn" data-member="'+m+'">'+esc(btnLabel)+' →</button></div>'+
         (rows ? '<ul class="sl-rank-list">'+rows+'</ul>' : '')+
         '</div>';
-      _gtag('event','setlist_rank_view',{member:m, submitters:e.submitters, ready:e.ready});
+      if(!_rankViewSent.has(m)){ _rankViewSent.add(m); _gtag('event','setlist_rank_view',{member:m, submitters:e.submitters, ready:e.ready}); }
     });
     sec.innerHTML = html;
     sec.querySelectorAll('.sl-fans-btn').forEach(b => b.addEventListener('click', () => openSetlist(b.getAttribute('data-member'), 'starter')));

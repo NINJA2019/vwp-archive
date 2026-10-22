@@ -1,11 +1,13 @@
 // setlist-submit — ファンのセットリスト登録（Phase 1）
 // POST { client_id, member, video_ids[3] }
 // 憲法2: video_ids は videos?status=eq.published で存在検証。非公開曲・他メンバー曲・非ソング曲は拒否。
-// 同一 client_id × member は upsert（on_conflict）で上書き。レート制限は client_hash（IP SHA-256）で 30 件/24h。
+// 同一 client_id × member は upsert（on_conflict）で上書き。
+// レート制限は client_hash（IP SHA-256）で「直近 24h に INSERT された行」30 件/24h（created_at 基準。更新は数えない）。
 // 応答には CDN を経由しない鮮度 100% のランキング（該当メンバー分）を含める（「登録後にランキングが動く」演出用）。
 
 const { serviceKey, sbFetch } = require('./_shared/supabase');
 const { getClientHash } = require('./_shared/client-hash');
+const crypto = require('crypto');
 const {
   SETLIST_MEMBERS, SETLIST_SIZE, MIN_SUBMITTERS, RANK_LIMIT, ALLOWED_ORIGIN,
   uuidRegex, isMissingSchemaError, shapeRankings,
@@ -71,8 +73,13 @@ exports.handler = async (event) => {
   if (!Array.isArray(rawIds) || rawIds.length !== SETLIST_SIZE) {
     return resp(400, { success: false, error: 'INVALID_VIDEO_IDS' });
   }
-  const videoIds = rawIds.map(x => (typeof x === 'number' || typeof x === 'string') ? parseInt(x, 10) : NaN);
-  if (!videoIds.every(n => Number.isFinite(n) && n > 0) || new Set(videoIds).size !== SETLIST_SIZE) {
+  // 数値は整数のみ、文字列は 10 進の数字列のみ受け付ける（102.5 や '1e3' を黙って丸めない）
+  const videoIds = rawIds.map(x => {
+    if (typeof x === 'number') return Number.isInteger(x) ? x : NaN;
+    if (typeof x === 'string' && /^\d{1,15}$/.test(x)) return parseInt(x, 10);
+    return NaN;
+  });
+  if (!videoIds.every(n => Number.isSafeInteger(n) && n > 0) || new Set(videoIds).size !== SETLIST_SIZE) {
     return resp(400, { success: false, error: 'INVALID_VIDEO_IDS' });
   }
 
@@ -82,16 +89,18 @@ exports.handler = async (event) => {
   const clientHash = getClientHash(event);
 
   // ── admin bypass（Yuki のテスト用。OL exchange と同型） ──
-  const adminKey = event.headers['x-admin-key'] || '';
-  const isAdmin = adminKey.length > 0 && adminKey === (process.env.ADMIN_PASSWORD || '');
+  const adminKey = String(event.headers['x-admin-key'] || '');
+  const adminPw = String(process.env.ADMIN_PASSWORD || '');
+  const isAdmin = adminKey.length > 0 && adminKey.length === adminPw.length
+    && crypto.timingSafeEqual(Buffer.from(adminKey), Buffer.from(adminPw));
 
   try {
-    // レート制限（24h の更新件数。admin は免除）
+    // レート制限（直近 24h に INSERT された行数 = created_at 基準。更新は数えない。admin は免除）
     let dailyUsed = 0;
     if (!isAdmin) {
       const since = new Date(Date.now() - 86400000).toISOString();
       const rateData = await sbFetch(
-        `${url}/rest/v1/setlists?select=id&client_hash=eq.${clientHash}&updated_at=gte.${since}`,
+        `${url}/rest/v1/setlists?select=id&client_hash=eq.${clientHash}&created_at=gte.${since}`,
         { headers: getHeaders }
       );
       dailyUsed = Array.isArray(rateData) ? rateData.length : 0;
@@ -143,16 +152,24 @@ exports.handler = async (event) => {
       return resp(500, { success: false, error: 'INTERNAL_ERROR' });
     }
 
-    // 鮮度 100% のランキング（該当メンバー分）
-    const rows = await sbFetch(
-      `${url}/rest/v1/rpc/setlist_rankings`,
-      {
-        method: 'POST',
-        headers: { ...getHeaders, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p_limit: RANK_LIMIT }),
-      }
-    );
-    const shaped = shapeRankings(rows)[member];
+    // 鮮度 100% のランキング（該当メンバー分）。書き込みは完了しているので RPC 失敗は 200 + rankings_error で返す
+    let rows = null, rankingsError = false;
+    try {
+      rows = await sbFetch(
+        `${url}/rest/v1/rpc/setlist_rankings`,
+        {
+          method: 'POST',
+          headers: { ...getHeaders, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_limit: RANK_LIMIT }),
+        }
+      );
+    } catch (e) {
+      console.error('setlist-submit rankings error:', e);
+      rankingsError = true;
+    }
+    const shaped = rankingsError
+      ? { submitters: 0, ready: false, remaining: MIN_SUBMITTERS, top: [] }
+      : shapeRankings(rows)[member];
     const myRanks = {};
     if (shaped.ready) {
       for (const id of videoIds) {
@@ -171,7 +188,8 @@ exports.handler = async (event) => {
       remaining: shaped.remaining,
       ranking: shaped.top,
       my_ranks: myRanks,
-      daily_used: isAdmin ? 0 : dailyUsed + 1,
+      rankings_error: rankingsError || undefined,
+      daily_used: isAdmin ? 0 : (isUpdate ? dailyUsed : dailyUsed + 1),
       daily_limit: isAdmin ? 999 : DAILY_LIMIT,
       is_admin: isAdmin || undefined,
     });
