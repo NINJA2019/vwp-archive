@@ -1,6 +1,6 @@
 # V.W.P ARCHIVE — 統合プロジェクト仕様書
 
-> 最終更新: 2026/04/03
+> 最終更新: 2026/10/17
 > 作成者: Yuki Kakinuma + Claude (設計パートナー)
 > 統合元: プロジェクト仕様書(03/22), MY SHELF変更仕様書(03/25), mobile_ui_spec(03/26), observer_link_spec(04/02), quick_send(04/03)
 
@@ -59,15 +59,15 @@ source TEXT DEFAULT 'manual',
 ingested_at TIMESTAMPTZ
 ```
 
-**status フィールドの運用ルール:**
+**status フィールドの運用ルール（2026-07-14 Yuki決定・憲法10改訂済み）:**
 - `published`: 公開。公開系videos取得クエリでのみ返却される（`status=eq.published` フィルタ必須）
-- `pending`: 自動取り込み後の審査待ち。Admin INCOMINGキューで確認・PUBLISH/REJECT操作を行う
+- `pending`: Admin での明示的な保留・審査用ステータス。ingest-youtubeは `status='published'` を明示してINSERTするため通常は使用されない。手動保留したい場合に Admin から付与する
 - `rejected`: 不採用。DBには残すが公開しない
-- **自動publishは永久にしない（絶対条件10番）**: ingest-youtubeは常に`pending`でINSERTする
+- **ingest-youtubeは `status='published'` で即着地**する（操作者自身が公開判断者）。手動経路（playlist-import / videos-add）も同様にDB default の `published` で着地。dedup全件fetchのページングループ（憲法5）が正しく機能していることが前提条件
 
 **content_type フィールド（ingest-youtubeによる自動分類）:**
-- `shorts`: duration ≤ 60秒 または #shorts タグ
-- `live`: liveStreamingDetails あり または ライブ系キーワード（ワンマン/ライブ映像/LIVE/不可解/現象/狂想）
+- `shorts`: duration ≤ 60秒 または #shorts タグ または Music Archiveキーワード（最優先）
+- `live`: (liveStreamingDetails あり かつ（duration が 20分以上 または P0D）) または ライブ系キーワード（ワンマン/ライブ映像/LIVE/不可解/現象/狂想）。プレミアMVはアーカイブ後も liveStreamingDetails が永続するため duration で区別する。真のライブ/配信は `P0D`（parseDurationがnullを返す）→ live 判定通過
 - `announcement`: 告知系キーワード（告知/トレーラー/Teaser/XFD/クロスフェード/予告/開催決定/発売決定/情報解禁）
 - `song`: 上記に該当しないもの（デフォルト）
 
