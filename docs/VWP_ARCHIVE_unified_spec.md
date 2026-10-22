@@ -491,6 +491,56 @@ Result画面（既存OLフローに合流）
 
 ---
 
+## 6b. セットリスト / ファン・セレクト（Phase 1）
+
+### 6b-1. 概要
+- ファンがメンバーごとに 3 曲の「セットリスト」を匿名で登録し、メンバー別に集計した上位 3 曲を「ファン・セレクト」としてスターターリスト画面に併記する（店主セレクトは置き換えない）。
+- ランキングは**メンバーごとに閉じる**（メンバー間の比較・総合ランキングは出さない。Yuki 方針）。
+- アカウントなし。ブラウザごとの匿名 ID（`vwp_client_id`、UUID v4）で同一ブラウザからの再登録はメンバー単位で上書き。
+- 冷スタート: メンバーごとに登録が `MIN_SUBMITTERS = 10` 件集まるまで順位をサーバーで隠し、「集計中：あと N 人」と表示。
+- 対象曲: `content_type` が shorts / live / announcement 以外。デュエット曲（`kafu rime`）は両メンバーに登録可（`parseMembers` includes 判定）。
+- 不正耐性の限界: 別ブラウザ / シークレットウィンドウ / localStorage 消去による多重登録は防げない（IP ハッシュで 30 件/24h が最後の砦）。「厳密な投票」ではなく「ファンの声の目安」として扱う。
+- レート制限は「直近 24h に INSERT された行」を IP ハッシュ単位で数える（created_at 基準）。同一ブラウザからの更新（upsert）は対象外。CGNAT / 学校・職場 NAT 配下では IP を共有するファン同士で上限 30 件/日を共有する。
+- 既知の TOCTOU（判断保留 m-9）: 存在検証〜upsert の間に曲が非公開化されると、その 1 回だけ非公開曲を含む行が書かれ得る。集計時の published JOIN で表示からは除外されるため実害は「票が 1 つ消える」のみ。許容。
+
+### 6b-2. データモデル（setlists テーブル）
+| 列 | 型 | 説明 |
+|---|---|---|
+| id | UUID PK | |
+| client_id | TEXT | ブラウザ匿名 ID（PII ではない） |
+| member | TEXT | kafu / rime / harusar / isekai / koko / vwp（CHECK） |
+| video_ids | BIGINT[] | 3 件固定（CHECK）。重複排除は Function 側 |
+| client_hash | TEXT | IP SHA-256（レート制限用、song_bottles と同じ） |
+| created_at / updated_at | TIMESTAMPTZ | upsert で created_at は据え置き |
+| UNIQUE(client_id, member) | | on_conflict キー |
+
+- RLS 有効（ポリシー無し = anon 全拒否）。Function は service role key で透過。
+- 集計は読み取り時の SQL 関数 `setlist_rankings(p_limit)`: `videos.status='published'` と JOIN し非公開曲を除外（憲法2 の延長）。タイブレーク `votes DESC → first_at ASC → video_id ASC`。戻り行数 ≤ 6 × p_limit（50 → 300 行 < 1,000、憲法5）。anon からの直接 RPC は REVOKE。
+- migration: `supabase/migrations/20261023000000_setlists.sql`
+
+### 6b-3. API
+| Function | Method | 入力 | 出力 / エラー |
+|---|---|---|---|
+| `setlist-submit` | POST | `{client_id, member, video_ids[3]}` | 200 `{member, is_update, submitters, min_submitters, ready, remaining, ranking[], my_ranks{}, daily_used, daily_limit}`。400 `INVALID_JSON / INVALID_CLIENT_ID / INVALID_MEMBER / INVALID_VIDEO_IDS / VIDEO_NOT_FOUND / MEMBER_MISMATCH / NOT_A_SONG`、413 `PAYLOAD_TOO_LARGE`、429 `RATE_LIMIT_EXCEEDED`、503 `SETLIST_UNAVAILABLE`（migration 未適用）、500 |
+| `setlist-rankings` | GET | `?member=` 任意 | 200 `{available, min_submitters, members{m:{submitters, ready, remaining, top[{video_id, votes, rank}]}}}`。CDN 5 分キャッシュ。migration 未適用時は `available:false`（no-store） |
+
+- `setlist-submit` は `videos?status=eq.published` で 3 件の存在を検証し、応答に CDN を経由しない鮮度 100% のランキングを含める。`x-admin-key` でレート制限を免除（テスト用）。
+- `setlist-rankings` はタイトル等を返さず `video_id` のみ。フロントは `getVideos()`（published のみ）と突合し、見つからない id はスキップ。
+
+### 6b-4. フロントエンド
+- `public/js/setlist.js`（export: `initSetlist / openSetlist / fetchRankings / getMySetlists / renderFanSelect / isSetlistOpen`。window 露出なし）、`public/css/setlist.css`（prefix `sl-`、scope `#setlist-overlay` / `#sl-fans` / `#sl-shelf-entry`、z-index 9998）。
+- 入口A: スターターリスト画面の各メンバー行「あなたの 3 曲を登録 →」。入口B: MY SHELF の「この棚からセットリストを作る」（棚に 3 曲以上あるとき表示。`shelf.js` が `openShelf` 末尾で `vwp:shelf-opened` を dispatch）。Phase 1 はデスクトップ入口のみ（オーバーレイ自体は 700px 以下でもボトムシート化して崩れない）。
+- 選曲画面: メンバータブ → 3 スロット → MY SHELF / ALL タブ（ALL は `search.js` の正規化・近似検索付き。メンバー外には広げない）→ 登録。登録後画面: 集計中なら残り人数、ready なら上位 3 曲 + 自分の曲の順位バッジ。
+- Esc: setlist が開いているときは setlist だけ閉じる（starter.js / shelf.js はガード）。閉じたあと下に starter / shelf が開いていればその page_view を明示再送。
+- CDN 5 分キャッシュ対策: 同セッション中は submit 応答のランキングでメンバー分を上書き表示。
+
+### 6b-5. フェーズ計画
+- Phase 1（本 PR）: 登録 + メンバー別ランキング + 冷スタート。
+- Phase 2: 他人のセットリストを 1 件ずつめくる閲覧（`setlist-browse`、OL のボトル抽選と同型、匿名・`time_ago` のみ）。
+- Phase 3: オンボーディング（店主メモ / NEW ドット）+ 自分の順位の常時表示。
+
+---
+
 ## 7. GA4 計測設計
 
 ### 7-1. 重要指標の優先順位
@@ -552,6 +602,19 @@ Result画面（既存OLフローに合流）
 
 - `ol_quick_send` の `source` 値: `grid` / `list` / `timeline` / `mobile_card`
 
+#### セットリスト / ファン・セレクト イベント
+| イベント名 | パラメータ | 発火タイミング |
+|---|---|---|
+| `setlist_open` | `source`（starter / shelf）, `member` | 選曲オーバーレイを開いた |
+| `setlist_member_select` | `member` | メンバータブ切替 |
+| `setlist_slot_add` | `member`, `source`（shelf / all / search） | スロットに曲を入れた |
+| `setlist_submit` | `member`, `song_count`, `is_update` | 登録成功 |
+| `setlist_submit_error` | `member`, `error` | 登録失敗 |
+| `setlist_rank_view` | `member`, `submitters`, `ready` | ファン・セレクト節の描画（メンバーごと） |
+| `setlist_rank_song_click` | `video_id`, `member`, `rank` | ランキング行クリック（`song_click` に加えて） |
+
+- 仮想 page_view: `/setlist`（選曲）、`/setlist/done`（登録後）
+
 ### 7-3. 離脱仮説
 1. **「目的の曲が見つからない」離脱**: filter_select → song_click 間の離脱率
 2. **「モバイルでの操作性」離脱**: デバイス別エンゲージセッション率比較
@@ -607,6 +670,8 @@ Result画面（既存OLフローに合流）
 |---|---|---|---|
 | `vwp_shelf` | MY SHELF（自分のピン留め曲） | `JSON.stringify([id1, id2, ...])` | 10曲 |
 | `vwp_received` | RECEIVED RECORDS（交換で受け取った曲） | `JSON.stringify([id1, id2, ...])` | 10曲 |
+| `vwp_client_id` | セットリスト登録用のブラウザ匿名 ID | UUID v4 文字列 | — |
+| `vwp_setlist` | 登録済みセットリストの表示用ミラー（サーバーが正） | `JSON.stringify({member:[id,id,id]})` | 6 メンバー × 3 曲 |
 
 ---
 

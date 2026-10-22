@@ -74,6 +74,9 @@ import {
 // ── Starter List ──────────────────────────────────────────────
 import { initStarter } from './starter.js';
 
+// ── Setlist / Fan Select（window露出しない） ──────────────────
+import { initSetlist } from './setlist.js';
+
 // ── Intro / Mobile ────────────────────────────────────────────
 import { initIntro } from './intro.js';
 import { initMobile } from './mobile.js';
@@ -208,6 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initEventTicker();    // ライブ告知ティッカー（メイン画面恒常UI）
   initShelf();          // 棚オーバーレイ初期化
   initStarter();        // スターターリストオーバーレイ初期化
+  initSetlist();        // セットリスト（ファン・セレクト）オーバーレイ初期化
   olInit();             // Observer-Link 初期化（deep-link解析含む）
   initMobile();         // モバイルS字UI（window幅>700pxなら即return）
   initIntro();          // ターンテーブルイントロ（モバイル時はinitMobileが先に制御を取る）
