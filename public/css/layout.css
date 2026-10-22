@@ -287,3 +287,7 @@
 .onb-dot { position: absolute; top: .15rem; right: .1rem; width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, #ff6a88, #c084fc); box-shadow: 0 0 6px rgba(192,132,252,.8); animation: onb-pulse 2s ease-in-out infinite; pointer-events: none; }
 @keyframes onb-pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.8); } }
 
+
+/* 検索フォールバック案内: 0件時に棚を広げたことを1行で示す（#vc 先頭に挿入） */
+.search-fb-note { font-family: 'Shippori Mincho', serif; font-size: .78rem; line-height: 1.6; color: var(--dim); padding: .6rem 1.5rem; border-bottom: 1px solid var(--border); letter-spacing: .02em; }
+body.light .search-fb-note { color: var(--dim); border-bottom-color: var(--border); }
