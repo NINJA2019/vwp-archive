@@ -7,10 +7,12 @@ import { loadAlbumsApi, loadVideosApi, addAlbumApi, updateAlbumApi, deleteAlbumA
 import { getMemberColor, drawVinylDisc } from './vinyl.js';
 import { applyFeatureDots } from './onboarding.js';
 import { trackScreen, trackScreenRestore } from './pageview.js';
+import { tokenize, buildSearchKey, bigrams, searchWithFallback } from './search.js';
 
 // ===== 可変状態 =====
 let videos = [], curMember = 'all', selectedMembers = [], curTag = 'all', curSort = 'new', curView = 'grid', searchQ = '', isAdmin = false, editId = null;
 let curContentType = 'song'; // メイン表示はデフォルトで楽曲（MV）のみ
+let _searchMeta = { level: 0, strictCount: 0, count: 0 }; // 直近 filtered() の検索フォールバック状態
 let filteredCache = [], curPage = 0;
 let ioObserver = null;
 let albums = [];
@@ -38,6 +40,7 @@ export function getCurContentType(){ return curContentType; }
 export function setCurContentType(v){ curContentType = v; }
 export function getSearchQ(){ return searchQ; }
 export function setSearchQ(v){ searchQ = v; }
+export function getSearchMeta(){ return _searchMeta; }
 export function getIsAdmin(){ return isAdmin; }
 export function getFilteredCache(){ return filteredCache; }
 export function getAlbums(){ return albums; }
@@ -156,6 +159,12 @@ const _ptCache=new WeakMap();
 export function parseTags(v){let c=_ptCache.get(v);if(c)return c;const raw=v.tags||v.tag||'';c=raw.split(/[ ,]+/).map(s=>s.replace(/^#/,'')).filter(Boolean);_ptCache.set(v,c);return c;}
 const _pmCache=new WeakMap();
 export function parseMembers(v){let c=_pmCache.get(v);if(c)return c;c=(v.member||'').split(/[ ,]+/).filter(Boolean);_pmCache.set(v,c);return c;}
+// 検索キー（正規化済み、言語非依存）。lazy に WeakMap キャッシュ。mobile.js からも import（二重キャッシュ回避）
+function albumNameOf(id){ if(id==null) return ''; const a=albums.find(a=>a.id===id); return a?(a.name||''):''; }
+const _skCache=new WeakMap();
+export function searchKey(v){let c=_skCache.get(v);if(c!==undefined)return c;c=buildSearchKey(v,parseMembers(v),parseTags(v),albumNameOf(v.album_id));_skCache.set(v,c);return c;}
+const _bgCache=new WeakMap();
+function searchBigrams(v){let c=_bgCache.get(v);if(c)return c;c=bigrams(searchKey(v));_bgCache.set(v,c);return c;}
 // XSS対策: HTML文字列エスケープ（DOM不使用の高速版）
 export function esc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 // XSS対策: href/onclickに使うURLをhttps?://のみ許可
@@ -236,12 +245,14 @@ export function filtered(){
     list=list.filter(v=>selectedMembers.every(m=>parseMembers(v).includes(m)));
   }
   if(curTag!=='all') list=list.filter(v=>parseTags(v).includes(curTag));
-  if(searchQ){
-    const words=searchQ.toLowerCase().split(/\s+/).filter(Boolean);
-    list=list.filter(v=>{
-      const hay=(v.title+' '+(v.note||'')).toLowerCase();
-      return words.every(w=>hay.includes(w));
-    });
+  const tokens=tokenize(searchQ);
+  if(tokens.length){
+    // 0件なら段階的に棚を広げる（L1: 絞り込み全解除 → L2: OR → L3: bigram近似）。filtered() 内で完結し render() は呼ばない
+    const r=searchWithFallback({tokens,scoped:list,all:videos,keyOf:searchKey,bigramsOf:searchBigrams,limit:PAGE_SIZE});
+    _searchMeta={level:r.level,strictCount:r.strictCount,count:r.list.length};
+    list=r.list;
+  } else {
+    _searchMeta={level:0,strictCount:list.length,count:list.length};
   }
   if(curSort!=='daily') list.sort((a,b)=>curSort==='new'?(b.date>a.date?1:-1):(a.date>b.date?1:-1));
   return list;
@@ -583,7 +594,7 @@ export function edit(id,e){
   document.getElementById("mover").classList.add("open"); setTimeout(()=>{renderTagChips();renderTagSuggest();},50);
 }
 
-export function showMb(v){return curMember==='all'?parseMembers(v).map(m=>mbPill(m)).join(''):''; }
+export function showMb(v){return (curMember==='all'||_searchMeta.level>0)?parseMembers(v).map(m=>mbPill(m)).join(''):''; }
 
 export function setupObserver(){
   if(ioObserver) ioObserver.disconnect();
@@ -762,6 +773,11 @@ export function render(){
   }
   c.innerHTML=`<div id="io-sentinel" style="height:1px"></div>`;
   if(shelfList.length) c.insertBefore(buildAlbumShelf(shelfList), c.firstChild);
+  if(searchQ && _searchMeta.level>0 && _searchMeta.level<4){
+    const n=document.createElement('div'); n.className='search-fb-note';
+    n.textContent=t(['','searchFbUnfiltered','searchFbAny','searchFbNear'][_searchMeta.level]).replace('{q}',searchQ); // textContent なので esc 不要
+    c.insertBefore(n, c.firstChild);
+  }
   loadMoreItems();
   setupObserver();
 }
@@ -1017,7 +1033,7 @@ export function initCore(){
 
   // search / view / sort events
   let _searchGa4Timer=null;
-  document.getElementById('searchInput').addEventListener('input',e=>{searchQ=e.target.value.trim();render();clearTimeout(_searchGa4Timer);_searchGa4Timer=setTimeout(()=>{const q=searchQ;if(q.length>=2&&typeof window.gtag==='function'){window.gtag('event','search',{search_term:q,results_count:filteredCache.length});if(filteredCache.length===0)window.gtag('event','search_no_result',{search_term:q});}},500);});
+  document.getElementById('searchInput').addEventListener('input',e=>{searchQ=e.target.value.trim();render();clearTimeout(_searchGa4Timer);_searchGa4Timer=setTimeout(()=>{const q=searchQ;if(q.length>=2&&typeof window.gtag==='function'){const m=_searchMeta;window.gtag('event','search',{search_term:q,results_count:m.strictCount,fallback_level:m.level,fallback_results_count:m.count});if(m.strictCount===0)window.gtag('event','search_no_result',{search_term:q});}},500);});
   ['vGrid','vList','vTl'].forEach(id=>{
     document.getElementById(id).addEventListener('click',()=>{
       curView={vGrid:'grid',vList:'list',vTl:'timeline'}[id];

@@ -1,7 +1,8 @@
 // mobile.js — モバイル S-CURVE UI（app.js L1387-1958 相当）
 // 注: window.* で shelf/OL 関数を参照（循環依存回避）
 
-import { _gtag, getVideos, ytId, parseTags, parseMembers, esc, safeUrl, fmtDate, getDailyPicks } from './core.js';
+import { _gtag, getVideos, ytId, parseTags, parseMembers, esc, safeUrl, fmtDate, getDailyPicks, searchKey } from './core.js';
+import { tokenize } from './search.js';
 import { mbr } from './i18n.js';
 import { trackScreen } from './pageview.js';
 
@@ -254,7 +255,7 @@ export function initMobile(){
 
   function mcFilter(){
     const videos = getVideos();
-    const q = (mcSearch ? mcSearch.value.trim().toLowerCase() : '');
+    const toks = mcSearch ? tokenize(mcSearch.value) : [];
     let pool = [...videos];
     // Member filter
     if(mcIsDaily){
@@ -267,8 +268,8 @@ export function initMobile(){
       pool = pool.filter(v => parseTags(v).includes(mcActiveTag));
     }
     // Search
-    if(q){
-      pool = pool.filter(v => (v.title||'').toLowerCase().includes(q) || (v.member||'').toLowerCase().includes(q));
+    if(toks.length){
+      pool = pool.filter(v => { const k = searchKey(v); return toks.every(t => k.includes(t)); });
     }
     // Sort newest first
     pool.sort((a,b) => (b.date||'').localeCompare(a.date||''));
