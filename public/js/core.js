@@ -6,6 +6,7 @@ import { t, mbr, applyI18n, tTag, getLang, setLang } from './i18n.js';
 import { loadAlbumsApi, loadVideosApi, addAlbumApi, updateAlbumApi, deleteAlbumApi, addVideoApi, deleteVideoApi, updateVideoApi, verifyPwApi } from './supabase.js';
 import { getMemberColor, drawVinylDisc } from './vinyl.js';
 import { applyFeatureDots } from './onboarding.js';
+import { trackScreen, trackScreenRestore } from './pageview.js';
 
 // ===== 可変状態 =====
 let videos = [], curMember = 'all', selectedMembers = [], curTag = 'all', curSort = 'new', curView = 'grid', searchQ = '', isAdmin = false, editId = null;
@@ -47,6 +48,10 @@ export function setEditId(v){ editId = v; }
 export function invalidateVideosCache(){ _videosCacheTime = 0; }
 export function invalidateAlbumsCache(){ _albumsCacheTime = 0; }
 
+// GA4 仮想 page_view 用（export も window 露出もしない）
+function archivePath(){ return selectedMembers.length ? '/archive/'+[...selectedMembers].sort().join('+') : '/archive/all'; }
+function trackArchiveScreen(){ const p=archivePath(); trackScreen(p, 'Archive - '+p.slice('/archive/'.length)+' | VWP Archive'); }
+
 // ===== openPage / closePage =====
 export function openPage(page){
   document.getElementById('pageAbout').style.display=page==='about'?'block':'none';
@@ -54,6 +59,7 @@ export function openPage(page){
   document.getElementById('pageUpdate').style.display=page==='update'?'block':'none';
   document.getElementById('pageMover').style.display='block';
   document.body.style.overflow='hidden';
+  trackScreen('/'+page, ({about:'About',contact:'Contact',update:'Update'}[page]||page)+' | VWP Archive', {overlay:true});
   return false;
 }
 export function closePage(){
@@ -62,6 +68,7 @@ export function closePage(){
   document.getElementById('pageContact').style.display='none';
   document.getElementById('pageUpdate').style.display='none';
   document.body.style.overflow='';
+  trackScreenRestore();
 }
 
 // ===== FETCH ERROR TOAST =====
@@ -271,7 +278,7 @@ export function buildSidebar(){
     const reset=document.createElement('button');
     reset.style.cssText='background:rgba(255,100,100,.1);border:1px solid rgba(255,100,100,.25);color:#fca5a5;font-size:.65rem;padding:3px 10px;border-radius:4px;cursor:pointer;margin-bottom:6px;width:100%;transition:all .2s;';
     reset.textContent='✕ 選択をリセット';
-    reset.addEventListener('click',()=>{selectedMembers=[];curMember='all';curTag='all';curAlbum=null;buildSidebar();updateCounts();render();});
+    reset.addEventListener('click',()=>{selectedMembers=[];curMember='all';curTag='all';curAlbum=null;buildSidebar();updateCounts();render();trackArchiveScreen();});
     mp.appendChild(reset);
   }
   MEMBERS.forEach(m=>{
@@ -308,6 +315,7 @@ export function buildSidebar(){
         curMember=selectedMembers.length===1?selectedMembers[0]:(selectedMembers.length>1?'multi':'all');
       }
       curTag='all';curAlbum=null;buildSidebar();updateCounts();render();
+      trackArchiveScreen();
     });
     mp.appendChild(btn);
   });
@@ -480,7 +488,7 @@ export function buildMobFilters(){
     reset.className='mob-chip';
     reset.style.cssText='background:rgba(255,100,100,.1);border-color:rgba(255,100,100,.25);color:#fca5a5;';
     reset.textContent='✕ リセット';
-    reset.addEventListener('click',()=>{selectedMembers=[];curMember='all';curTag='all';curAlbum=null;buildSidebar();updateCounts();render();});
+    reset.addEventListener('click',()=>{selectedMembers=[];curMember='all';curTag='all';curAlbum=null;buildSidebar();updateCounts();render();trackArchiveScreen();});
     mm.appendChild(reset);
   }
   MEMBERS.forEach(m=>{
@@ -509,6 +517,7 @@ export function buildMobFilters(){
         curMember=selectedMembers.length===1?selectedMembers[0]:(selectedMembers.length>1?'multi':'all');
       }
       curTag='all';curAlbum=null;buildSidebar();updateCounts();render();
+      trackArchiveScreen();
     });
     mm.appendChild(b);
   });

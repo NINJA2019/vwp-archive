@@ -1,5 +1,5 @@
 // main.js — ES Module エントリポイント（PR-B2a / v1.8.0、feat/starter-list v1.9.4）
-// import順: constants → i18n/supabase/vinyl → core → shelf → starter → observer-link → intro → mobile
+// import順: constants → i18n/supabase/vinyl → pageview → core → shelf → starter → observer-link → intro → mobile
 // window露出テーブル: A=明示24件 / B=インラインハンドラ11件 / C=要確認55件（_searchGa4Timer除く）
 
 // ── Leaf modules ──────────────────────────────────────────────
@@ -83,6 +83,9 @@ import { initOnboarding } from './onboarding.js';
 
 // ── Event Ticker（ライブ告知ティッカー） ─────────────────────
 import { initEventTicker } from './events.js';
+
+// ── GA4 仮想 page_view（window露出しない） ───────────────────
+import { trackScreen } from './pageview.js';
 
 // ═══════════════════════════════════════════════════════════════
 // window露出テーブル（A + B + C の計90件）
@@ -195,6 +198,11 @@ Object.assign(window, {
 // 順序固定: core → shelf → observer-link → intro/mobile → bootstrap
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
+  // 初回 page_view（index.html は send_page_view:false）。init群が例外を投げても送られるよう先頭で try/catch
+  try {
+    trackScreen(window.innerWidth > 700 ? '/intro' : '/mobile/welcome',
+                window.innerWidth > 700 ? 'Intro | VWP Archive' : 'Mobile Welcome | VWP Archive');
+  } catch(e) { /* GA4 送信失敗はアプリ起動を妨げない */ }
   initCore();           // DOM イベント登録・検索・ビュー切替等
   initOnboarding();     // 店主メモ+NEWドット（intro入店イベント購読。initIntroより先に登録）
   initEventTicker();    // ライブ告知ティッカー（メイン画面恒常UI）
