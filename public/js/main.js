@@ -198,10 +198,12 @@ Object.assign(window, {
 // 順序固定: core → shelf → observer-link → intro/mobile → bootstrap
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
+  // 初回 page_view（index.html は send_page_view:false）。init群が例外を投げても送られるよう先頭で try/catch
+  try {
+    trackScreen(window.innerWidth > 700 ? '/intro' : '/mobile/welcome',
+                window.innerWidth > 700 ? 'Intro | VWP Archive' : 'Mobile Welcome | VWP Archive');
+  } catch(e) { /* GA4 送信失敗はアプリ起動を妨げない */ }
   initCore();           // DOM イベント登録・検索・ビュー切替等
-  // 初回 page_view（index.html は send_page_view:false）。olInit の deep-link より前に送る
-  trackScreen(window.innerWidth > 700 ? '/intro' : '/mobile/welcome',
-              window.innerWidth > 700 ? 'Intro | VWP Archive' : 'Mobile Welcome | VWP Archive');
   initOnboarding();     // 店主メモ+NEWドット（intro入店イベント購読。initIntroより先に登録）
   initEventTicker();    // ライブ告知ティッカー（メイン画面恒常UI）
   initShelf();          // 棚オーバーレイ初期化

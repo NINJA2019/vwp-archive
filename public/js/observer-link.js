@@ -80,7 +80,10 @@ export function olInit(){
   }
 }
 
+let _olSuppressComposePv = false; // deep link 時、表示されない compose 画面の page_view を抑止（window 露出なし）
+
 function olOpenFromResult(exchangeId){
+  _olSuppressComposePv = true;
   olOpen();
   olShowScreen('olResultScreen');
   const body = document.getElementById('olResultBody');
@@ -242,8 +245,8 @@ function olShowScreen(id){
   if(id === 'olComposeScreen') startOlHeroCanvas();
   else stopOlHeroCanvas();
   // GA4 仮想 page_view（olSendingScreen は演出中のため送らない）
-  if(id === 'olComposeScreen') trackScreen('/observer-link','Observer-Link | VWP Archive',{overlay:true});
-  else if(id === 'olResultScreen') trackScreen('/observer-link/result','Observer-Link Result | VWP Archive',{overlay:true});
+  if(id === 'olComposeScreen'){ if(!_olSuppressComposePv) trackScreen('/observer-link','Observer-Link | VWP Archive',{overlay:true}); }
+  else if(id === 'olResultScreen'){ trackScreen('/observer-link/result','Observer-Link Result | VWP Archive',{overlay:true}); _olSuppressComposePv = false; }
 }
 
 function olToggleMood(el, mood){
