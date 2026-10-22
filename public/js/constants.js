@@ -38,12 +38,12 @@ export const MEMBERS = [
 export const MBR_CLS = {kafu:'mb-kafu',rime:'mb-rime',harusar:'mb-harusar',isekai:'mb-isekai',koko:'mb-koko',vwp:'mb-vwp'};
 // 検索用の別表記（I18N の mbr 名は search.js が自動で取り込むので、ここには I18N にない表記だけ）
 export const MEMBER_ALIASES = {
-  kafu:    ['kaf','カフ'],
-  rime:    ['rim','リメ'],
-  harusar: ['harusaruhi','haru','ハルサルヒ'],
+  kafu:    ['カフ'],
+  rime:    ['リメ'],
+  harusar: ['harusaruhi','ハルサルヒ'],
   isekai:  ['isekaijocho','joucho','jocho','情緒','ジョウチョ','イ世界情緒','異世界情緒'],
   koko:    ['ココ'],
-  vwp:     ['vwp','ブイダブリューピー'],
+  vwp:     ['ブイダブリューピー'],
 };
 
 export const PAGE_SIZE = 30;

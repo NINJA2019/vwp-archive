@@ -165,6 +165,7 @@ const _skCache=new WeakMap();
 export function searchKey(v){let c=_skCache.get(v);if(c!==undefined)return c;c=buildSearchKey(v,parseMembers(v),parseTags(v),albumNameOf(v.album_id));_skCache.set(v,c);return c;}
 const _bgCache=new WeakMap();
 function searchBigrams(v){let c=_bgCache.get(v);if(c)return c;c=bigrams(searchKey(v));_bgCache.set(v,c);return c;}
+export function invalidateSearchKey(v){ _skCache.delete(v); _bgCache.delete(v); }
 // XSS対策: HTML文字列エスケープ（DOM不使用の高速版）
 export function esc(s){ if(s==null) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 // XSS対策: href/onclickに使うURLをhttps?://のみ許可
@@ -254,7 +255,7 @@ export function filtered(){
   } else {
     _searchMeta={level:0,strictCount:list.length,count:list.length};
   }
-  if(curSort!=='daily') list.sort((a,b)=>curSort==='new'?(b.date>a.date?1:-1):(a.date>b.date?1:-1));
+  if(curSort!=='daily' && _searchMeta.level!==3) list.sort((a,b)=>curSort==='new'?(b.date>a.date?1:-1):(a.date>b.date?1:-1));
   return list;
 }
 export function allTagsOf(src){const s=new Set();src.forEach(v=>parseTags(v).forEach(t=>s.add(t)));return [...s].sort();}
@@ -760,8 +761,10 @@ export function render(){
     // Daily Pickも表示直前にカテゴリフィルタを適用（レビュー指摘対応）。
     // キャッシュ(localStorage vwp_daily_obs)はカテゴリ非依存で全picksのまま保持し、表示時のみ絞る
     filteredCache=getDailyPicksFromCache().filter(v=>matchesContentType(v));
+    _searchMeta={level:0,strictCount:filteredCache.length,count:filteredCache.length}; // daily は filtered() を通らないのでリセット
   } else {
     filteredCache=filtered();
+    if(ah && curAlbum!==null && _searchMeta.level>0) ah.style.display='none'; // フォールバックでアルバム外の曲が出るときはヘッダーを隠す
   }
   curPage=0;
   document.getElementById('rcnt').textContent=filteredCache.length+' 件';
@@ -773,9 +776,9 @@ export function render(){
   }
   c.innerHTML=`<div id="io-sentinel" style="height:1px"></div>`;
   if(shelfList.length) c.insertBefore(buildAlbumShelf(shelfList), c.firstChild);
-  if(searchQ && _searchMeta.level>0 && _searchMeta.level<4){
+  if(searchQ && curSort!=='daily' && _searchMeta.level>0 && _searchMeta.level<4){
     const n=document.createElement('div'); n.className='search-fb-note';
-    n.textContent=t(['','searchFbUnfiltered','searchFbAny','searchFbNear'][_searchMeta.level]).replace('{q}',searchQ); // textContent なので esc 不要
+    n.textContent=t(['','searchFbUnfiltered','searchFbAny','searchFbNear'][_searchMeta.level]).replace('{q}',()=>searchQ); // 関数形式: $ パターンの解釈を避ける。textContent なので esc 不要
     c.insertBefore(n, c.firstChild);
   }
   loadMoreItems();
@@ -920,7 +923,7 @@ export async function linkSong(videoId, albumId){
     await updateVideoApiFn(videoId,{album_id:albumId});
     _videosCacheTime=0;
     const v=videos.find(v=>v.id===videoId);
-    if(v) v.album_id=albumId;
+    if(v){ v.album_id=albumId; invalidateSearchKey(v); }
     document.getElementById('linkSongOverlay')?.remove();
     const al=albums.find(a=>a.id===albumId);
     if(al) openLinkSongModal(al);
@@ -933,7 +936,7 @@ export async function unlinkSong(videoId, albumId){
     await updateVideoApiFn(videoId,{album_id:null});
     _videosCacheTime=0;
     const v=videos.find(v=>v.id===videoId);
-    if(v) v.album_id=null;
+    if(v){ v.album_id=null; invalidateSearchKey(v); }
     document.getElementById('linkSongOverlay')?.remove();
     const al=albums.find(a=>a.id===albumId);
     if(al) openLinkSongModal(al);
@@ -989,6 +992,7 @@ export function openEditAlbumModal(al){
       _albumsCacheTime=0;
       const idx=albums.findIndex(a=>a.id===al.id);
       if(idx!==-1) albums[idx]={...albums[idx],...updated};
+      videos.filter(v=>v.album_id===al.id).forEach(invalidateSearchKey); // アルバム名変更を検索キーに反映
       overlay.remove();
       buildSidebar();updateCounts();render();
     }catch(e){st.textContent='エラー: '+e.message;st.style.color='#fca5a5';}

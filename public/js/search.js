@@ -3,7 +3,7 @@
 import { I18N, MEMBER_ALIASES } from './constants.js';
 
 // 記号除去: 空白に置換せず削除する（"V.W.P" → "vwp" を成立させるため）。長音「ー」も両辺同処理で削除
-const SYMBOL_RE = /["'「」『』【】（）()\[\]{}<>《》〈〉・/|:;,.!?~\-—–ー#&*+=_｜`]/g;
+const SYMBOL_RE = /["'「」『』【】（）()\[\]{}<>《》〈〉・/|:;,.!?~〜\-—–ー#&*+=_｜`、。…※★☆♪]/g;
 
 export function normalizeText(s){
   if(s==null) return '';
@@ -38,10 +38,11 @@ export function buildSearchKey(v, members, tags, albumName){
   return normalizeText(parts.join(' '));
 }
 
+// 空白は削除せず、空白を含む bigram はスキップ（パート境界をまたぐノイズを作らない）
 export function bigrams(s){
-  const t = String(s || '').replace(/\s+/g, '');
+  const t = String(s || '');
   const set = new Set();
-  for(let i = 0; i + 1 < t.length; i++) set.add(t.slice(i, i + 2));
+  for(let i = 0; i + 1 < t.length; i++){ const g = t.slice(i, i + 2); if(!/\s/.test(g)) set.add(g); }
   return set;
 }
 
@@ -52,7 +53,7 @@ export function matchAny(key, tokens){ return tokens.some(t => key.includes(t));
 //  level 0: scoped（現在の絞り込み）に対し全語AND
 //  level 1: all（絞り込み全解除）に対し全語AND
 //  level 2: all に対し いずれかの語OR（トークン>=2のとき）
-//  level 3: all に対し bigram 近似一致（正規化クエリ長>=2）、共通bigram数 >= max(1, floor(n/2))、上位 limit 件
+//  level 3: all に対し bigram 近似一致（クエリ bigram 数>=2）、共通bigram数 >= (n<=2 ? 1 : max(2, ceil(n/2)))、上位 limit 件（スコア順）
 //  level 4: 0件
 export function searchWithFallback({ tokens, scoped, all, keyOf, bigramsOf, limit = 30 }){
   if(!tokens || !tokens.length) return { level: 0, list: scoped.slice(), strictCount: scoped.length };
@@ -64,10 +65,9 @@ export function searchWithFallback({ tokens, scoped, all, keyOf, bigramsOf, limi
     const l2 = all.filter(v => matchAny(keyOf(v), tokens));
     if(l2.length) return { level: 2, list: l2, strictCount: 0 };
   }
-  const q = tokens.join('');
-  if(q.length >= 2){
-    const qb = bigrams(q);
-    const need = Math.max(1, Math.floor(qb.size / 2));
+  const qb = bigrams(tokens.join(' '));
+  if(qb.size >= 2){
+    const need = qb.size <= 2 ? 1 : Math.max(2, Math.ceil(qb.size / 2)); // 3文字クエリ（bigram 2個）は 1 一致で拾う（例: ｶﾌｳ→カフ）
     const scored = [];
     all.forEach(v => {
       const vb = bigramsOf(v);
