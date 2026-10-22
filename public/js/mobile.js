@@ -3,6 +3,7 @@
 
 import { _gtag, getVideos, ytId, parseTags, parseMembers, esc, safeUrl, fmtDate, getDailyPicks } from './core.js';
 import { mbr } from './i18n.js';
+import { trackScreen } from './pageview.js';
 
 export function initMobile(){
   if(window.innerWidth > 700) return;
@@ -184,6 +185,7 @@ export function initMobile(){
     setTimeout(() => {
       mwTrans.classList.remove('active');
       mobWelcome.style.display = 'none';
+      trackScreen('/archive/all','Archive - all | VWP Archive'); // OLを閉じた後に見える裏画面
       if(typeof window.openObserverLink === 'function') window.openObserverLink();
     }, 800);
   });
@@ -200,6 +202,7 @@ export function initMobile(){
       mcSelectedMember = m.id;
       mcIsDaily = false;
       mcInit();
+      trackScreen('/mobile/cards/'+m.id, 'Mobile Cards - '+m.id+' | VWP Archive');
       // 入店確定をオンボーディング（店主メモ等）へ通知（onboarding.js が {once:true} で購読）
       document.dispatchEvent(new CustomEvent('vwp:archive-entered'));
     }, 800);
@@ -831,6 +834,7 @@ export function initMobile(){
     mcCardView.style.display = 'none';
     mobWelcome.style.display = 'flex';
     mwRender(true);
+    trackScreen('/mobile/welcome','Mobile Welcome | VWP Archive');
   });
 
   // === MOBILE SHELF ===
@@ -857,6 +861,7 @@ export function initMobile(){
     mcCardView.style.display = 'none';
     msRender();
     if(msSongs.length) msSetAct(0);
+    trackScreen('/mobile/shelf','Mobile Shelf | VWP Archive');
   }
 
   function msRender(){
@@ -920,6 +925,7 @@ export function initMobile(){
     mobShelf.style.display = 'none';
     mcCardView.style.display = 'flex';
     mcRenderCards(); mcUpdateMeta();
+    trackScreen('/mobile/cards/'+mcSelectedMember, 'Mobile Cards - '+mcSelectedMember+' | VWP Archive');
   });
 
   // YouTube button

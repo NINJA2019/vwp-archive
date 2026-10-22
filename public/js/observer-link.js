@@ -4,6 +4,7 @@ import { t } from './i18n.js';
 import { getVideos, ytId, parseTags, parseMembers, esc, safeUrl, _gtag, getIsAdmin, getStoredPw } from './core.js';
 import { getShelf } from './shelf.js';
 import { getMemberColor } from './vinyl.js';
+import { trackScreen, trackScreenRestore } from './pageview.js';
 
 const OL_MOODS = ['Morning', 'Night', 'Rain', 'Walk', 'Work', 'Chill'];
 const OL_DAILY_LIMIT = 10;
@@ -230,6 +231,7 @@ export function olClose(){
   const screen = document.getElementById('observer-link-screen');
   if(screen){ screen.style.display = 'none'; screen.classList.remove('ol-open'); }
   document.body.style.overflow = '';
+  trackScreenRestore();
 }
 
 function olShowScreen(id){
@@ -239,6 +241,9 @@ function olShowScreen(id){
   });
   if(id === 'olComposeScreen') startOlHeroCanvas();
   else stopOlHeroCanvas();
+  // GA4 仮想 page_view（olSendingScreen は演出中のため送らない）
+  if(id === 'olComposeScreen') trackScreen('/observer-link','Observer-Link | VWP Archive',{overlay:true});
+  else if(id === 'olResultScreen') trackScreen('/observer-link/result','Observer-Link Result | VWP Archive',{overlay:true});
 }
 
 function olToggleMood(el, mood){

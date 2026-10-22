@@ -1,6 +1,7 @@
 // intro.js — ターンテーブルイントロ（app.js L1152-1386 相当）
 
 import { _gtag, setSelectedMembers_state, setCurMember, setCurTag, setCurSort, setCurAlbum, setSearchQ, buildSidebar, updateCounts, render } from './core.js';
+import { trackScreen } from './pageview.js';
 
 export function initIntro(){
   // スタートページ表示中は裏のページをスクロール固定
@@ -201,6 +202,7 @@ export function initIntro(){
         buildSidebar();
         updateCounts();
         render();
+        trackScreen('/archive/all','Archive - all | VWP Archive'); // OLを閉じた後に見える裏画面
         // Open OL screen after archive renders
         if(typeof window.openObserverLink === 'function') window.openObserverLink();
         setTimeout(() => {
@@ -223,6 +225,7 @@ export function initIntro(){
       buildSidebar();
       updateCounts();
       render();
+      trackScreen('/archive/'+m, 'Archive - '+m+' | VWP Archive');
 
       // 黒幕フェードアウト
       setTimeout(() => {

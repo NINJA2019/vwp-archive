@@ -4,6 +4,7 @@
 import { t, mbr } from './i18n.js';
 import { getMemberColor, drawVinylDisc, MEMBER_COLORS } from './vinyl.js';
 import { getVideos, ytId, parseTags, parseMembers, esc, safeUrl, _gtag, trackExternalLink } from './core.js';
+import { trackScreen, trackScreenRestore } from './pageview.js';
 
 const SHELF_KEY = 'vwp_shelf';
 const SHELF_MAX = 10;
@@ -279,6 +280,7 @@ export function openShelf(){
   overlay.style.display = '';
   document.body.style.overflow = 'hidden';
   _gtag('event','shelf_open',{song_count:getShelf().length});
+  trackScreen('/shelf','My Shelf | VWP Archive',{overlay:true});
 }
 
 function updateShelfI18n(){
@@ -307,6 +309,7 @@ function closeShelfOverlay(){
   const overlay = document.getElementById('my-shelf-overlay');
   if(overlay) overlay.style.display = 'none';
   document.body.style.overflow = '';
+  trackScreenRestore();
 }
 
 // --- Shelf pin button ---

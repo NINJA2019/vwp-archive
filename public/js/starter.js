@@ -4,6 +4,7 @@
 
 import { getVideos, thumb, esc, safeUrl, trackSongClick } from './core.js';
 import { t, mbr } from './i18n.js';
+import { trackScreen, trackScreenRestore } from './pageview.js';
 
 // ── 内部状態 ────────────────────────────────────────────
 var _initialized = false;
@@ -81,12 +82,14 @@ function openStarter() {
   buildStarterList();
   screen.style.display = '';
   document.body.style.overflow = 'hidden';
+  trackScreen('/starter','Starter List | VWP Archive',{overlay:true});
 }
 
 function closeStarter() {
   var screen = document.getElementById('starter-list-screen');
   if (screen) screen.style.display = 'none';
   document.body.style.overflow = '';
+  trackScreenRestore();
 }
 
 // ── initStarter ───────────────────────────────────────────
