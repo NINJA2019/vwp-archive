@@ -20,6 +20,12 @@ const LIVE_KEYWORDS = [
 ];
 // 英語 "live" は部分一致だと "deliver"/"believe" 等を誤爆するため単語境界で判定
 const LIVE_WORD_RE = /\blive\b/i;
+// プレミア動画はアーカイブ公開後もliveStreamingDetailsが残り続けるため、
+// liveStreamingDetails単独では live と判定しない（20分閾値を設ける）。
+// 真のライブ/配信: contentDetails.duration='P0D'（"PT"を含まないためparseDurationがnullを返す） → live
+// プレミアMV: 公開前後も本来の尺（例PT4M10S）が入っており20分未満 → song
+// 閾値20分: 短尺ライブクリップ（例20min以上）はキーワード判定で拾われるため実害なし
+const LIVE_DURATION_THRESHOLD_SEC = 20 * 60;
 const ANNOUNCEMENT_KEYWORDS = [
   '告知', 'トレーラー', 'Teaser', 'XFD', 'クロスフェード', '予告',
   '開催決定', '発売決定', '情報解禁'
@@ -64,10 +70,14 @@ function classifyContentType(title, description, durationSec, hasLiveDetails) {
     return 'shorts';
   }
 
-  // live: liveStreamingDetailsあり OR タイトルにライブ系キーワード
+  // live: (liveStreamingDetailsあり かつ 20分以上 or P0D) OR タイトルにライブ系キーワード
   // 英語 "live" のみ単語境界一致（誤爆防止）、日本語キーワードは部分一致
+  // 【load-bearing null branch】真のライブ/upcoming配信は contentDetails.duration='P0D' を返す。
+  // parseDuration は /PT(?:...)/ にマッチしないため null を返す → durationSec===null → live 判定通過。
+  // プレミアMVは実際の尺（例: PT4M10S）が入っており LIVE_DURATION_THRESHOLD_SEC=1200秒未満 → song へ落ちる。
+  // プレミアMVは公開後もliveStreamingDetailsが永続するためhasLiveDetailsのみでの判定はバグの温床。
   if (
-    hasLiveDetails ||
+    (hasLiveDetails && (durationSec === null || durationSec >= LIVE_DURATION_THRESHOLD_SEC)) ||
     LIVE_KEYWORDS.some(k => titleLower.includes(k.toLowerCase())) ||
     LIVE_WORD_RE.test(title)
   ) {
