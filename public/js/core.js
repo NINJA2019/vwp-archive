@@ -7,6 +7,7 @@ import { loadAlbumsApi, loadVideosApi, addAlbumApi, updateAlbumApi, deleteAlbumA
 import { getMemberColor, drawVinylDisc } from './vinyl.js';
 import { applyFeatureDots } from './onboarding.js';
 import { trackScreen, trackScreenRestore } from './pageview.js';
+import { writeHash } from './route.js';
 import { tokenize, buildSearchKey, bigrams, searchWithFallback } from './search.js';
 
 // ===== 可変状態 =====
@@ -53,7 +54,15 @@ export function invalidateAlbumsCache(){ _albumsCacheTime = 0; }
 
 // GA4 仮想 page_view 用（export も window 露出もしない）
 function archivePath(){ return selectedMembers.length ? '/archive/'+[...selectedMembers].sort().join('+') : '/archive/all'; }
-function trackArchiveScreen(){ const p=archivePath(); trackScreen(p, 'Archive - '+p.slice('/archive/'.length)+' | VWP Archive'); }
+function trackArchiveScreen(){
+  const p=archivePath();
+  trackScreen(p, 'Archive - '+p.slice('/archive/'.length)+' | VWP Archive');
+  // ハッシュルーティング: シングルメンバーまたは all のみ書く（マルチは hash に書かない）
+  try {
+    const seg = selectedMembers.length === 1 ? selectedMembers[0] : 'all';
+    writeHash('/archive/'+seg);
+  } catch(e){}
+}
 
 // ===== openPage / closePage =====
 export function openPage(page){
