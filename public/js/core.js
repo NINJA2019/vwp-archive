@@ -57,7 +57,7 @@ function archivePath(){ return selectedMembers.length ? '/archive/'+[...selected
 function trackArchiveScreen(){
   const p=archivePath();
   trackScreen(p, 'Archive - '+p.slice('/archive/'.length)+' | VWP Archive');
-  // ハッシュルーティング: シングルメンバーまたは all のみ書く（マルチは hash に書かない）
+  // ハッシュルーティング: シングル選択以外（未選択・マルチ）は all として hash に書く
   try {
     const seg = selectedMembers.length === 1 ? selectedMembers[0] : 'all';
     writeHash('/archive/'+seg);
