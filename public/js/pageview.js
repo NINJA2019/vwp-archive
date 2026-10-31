@@ -15,10 +15,21 @@ function cleanSearch(){
   } catch(e) { return ''; }
 }
 
+// path から screen_name を導出（先頭スラッシュを除いた最初のセグメント or パス全体）
+function screenNameOf(path){
+  try {
+    const seg = path.replace(/^\//, '').split('/')[0];
+    return seg || 'top';
+  } catch(e) { return 'top'; }
+}
+
 function send(path, title){
+  // document.title はgtag不在でも設定（adblock環境でも title ownership を維持）
+  if(title) document.title = title;
   if(typeof window.gtag !== 'function') return;
   const page_location = location.origin + path + cleanSearch(); // utm等のクエリは保持、ol_result は除外
-  const params = { page_location, page_title: title };
+  const screen_name = screenNameOf(path);
+  const params = { page_location, page_title: title, screen_name };
   if(lastLocation) params.page_referrer = lastLocation;
   window.gtag('set', { page_location, page_title: title }); // 以降の全イベントに仮想URLを付与
   window.gtag('event', 'page_view', params);
@@ -28,7 +39,13 @@ function send(path, title){
 // ベース画面（intro / archive / mobile 系）または overlay:true でオーバーレイ画面を記録
 export function trackScreen(path, title, opts){
   const overlay = !!(opts && opts.overlay);
-  if(overlay){ overlayOpen = true; } else { basePath = path; baseTitle = title; overlayOpen = false; }
+  if(overlay){
+    overlayOpen = true;
+  } else {
+    basePath = path; baseTitle = title; overlayOpen = false;
+    // タイトルは path dedup と無関係に常に同期
+    if(title) document.title = title;
+  }
   if(path === lastPath) return; // 同一画面の連続送信は抑止
   send(path, title);
 }
@@ -39,4 +56,9 @@ export function trackScreenRestore(){
   overlayOpen = false;
   if(basePath === lastPath) return;
   send(basePath, baseTitle);
+}
+
+// ベースタイトルのみ復元（page_view を送らない。OL compose リセット時など）
+export function restoreBaseTitle(){
+  if(baseTitle) document.title = baseTitle;
 }

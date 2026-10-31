@@ -4,7 +4,7 @@ import { t } from './i18n.js';
 import { getVideos, ytId, parseTags, parseMembers, esc, safeUrl, _gtag, getIsAdmin, getStoredPw } from './core.js';
 import { getShelf } from './shelf.js';
 import { getMemberColor } from './vinyl.js';
-import { trackScreen, trackScreenRestore } from './pageview.js';
+import { trackScreen, trackScreenRestore, restoreBaseTitle } from './pageview.js';
 
 const OL_MOODS = ['Morning', 'Night', 'Rain', 'Walk', 'Work', 'Chill'];
 const OL_DAILY_LIMIT = 10;
@@ -74,7 +74,8 @@ export function olInit(){
   const params = new URLSearchParams(location.search);
   const olResult = params.get('ol_result');
   if(olResult) {
-    const cleanUrl = location.pathname + location.search.replace(/[?&]ol_result=[^&]+/, '').replace(/^\?$/, '').replace(/^&/, '?');
+    const cleanSearch = location.search.replace(/[?&]ol_result=[^&]+/, '').replace(/^\?$/, '').replace(/^&/, '?');
+    const cleanUrl = location.pathname + cleanSearch + location.hash;
     history.replaceState(null, '', cleanUrl || location.pathname);
     olOpenFromResult(olResult);
   }
@@ -854,7 +855,7 @@ export function olResetCompose(){
   document.querySelectorAll('.ol-mood-tag').forEach(t => t.classList.remove('selected'));
   olUpdateSendBtn();
   olShowScreen('olComposeScreen');
-  document.title = 'V.W.P ARCHIVE';
+  restoreBaseTitle(); // pageview.js が保持する baseTitle に戻す（title ownership を pageview.js に委譲）
   olShareData = { text: '', url: '' };
 }
 
