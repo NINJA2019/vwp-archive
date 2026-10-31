@@ -208,7 +208,7 @@ Object.assign(window, {
  * ブート判定。
  * hash deep link / ol_result / vwp_intro_seen / viewport から
  * 「イントロをスキップするか」と「初期メンバーフィルタ」を決定する。
- * ※ モバイル（≤700px）はスキップしても mobWelcome はそのまま（initMobileが制御）。
+ * ※ skip は desktop のみ適用。モバイルは常に通常フロー（mobWelcome はそのまま）。
  * Returns: { skipIntro: boolean, initialMember: string|null }
  */
 function decideBoot(){
@@ -231,6 +231,32 @@ function decideBoot(){
 
 document.addEventListener('DOMContentLoaded', () => {
   const boot = decideBoot();
+  const isMobile = window.innerWidth <= 700;
+
+  // ── 初回 page_view: olInit より前に送る（base/overlay 順序を保証）──
+  // skip: desktop のみ archive 画面へ着地。mobile は常に通常フロー。
+  if(boot.skipIntro && !isMobile){
+    // デスクトップ skip: メンバーフィルタを先に適用し、archive page_view を送る
+    const m = boot.initialMember;
+    if(m && m !== 'all'){
+      setSelectedMembers_state([m]);
+      setCurMember(m);
+    } else {
+      setSelectedMembers_state([]);
+      setCurMember('all');
+    }
+    const archiveSegment = (m && m !== 'all') ? m : 'all';
+    try {
+      trackScreen('/archive/'+archiveSegment, 'Archive - '+archiveSegment+' | VWP Archive');
+    } catch(e) {}
+    try { writeHash('/archive/'+archiveSegment); } catch(e){}
+  } else {
+    // 通常フロー（デスクトップ初回 or モバイル全パターン）
+    try {
+      trackScreen(isMobile ? '/mobile/welcome' : '/intro',
+                  isMobile ? 'Mobile Welcome | VWP Archive' : 'Intro | VWP Archive');
+    } catch(e) {}
+  }
 
   initCore();           // DOM イベント登録・検索・ビュー切替等
   initOnboarding();     // 店主メモ+NEWドット（intro入店イベント購読。initIntroより先に登録）
@@ -241,37 +267,12 @@ document.addEventListener('DOMContentLoaded', () => {
   olInit();             // Observer-Link 初期化（deep-link解析含む）
   initMobile();         // モバイルS字UI（window幅>700pxなら即return）
 
-  // デスクトップ Intro
-  if(boot.skipIntro){
-    // イントロをスキップ: intro要素を即非表示・アーカイブに着地
-    initIntro({ skip: true, initialMember: boot.initialMember });
-
-    // メンバーフィルタを適用（hash deep link 等）
-    const m = boot.initialMember;
-    if(m && m !== 'all'){
-      setSelectedMembers_state([m]);
-      setCurMember(m);
-    } else {
-      setSelectedMembers_state([]);
-      setCurMember('all');
-    }
-
-    // 初回 page_view: 着地した archive 画面
-    const archiveSegment = (m && m !== 'all') ? m : 'all';
-    try {
-      trackScreen('/archive/'+archiveSegment, 'Archive - '+archiveSegment+' | VWP Archive');
-    } catch(e) {}
-
-    // hash を正規化（書かれていない場合も write）
-    try { writeHash('/archive/'+archiveSegment); } catch(e){}
+  // ── デスクトップ Intro 制御 ──
+  // skip は desktop のみ。mobile は initMobile が ttIntro を非表示にして mobWelcome を出す。
+  if(boot.skipIntro && !isMobile){
+    initIntro({ skip: true });
   } else {
-    // 通常フロー: イントロを表示（モバイル時は initMobile が ttIntro を非表示にして mobWelcome を出す）
-    const isMobile = window.innerWidth <= 700;
-    try {
-      trackScreen(isMobile ? '/mobile/welcome' : '/intro',
-                  isMobile ? 'Mobile Welcome | VWP Archive' : 'Intro | VWP Archive');
-    } catch(e) {}
-    initIntro(); // デスクトップ Intro 初期化
+    initIntro(); // デスクトップ Intro 初期化（モバイルでは ttIntro が hidden なので実質 no-op）
   }
 
   bootstrapApp();       // データfetch → render → PW自動ログイン

@@ -7,13 +7,15 @@ const INTRO_SEEN_KEY = 'vwp_intro_seen';
 
 // initIntro は main.js から呼ばれる。
 // skipIfSeen=true を渡すと vwp_intro_seen が '1' の場合に即リターン（スキップ）。
-export function initIntro({ skip = false, initialMember = null } = {}){
+export function initIntro({ skip = false } = {}){
   const intro = document.getElementById('ttIntro');
   if(!intro) return;
 
-  // スキップ経路: intro を非表示にして archive を即表示
+  // スキップ経路: intro を非表示にして archive を即表示（デスクトップ限定。mobile は main.js が skip を渡さない）
   if(skip){
     intro.style.display = 'none';
+    // vwp_intro_seen を記録（skip パスも「イントロ通過済み」扱い）
+    try { localStorage.setItem(INTRO_SEEN_KEY, '1'); } catch(e){}
     // スキップ時は archiveへの遷移イベントを発行（onboarding.js が購読）
     document.dispatchEvent(new CustomEvent('vwp:archive-entered'));
     _gtag('event','intro_exit',{method:'skip'});
