@@ -213,17 +213,20 @@ Object.assign(window, {
  */
 function decideBoot(){
   const isMobile = window.innerWidth <= 700;
+  // モバイルは常に通常フロー（mobWelcome が Intro 相当）。skip は desktop 専用。
+  if(isMobile) return { skipIntro: false, initialMember: null };
+
   const hashRoute = parseHash(); // #/archive or #/archive/<member>
   const hasOlResult = new URLSearchParams(location.search).has('ol_result');
   let introSeen = false;
   try { introSeen = localStorage.getItem('vwp_intro_seen') === '1'; } catch(e){}
 
-  // hash deep link または ol_result → スキップ（モバイルでも適用）
+  // hash deep link または ol_result → デスクトップでスキップ
   if(hashRoute.matched || hasOlResult){
     return { skipIntro: true, initialMember: hashRoute.matched ? hashRoute.member : null };
   }
-  // 再訪者（intro_seen）→ デスクトップのみスキップ（モバイルは mobWelcome が常に出る）
-  if(introSeen && !isMobile){
+  // 再訪者（intro_seen）→ デスクトップでスキップ
+  if(introSeen){
     return { skipIntro: true, initialMember: null };
   }
   return { skipIntro: false, initialMember: null };
@@ -231,12 +234,12 @@ function decideBoot(){
 
 document.addEventListener('DOMContentLoaded', () => {
   const boot = decideBoot();
-  const isMobile = window.innerWidth <= 700;
+  // decideBoot がモバイルを除外済みなので、ここでは boot.skipIntro だけ見ればよい
 
   // ── 初回 page_view: olInit より前に送る（base/overlay 順序を保証）──
-  // skip: desktop のみ archive 画面へ着地。mobile は常に通常フロー。
-  if(boot.skipIntro && !isMobile){
-    // デスクトップ skip: メンバーフィルタを先に適用し、archive page_view を送る
+  // skip(=desktop): メンバーフィルタを先に適用し、archive page_view を送る。
+  // 通常フロー(desktop初回 or mobile全パターン): intro/mobile welcome page_view。
+  if(boot.skipIntro){
     const m = boot.initialMember;
     if(m && m !== 'all'){
       setSelectedMembers_state([m]);
@@ -251,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(e) {}
     try { writeHash('/archive/'+archiveSegment); } catch(e){}
   } else {
-    // 通常フロー（デスクトップ初回 or モバイル全パターン）
+    const isMobile = window.innerWidth <= 700;
     try {
       trackScreen(isMobile ? '/mobile/welcome' : '/intro',
                   isMobile ? 'Mobile Welcome | VWP Archive' : 'Intro | VWP Archive');
@@ -268,11 +271,12 @@ document.addEventListener('DOMContentLoaded', () => {
   initMobile();         // モバイルS字UI（window幅>700pxなら即return）
 
   // ── デスクトップ Intro 制御 ──
-  // skip は desktop のみ。mobile は initMobile が ttIntro を非表示にして mobWelcome を出す。
-  if(boot.skipIntro && !isMobile){
+  // skip は desktop のみ（decideBoot 保証）。
+  // mobile: initMobile が ttIntro を非表示にして mobWelcome を出す。initIntro は ttIntro を触らない。
+  if(boot.skipIntro){
     initIntro({ skip: true });
   } else {
-    initIntro(); // デスクトップ Intro 初期化（モバイルでは ttIntro が hidden なので実質 no-op）
+    initIntro();
   }
 
   bootstrapApp();       // データfetch → render → PW自動ログイン
