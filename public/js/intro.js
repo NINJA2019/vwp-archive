@@ -139,7 +139,7 @@ export function initIntro({ skip = false, initialMember = null } = {}){
       enterBtn.style.cursor = 'pointer';
       enterBtn.style.boxShadow = '0 0 14px rgba(108,92,231,0.25)';
       enterBtn.textContent = '✦ OBSERVER-LINK';
-      setTimeout(() => { busy = false; enterArchive('button'); }, 350);
+      setTimeout(() => { busy = false; enterArchive('observer_link'); }, 350);
       return;
     }
 
