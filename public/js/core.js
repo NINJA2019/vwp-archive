@@ -102,11 +102,17 @@ export function showFetchError(msg){
 export function _gtag(...args){ if(typeof window.gtag==='function') window.gtag(...args); }
 export function trackSongClick(id, url){
   const v=videos.find(x=>x.id===id);
-  if(v) _gtag('event','song_click',{
+  let destination='';
+  try{ if(url){ const u=new URL(url); destination=u.hostname.replace(/^www\./,''); } }catch(e){}
+  if(v) _gtag('event','song_link_click',{
+    song_id:     String(v.id),
+    member:      v.member||'',
+    destination,
     song_title:  v.title||'',
     member_name: v.member||'',
     video_date:  v.date||'',
     album_id:    v.album_id?String(v.album_id):'',
+    video_id:    String(v.id),
   });
   window.open(url,'_blank');
 }
@@ -319,7 +325,8 @@ export function buildSidebar(){
     btn.innerHTML=`<span class="mpill-icon">${m.emoji}</span><span class="mpill-name">${mbr(m.id)}</span><span class="mpill-cnt" id="mc-${m.id}">0</span>`;
     btn.addEventListener('click',()=>{
       if(dimmed) return;
-      _gtag('event','member_filter_select',{
+      _gtag('event','member_select',{
+        member:         m.id,
         member_name:    m.id,
         action:         m.id==='all'?'reset':selectedMembers.includes(m.id)?'deselect':'select',
         selected_count: selectedMembers.length,
@@ -384,7 +391,7 @@ export function buildSidebar(){
       }
       btn.addEventListener('click',()=>{
           curAlbum=isOn?null:al.id;
-          if(curAlbum!==null) _gtag('event','album_open',{album_title:al.name,member_name:al.member});
+          if(curAlbum!==null) _gtag('event','album_open',{album_id:String(al.id),member:al.member,album_title:al.name,member_name:al.member});
           buildSidebar();updateCounts();render();
         });
         af.appendChild(btn);
@@ -437,7 +444,7 @@ export function buildSidebar(){
           btn2.addEventListener('click',()=>{
             const on2=curAlbum===al.id;
             curAlbum=on2?null:al.id;
-            if(curAlbum!==null) _gtag('event','album_open',{album_title:al.name,member_name:al.member});
+            if(curAlbum!==null) _gtag('event','album_open',{album_id:String(al.id),member:al.member,album_title:al.name,member_name:al.member});
             buildSidebar();updateCounts();render();
           });
           children.appendChild(btn2);
@@ -638,7 +645,7 @@ export function loadMoreItems(){
       const a=document.createElement('a');
       a.className='litem';a.style.animationDelay=((start+i)*CARD_ANIM_DELAY_STEP)+'s';
       a.href=safeUrl(v.url);a.target='_blank';a.rel='noopener';
-      a.addEventListener('click',()=>_gtag('event','song_click',{song_title:v.title||'',member_name:v.member||'',video_date:v.date||'',album_id:v.album_id?String(v.album_id):''}));
+      a.addEventListener('click',()=>{let destination='';try{const u=new URL(a.href);destination=u.hostname.replace(/^www\./,'');}catch(e){}; _gtag('event','song_link_click',{song_id:String(v.id),member:v.member||'',destination,song_title:v.title||'',member_name:v.member||'',video_date:v.date||'',album_id:v.album_id?String(v.album_id):'',video_id:String(v.id)});});
       a.innerHTML=`<div class="lthumb"><img src="${thumb(v)}" alt="" loading="lazy"></div><div class="linfo"><div class="ltitle">${newBadgeIds.has(v.id)?'<span class="new-badge">NEW</span>':''} ${esc(v.title)}</div><div class="lmeta">${tagPills(v)}${showMb(v)}<span>${fmtDate(v.date)}</span>${spotifyBtn(v)}${v.note?`<span>${esc(v.note)}</span>`:''}</div></div>${typeof window.shelfPinHtml==="function"?window.shelfPinHtml(v.id):""}${typeof window.olQuickSendHtml==="function"?window.olQuickSendHtml(v.id):""}${isAdmin?`<button class="dbtn" onclick="edit(${v.id},event)" style="color:var(--dim);">✎</button><button class="dbtn" onclick="del(${v.id},event)">✕</button>`:""}`;
       wrap.appendChild(a);
     });
@@ -709,7 +716,7 @@ function buildAlbumShelf(list){
       +`<span class="al-card-meta"><span>${cnt} ${esc(t('shelfSongs'))}</span>${soldBadge}</span>`;
     card.addEventListener('click',()=>{
       curAlbum=al.id;
-      _gtag('event','album_open',{album_title:al.name,member_name:al.member});
+      _gtag('event','album_open',{album_id:String(al.id),member:al.member,album_title:al.name,member_name:al.member});
       buildSidebar();updateCounts();render();
     });
     row.appendChild(card);

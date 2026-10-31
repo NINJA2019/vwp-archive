@@ -825,7 +825,19 @@ export function initMobile(){
     }
   }
 
-  if(mcSearch) mcSearch.addEventListener('input', () => mcFilter());
+  let _mcSearchGa4Timer = null;
+  if(mcSearch) mcSearch.addEventListener('input', () => {
+    mcFilter();
+    // GA4 search イベント（デスクトップと同じ命名・パラメータ）
+    clearTimeout(_mcSearchGa4Timer);
+    _mcSearchGa4Timer = setTimeout(() => {
+      const q = mcSearch.value.trim();
+      if(q.length >= 2 && typeof window.gtag === 'function'){
+        window.gtag('event','search',{search_term:q, results_count:mcFiltered.length});
+        if(mcFiltered.length === 0) window.gtag('event','search_no_result',{search_term:q});
+      }
+    }, 500);
+  });
 
   // Card view header buttons
   if(mcShelfBtn) mcShelfBtn.addEventListener('click', () => msInit());
