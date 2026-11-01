@@ -3,7 +3,25 @@
 import { _gtag, setSelectedMembers_state, setCurMember, setCurTag, setCurSort, setCurAlbum, setSearchQ, buildSidebar, updateCounts, render } from './core.js';
 import { trackScreen } from './pageview.js';
 
-export function initIntro(){
+const INTRO_SEEN_KEY = 'vwp_intro_seen';
+
+// initIntro は main.js から呼ばれる。
+// skipIfSeen=true を渡すと vwp_intro_seen が '1' の場合に即リターン（スキップ）。
+export function initIntro({ skip = false } = {}){
+  const intro = document.getElementById('ttIntro');
+  if(!intro) return;
+
+  // スキップ経路: intro を非表示にして archive を即表示（デスクトップ限定。mobile は main.js が skip を渡さない）
+  if(skip){
+    intro.style.display = 'none';
+    // vwp_intro_seen を記録（skip パスも「イントロ通過済み」扱い）
+    try { localStorage.setItem(INTRO_SEEN_KEY, '1'); } catch(e){}
+    // スキップ時は archiveへの遷移イベントを発行（onboarding.js が購読）
+    document.dispatchEvent(new CustomEvent('vwp:archive-entered'));
+    _gtag('event','intro_exit',{method:'skip'});
+    return;
+  }
+
   // スタートページ表示中は裏のページをスクロール固定
   document.body.style.overflow = 'hidden';
   const MEMBERS = [
@@ -25,7 +43,6 @@ export function initIntro(){
   const infoJa  = document.getElementById('ttInfoJa');
   const enterBtn= document.getElementById('ttEnterBtn');
   const hint    = document.getElementById('ttHint');
-  const intro   = document.getElementById('ttIntro');
 
   // 画面サイズに応じてスケール
   // ヘッダー(約60px) + 名前テキスト込みのマージン + ボタン類(約120px) を除いた残り高さ
@@ -73,6 +90,11 @@ export function initIntro(){
   const R = Math.round(218 * scale), CX = Math.round(280 * scale), CY = Math.round(280 * scale);
   let busy = false, chosen = null, entering = false;
 
+  // ENTERボタンは初期から clickable（メンバー未選択でも 'all' として入場可能）
+  enterBtn.style.color = 'rgba(176,184,255,.65)';
+  enterBtn.style.borderColor = 'rgba(176,184,255,.35)';
+  enterBtn.style.cursor = 'pointer';
+
   // LPを配置
   MEMBERS.forEach((mb, i) => {
     const angle = (i / MEMBERS.length) * 2 * Math.PI - Math.PI / 2;
@@ -119,7 +141,7 @@ export function initIntro(){
       enterBtn.style.cursor = 'pointer';
       enterBtn.style.boxShadow = '0 0 14px rgba(108,92,231,0.25)';
       enterBtn.textContent = '✦ OBSERVER-LINK';
-      setTimeout(() => { busy = false; enterArchive(); }, 350);
+      setTimeout(() => { busy = false; enterArchive('observer_link'); }, 350);
       return;
     }
 
@@ -152,7 +174,7 @@ export function initIntro(){
           infoName.textContent = mb.en;
           infoJa.style.color = 'rgba(160,170,220,0.65)';
           infoJa.textContent = mb.ja;
-          // ENTERボタンを有効化
+          // ENTERボタンをメンバー選択後スタイルへ
           enterBtn.style.color = '#ccd4ee';
           enterBtn.style.borderColor = 'rgba(176,184,255,.45)';
           enterBtn.style.cursor = 'pointer';
@@ -165,9 +187,18 @@ export function initIntro(){
     }, 250);
   }
 
-  function enterArchive(){
-    if(!chosen || entering) return;
+  function enterArchive(method){
+    if(entering) return;
     entering = true;
+
+    // メンバー未選択の場合は 'all' として入場
+    const effectiveChosen = chosen || { m: 'all', ol: false };
+
+    // vwp_intro_seen を記録（再訪バイパス用）
+    try { localStorage.setItem(INTRO_SEEN_KEY, '1'); } catch(e){}
+
+    // intro_exit イベント（デスクトップ Intro のみ。mobile は呼ばれない）
+    _gtag('event', 'intro_exit', { method: method || 'button' });
 
     // 黒幕を作成してフェードイン → 暗転完了後にアーカイブ表示 → 黒幕フェードアウト
     const black = document.createElement('div');
@@ -186,10 +217,10 @@ export function initIntro(){
       // 入店確定をオンボーディング（店主メモ等）へ通知（onboarding.js が購読）
       document.dispatchEvent(new CustomEvent('vwp:archive-entered'));
 
-      const m = chosen.m;
+      const m = effectiveChosen.m;
 
       // Observer-Link: open OL screen directly
-      if(chosen.ol){
+      if(effectiveChosen.ol){
         _gtag('event','archive_enter',{member_name:'ol',view_mode:'observer_link'});
         setSelectedMembers_state([]);
         setCurMember('all');
@@ -212,10 +243,17 @@ export function initIntro(){
         return;
       }
 
-      // メンバーフィルタを適用
-      _gtag('event','archive_enter',{member_name:m,view_mode:'member'});
-      setSelectedMembers_state([m]);
-      setCurMember(m);
+      // all の場合はメンバーフィルタなし
+      if(m === 'all'){
+        _gtag('event','archive_enter',{member_name:'all',view_mode:'all'});
+        setSelectedMembers_state([]);
+        setCurMember('all');
+      } else {
+        // メンバーフィルタを適用
+        _gtag('event','archive_enter',{member_name:m,view_mode:'member'});
+        setSelectedMembers_state([m]);
+        setCurMember(m);
+      }
       setCurTag('all');
       setCurSort('new');
       setCurAlbum(null);
@@ -225,7 +263,8 @@ export function initIntro(){
       buildSidebar();
       updateCounts();
       render();
-      trackScreen('/archive/'+m, 'Archive - '+m+' | VWP Archive');
+      trackScreen(m === 'all' ? '/archive/all' : '/archive/'+m,
+                  (m === 'all' ? 'Archive - all' : 'Archive - '+m)+' | VWP Archive');
 
       // 黒幕フェードアウト
       setTimeout(() => {
@@ -235,10 +274,11 @@ export function initIntro(){
     }, 600);
   }
 
-  enterBtn.addEventListener('click', () => { if(chosen) enterArchive(); });
+  // ENTERボタン: 常にクリック可（メンバー未選択でも 'all' で入場）
+  enterBtn.addEventListener('click', () => { enterArchive('button'); });
 
-  // キーボード: Enterでも入場可
+  // キーボード: Enterでも入場可（intro が表示中のみ）
   document.addEventListener('keydown', e => {
-    if(e.key === 'Enter' && chosen && intro.style.display !== 'none') enterArchive();
+    if(e.key === 'Enter' && intro.style.display !== 'none' && !entering) enterArchive('keyboard');
   });
 }

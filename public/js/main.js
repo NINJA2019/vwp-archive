@@ -90,6 +90,9 @@ import { initEventTicker } from './events.js';
 // ── GA4 仮想 page_view（window露出しない） ───────────────────
 import { trackScreen } from './pageview.js';
 
+// ── ハッシュルーティング（window露出しない） ──────────────────
+import { parseHash, writeHash } from './route.js';
+
 // ═══════════════════════════════════════════════════════════════
 // window露出テーブル（A + B + C の計90件）
 // _rcvSongs は shelf.js 内で実行時代入のため除外
@@ -200,12 +203,64 @@ Object.assign(window, {
 // 起動シーケンス（旧 DOMContentLoaded ブロック相当）
 // 順序固定: core → shelf → observer-link → intro/mobile → bootstrap
 // ═══════════════════════════════════════════════════════════════
+
+/**
+ * ブート判定。
+ * hash deep link / ol_result / vwp_intro_seen / viewport から
+ * 「イントロをスキップするか」と「初期メンバーフィルタ」を決定する。
+ * ※ skip は desktop のみ適用。モバイルは常に通常フロー（mobWelcome はそのまま）。
+ * Returns: { skipIntro: boolean, initialMember: string|null }
+ */
+function decideBoot(){
+  const isMobile = window.innerWidth <= 700;
+  // モバイルは常に通常フロー（mobWelcome が Intro 相当）。skip は desktop 専用。
+  if(isMobile) return { skipIntro: false, initialMember: null };
+
+  const hashRoute = parseHash(); // #/archive or #/archive/<member>
+  const hasOlResult = new URLSearchParams(location.search).has('ol_result');
+  let introSeen = false;
+  try { introSeen = localStorage.getItem('vwp_intro_seen') === '1'; } catch(e){}
+
+  // hash deep link または ol_result → デスクトップでスキップ
+  if(hashRoute.matched || hasOlResult){
+    return { skipIntro: true, initialMember: hashRoute.matched ? hashRoute.member : null };
+  }
+  // 再訪者（intro_seen）→ デスクトップでスキップ
+  if(introSeen){
+    return { skipIntro: true, initialMember: null };
+  }
+  return { skipIntro: false, initialMember: null };
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-  // 初回 page_view（index.html は send_page_view:false）。init群が例外を投げても送られるよう先頭で try/catch
-  try {
-    trackScreen(window.innerWidth > 700 ? '/intro' : '/mobile/welcome',
-                window.innerWidth > 700 ? 'Intro | VWP Archive' : 'Mobile Welcome | VWP Archive');
-  } catch(e) { /* GA4 送信失敗はアプリ起動を妨げない */ }
+  const boot = decideBoot();
+  // decideBoot がモバイルを除外済みなので、ここでは boot.skipIntro だけ見ればよい
+
+  // ── 初回 page_view: olInit より前に送る（base/overlay 順序を保証）──
+  // skip(=desktop): メンバーフィルタを先に適用し、archive page_view を送る。
+  // 通常フロー(desktop初回 or mobile全パターン): intro/mobile welcome page_view。
+  if(boot.skipIntro){
+    const m = boot.initialMember;
+    if(m && m !== 'all'){
+      setSelectedMembers_state([m]);
+      setCurMember(m);
+    } else {
+      setSelectedMembers_state([]);
+      setCurMember('all');
+    }
+    const archiveSegment = (m && m !== 'all') ? m : 'all';
+    try {
+      trackScreen('/archive/'+archiveSegment, 'Archive - '+archiveSegment+' | VWP Archive');
+    } catch(e) {}
+    try { writeHash('/archive/'+archiveSegment); } catch(e){}
+  } else {
+    const isMobile = window.innerWidth <= 700;
+    try {
+      trackScreen(isMobile ? '/mobile/welcome' : '/intro',
+                  isMobile ? 'Mobile Welcome | VWP Archive' : 'Intro | VWP Archive');
+    } catch(e) {}
+  }
+
   initCore();           // DOM イベント登録・検索・ビュー切替等
   initOnboarding();     // 店主メモ+NEWドット（intro入店イベント購読。initIntroより先に登録）
   initEventTicker();    // ライブ告知ティッカー（メイン画面恒常UI）
@@ -214,6 +269,15 @@ document.addEventListener('DOMContentLoaded', () => {
   initSetlist();        // セットリスト（ファン・セレクト）オーバーレイ初期化
   olInit();             // Observer-Link 初期化（deep-link解析含む）
   initMobile();         // モバイルS字UI（window幅>700pxなら即return）
-  initIntro();          // ターンテーブルイントロ（モバイル時はinitMobileが先に制御を取る）
+
+  // ── デスクトップ Intro 制御 ──
+  // skip は desktop のみ（decideBoot 保証）。
+  // mobile: initMobile が ttIntro を非表示にして mobWelcome を出す。initIntro は ttIntro を触らない。
+  if(boot.skipIntro){
+    initIntro({ skip: true });
+  } else {
+    initIntro();
+  }
+
   bootstrapApp();       // データfetch → render → PW自動ログイン
 });
